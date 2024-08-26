@@ -1,0 +1,10 @@
+
+# Screen Size
+WIDTH, HEIGHT = 1280, 720
+
+#GAME FPS
+FPS = 60
+
+# Colors
+GRAY = (128, 128, 128)
+FERN_GREEN = (79, 121, 66)
