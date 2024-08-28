@@ -299,72 +299,59 @@ class FirstLevel:
 
     def run(self):
 
-        # Example of handling user input to return to the main menu
+        # Get the current key presses
+        keys = pygame.key.get_pressed()
+        moving = False
+        if keys[pygame.K_w]:
+            self.player_y -= self.player_speed
+            moving = True
+        if keys[pygame.K_s]:
+            self.player_y += self.player_speed
+            moving = True
+        if keys[pygame.K_a]:
+            self.player_x -= self.player_speed
+            moving = True
+            self.facing_right = False
+        if keys[pygame.K_d]:
+            self.player_x += self.player_speed
+            moving = True
+            self.facing_right = True
+
+        self.idle = not moving
+
+        # Update the animation frame
+        current_time = pygame.time.get_ticks()
+        self.elapsed_time += (current_time - self.last_time) / 1000.0
+        self.last_time = current_time
+
+        if self.elapsed_time > self.animation_speed:
+            self.current_frame = (self.current_frame + 1) % (
+                self.num_frames_Idle if self.idle else self.num_frames_Run)  # Loop to the next frame
+            self.elapsed_time = 0
+
+        sprite_sheet = self.sprite_sheet_Idle if self.idle else self.sprite_sheet_Run
+        frame_image = self.get_frame(sprite_sheet, self.current_frame, self.frame_width, self.frame_height, self.scale,
+                                     not self.facing_right)
+
+        # Fill the screen with the background color
+        self.display.fill(FERN_GREEN)
+
+        # Update shadow position
+        shadow_offset_x = 37  # Adjust the shadow offset as needed
+        shadow_offset_y = 65
+        self.display.blit(self.shadow_surface,
+                          (self.player_x - self.shadow_width // 2 + shadow_offset_x, self.player_y + shadow_offset_y))
+
+        # Blit the current animation frame onto the screen
+        self.display.blit(frame_image, (self.player_x, self.player_y))
+
+        # Event Handling
         keys = pygame.key.get_pressed()
         if keys[pygame.K_ESCAPE]:  # If Escape key is pressed
             self.gameStateManager.set_state('main-menu')  # Return to the main menu
 
-        while True:
-            # Event loop
-            # print("Running First Level state")
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
 
 
-
-            # Get the current key presses
-            keys = pygame.key.get_pressed()
-            moving = False
-            if keys[pygame.K_w]:
-                self.player_y -= self.player_speed
-                moving = True
-            if keys[pygame.K_s]:
-                self.player_y += self.player_speed
-                moving = True
-            if keys[pygame.K_a]:
-                self.player_x -= self.player_speed
-                moving = True
-                self.facing_right = False
-            if keys[pygame.K_d]:
-                self.player_x += self.player_speed
-                moving = True
-                self.facing_right = True
-
-            self.idle = not moving
-
-            # Update the animation frame
-            current_time = pygame.time.get_ticks()
-            self.elapsed_time += (current_time - self.last_time) / 1000.0
-            self.last_time = current_time
-
-            if self.elapsed_time > self.animation_speed:
-                self.current_frame = (self.current_frame + 1) % (
-                    self.num_frames_Idle if self.idle else self.num_frames_Run)  # Loop to the next frame
-                self.elapsed_time = 0
-
-            sprite_sheet = self.sprite_sheet_Idle if self.idle else self.sprite_sheet_Run
-            frame_image = self.get_frame(sprite_sheet, self.current_frame, self.frame_width, self.frame_height, self.scale,
-                                         not self.facing_right)
-
-            # Fill the screen with the background color
-            self.display.fill(FERN_GREEN)
-
-            # Update shadow position
-            shadow_offset_x = 37  # Adjust the shadow offset as needed
-            shadow_offset_y = 65
-            self.display.blit(self.shadow_surface,
-                             (self.player_x - self.shadow_width // 2 + shadow_offset_x, self.player_y + shadow_offset_y))
-
-            # Blit the current animation frame onto the screen
-            self.display.blit(frame_image, (self.player_x, self.player_y))
-
-            # Update the display
-            pygame.display.update()
-
-            # Cap the frame rate
-            self.clock.tick(FPS)
 
 class GameStateManager:
     def __init__(self, currentState):
