@@ -8,6 +8,7 @@ from settings import *
 # Initialize Pygame
 pygame.init()
 engine = pyttsx3.init()
+
 class Game:
     def __init__(self):
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -365,6 +366,23 @@ class FirstLevel:
 
             # Cap the frame rate
             self.clock.tick(FPS)
+
+class SecondLevel:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+
+    def run(self):
+        pass
+
+class ThirdLevel:
+    pass
+
+class FourthLevel:
+    pass
+
+class FifthLevel:
+    pass
 
 class GameStateManager:
     def __init__(self, currentState):
