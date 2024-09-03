@@ -98,7 +98,7 @@ class MainMenu:
         self.exitbutton_color = (255, 200, 0)
         self.exitbutton_hover_color = (255, 170, 0)
         self.exitbutton_text = "Exit Game"
-        self.exitbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 600), (250, 70))
+        self.exitbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 590), (250, 70))
 
     def stop_sounds(self):
         self.main_menu_bgm.stop()
