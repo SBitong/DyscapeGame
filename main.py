@@ -258,19 +258,65 @@ class Options:
         self.display = display
         self.gameStateManager = gameStateManager
 
+        # Load the specified font
+        self.font = pygame.font.SysFont(FONT_NAME, FONT_SIZE)
+
+        # Volume slider properties
+        self.slider_length = 300
+        self.slider_height = 10
+        self.slider_color = (200, 200, 200)
+        self.knob_color = (255, 255, 255)
+        self.slider_x = 150
+        self.slider_y = 150
+        self.knob_radius = 10
+        self.knob_position = self.slider_x + int(MASTER_VOLUME * self.slider_length)
+
     def run(self):
-        print("Running Options state")  # Debugging line
-        self.display.fill('black')
+        running = True
+        while running:
+            self.display.fill((50, 50, 50))  # Dark background for the options menu
 
-        # Example of adding a simple title
-        font = pygame.font.Font(None, 74)
-        title_text = font.render('Options', True, (255, 255, 255))
-        self.display.blit(title_text, (100, 100))
+            # Draw the volume slider
+            pygame.draw.rect(self.display, self.slider_color, (self.slider_x, self.slider_y, self.slider_length, self.slider_height))
+            pygame.draw.circle(self.display, self.knob_color, (self.knob_position, self.slider_y + self.slider_height // 2), self.knob_radius)
 
-        # Example of handling user input to return to the main menu
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE]:  # If Escape key is pressed
-            self.gameStateManager.set_state('main-menu')  # Return to the main menu
+            # Display volume label
+            volume_label = self.font.render("Master Volume", True, (255, 255, 255))
+            self.display.blit(volume_label, (self.slider_x, self.slider_y - 40))
+
+            # Event Handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.is_mouse_on_slider(event.pos):
+                        self.adjust_volume(event.pos)
+                elif event.type == pygame.MOUSEMOTION:
+                    if event.buttons[0] and self.is_mouse_on_slider(event.pos):
+                        self.adjust_volume(event.pos)
+
+            pygame.display.update()
+
+            # Go back to the main menu
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_ESCAPE]:
+                running = False
+                self.save_settings()
+                self.gameStateManager.set_state('main-menu')
+
+    def is_mouse_on_slider(self, mouse_pos):
+        return (self.slider_x <= mouse_pos[0] <= self.slider_x + self.slider_length and
+                self.slider_y - self.knob_radius <= mouse_pos[1] <= self.slider_y + self.slider_height + self.knob_radius)
+
+    def adjust_volume(self, mouse_pos):
+        self.knob_position = max(self.slider_x, min(mouse_pos[0], self.slider_x + self.slider_length))
+        MASTER_VOLUME = (self.knob_position - self.slider_x) / self.slider_length
+        pygame.mixer.music.set_volume(MASTER_VOLUME)
+
+    def save_settings(self):
+        # Save the settings back to settings.py or some other persistent storage
+        pass
 
 class FirstLevel:
     def __init__(self, display, gameStateManager):
