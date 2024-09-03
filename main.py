@@ -53,6 +53,7 @@ class MainMenu:
         self.hover_sound = pygame.mixer.Sound(hover_sound_path)
         self.start_button_hovered = False
         self.option_button_hovered = False
+        self.exit_button_hovered = False
 
         # Load the game music
         music_path = os.path.join('audio','01 Hei Shao.mp3')
@@ -93,6 +94,12 @@ class MainMenu:
         self.optionbutton_hover_color = (255, 170, 0)
         self.optionbutton_text = "Options"
         self.optionbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 500), (250, 70))
+
+        # Exit Button properties
+        self.exitbutton_color = (255, 200, 0)
+        self.exitbutton_hover_color = (255, 170, 0)
+        self.exitbutton_text = "Exit Game"
+        self.exitbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 600), (250, 70))
 
     def stop_sounds(self):
         self.main_menu_bgm.stop()
@@ -194,6 +201,17 @@ class MainMenu:
 
         self.draw_button(self.optionbutton_text, self.font, self.optionbutton_rect, option_button_color, border_radius = 20)
 
+        if self.exitbutton_rect.collidepoint(mouse_pos):
+            if not self.exit_button_hovered:
+                self.hover_sound.play()
+                self.exit_button_hovered = True
+            exit_button_color = self.exitbutton_hover_color
+        else:
+            exit_button_color = self.exitbutton_color
+            self.exit_button_hovered = False
+
+        self.draw_button(self.exitbutton_text, self.font, self.exitbutton_rect, exit_button_color, border_radius = 20)
+
 
         # Update and draw leaves
         for leaf in self.leaves:
@@ -227,6 +245,11 @@ class MainMenu:
                     engine.say("Options")
                     engine.runAndWait()
 
+                elif self.exitbutton_rect.collidepoint(event.pos):
+                    self.stop_sounds()
+                    print("Exit Button Clicked!")
+                    pygame.quit()
+                    sys.exit()
         # keys = pygame.key.get_pressed()
         # if keys[pygame.K_RETURN]:  # If Enter key is pressed
         #     self.gameStateManager.set_state('first-level')  # Switch to the options menu
@@ -236,19 +259,107 @@ class Options:
         self.display = display
         self.gameStateManager = gameStateManager
 
+        # Load the background image
+        background_image_path = os.path.join('graphics', 'main-menu-background-1.jpg')
+        self.background_image = pygame.image.load(background_image_path).convert_alpha()
+        self.background_image = pygame.transform.scale(self.background_image, (self.display.get_width(), self.display.get_height()))
+
+        # Load the specified font
+        self.font = pygame.font.SysFont(FONT_NAME, FONT_SIZE)
+
+        # Volume slider properties
+        self.slider_length = 300
+        self.slider_height = 10
+        self.slider_color = (200, 200, 200)
+        self.knob_color = (255, 255, 255)
+        self.knob_radius = 10
+
+        # Center the volume slider
+        self.slider_x = (WIDTH - self.slider_length) // 2
+        self.slider_y = HEIGHT // 3
+        self.knob_position = self.slider_x + int(MASTER_VOLUME * self.slider_length)
+
+        # TTS toggle button properties
+        self.tts_toggle_rect = pygame.Rect((WIDTH - 150) // 2, self.slider_y + 100, 150, 50)
+        self.tts_enabled = TTS_ENABLED
+
+        # Font selection properties
+        self.fonts = ["Arial", "Courier", "Comic Sans MS", "Georgia", "Times New Roman"]
+        self.current_font_index = self.fonts.index(FONT_NAME) if FONT_NAME in self.fonts else 0
+        self.font_rect = pygame.Rect((WIDTH - 300) // 2, self.tts_toggle_rect.y + 100, 300, 50)
+
     def run(self):
-        print("Running Options state")  # Debugging line
-        self.display.fill('black')
+        running = True
+        while running:
+            self.display.blit(self.background_image, (0, 0))  # Draw the background image
 
-        # Example of adding a simple title
-        font = pygame.font.Font(None, 74)
-        title_text = font.render('Options', True, (255, 255, 255))
-        self.display.blit(title_text, (100, 100))
+            # Draw the volume slider
+            pygame.draw.rect(self.display, self.slider_color, (self.slider_x, self.slider_y, self.slider_length, self.slider_height))
+            pygame.draw.circle(self.display, self.knob_color, (self.knob_position, self.slider_y + self.slider_height // 2), self.knob_radius)
 
-        # Example of handling user input to return to the main menu
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE]:  # If Escape key is pressed
-            self.gameStateManager.set_state('main-menu')  # Return to the main menu
+            # Display volume label
+            volume_label = self.font.render("Master Volume", True, (255, 255, 255),)
+            volume_label_rect = volume_label.get_rect(center=(WIDTH // 2, self.slider_y - 40))
+            self.display.blit(volume_label, volume_label_rect)
+
+            # Draw TTS toggle
+            tts_text = self.font.render("TTS: On" if self.tts_enabled else "TTS: Off", True, (255, 255, 255))
+            pygame.draw.rect(self.display, (0, 100, 0) if self.tts_enabled else (100, 0, 0), self.tts_toggle_rect)
+            tts_text_rect = tts_text.get_rect(center=self.tts_toggle_rect.center)
+            self.display.blit(tts_text, tts_text_rect)
+
+            # Draw font selection
+            font_text = self.font.render(f"Font: {self.fonts[self.current_font_index]}", True, (255, 255, 255))
+            pygame.draw.rect(self.display, (100, 100, 100), self.font_rect)
+            font_text_rect = font_text.get_rect(center=self.font_rect.center)
+            self.display.blit(font_text, font_text_rect)
+
+            # Event Handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.is_mouse_on_slider(event.pos):
+                        self.adjust_volume(event.pos)
+                    elif self.tts_toggle_rect.collidepoint(event.pos):
+                        self.toggle_tts()
+                    elif self.font_rect.collidepoint(event.pos):
+                        self.cycle_font()
+                elif event.type == pygame.MOUSEMOTION:
+                    if event.buttons[0] and self.is_mouse_on_slider(event.pos):
+                        self.adjust_volume(event.pos)
+
+            pygame.display.update()
+
+            # Go back to the main menu
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_ESCAPE]:
+                running = False
+                self.save_settings()
+                self.gameStateManager.set_state('main-menu')
+
+    def is_mouse_on_slider(self, mouse_pos):
+        return (self.slider_x <= mouse_pos[0] <= self.slider_x + self.slider_length and
+                self.slider_y - self.knob_radius <= mouse_pos[1] <= self.slider_y + self.slider_height + self.knob_radius)
+
+    def adjust_volume(self, mouse_pos):
+        self.knob_position = max(self.slider_x, min(mouse_pos[0], self.slider_x + self.slider_length))
+        MASTER_VOLUME = (self.knob_position - self.slider_x) / self.slider_length
+        pygame.mixer.music.set_volume(MASTER_VOLUME)
+
+    def toggle_tts(self):
+        self.tts_enabled = not self.tts_enabled
+        TTS_ENABLED = self.tts_enabled
+
+    def cycle_font(self):
+        self.current_font_index = (self.current_font_index + 1) % len(self.fonts)
+        FONT_NAME = self.fonts[self.current_font_index]
+        self.font = pygame.font.SysFont(FONT_NAME, FONT_SIZE)
+
+    def save_settings(self):
+        # Save the settings back to settings.py or some other persistent storage
+        pass
 
 class FirstLevel:
     def __init__(self, display, gameStateManager):

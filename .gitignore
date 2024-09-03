@@ -1,0 +1,31 @@
+# Ignore Python bytecode files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Ignore virtual environment directories
+venv/
+env/
+
+# Ignore specific environment files
+.env
+.env.local
+
+# Ignore PyCharm project files
+.idea/
+
+# Ignore logs and other output
+*.log
+*.csv
+
+# Ignore data directories
+data/
+
+# Ignore build directories
+build/
+dist/
+
+# Ignore user-specific configuration files
+*.swp
+*~
