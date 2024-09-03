@@ -52,6 +52,7 @@ class MainMenu:
         self.hover_sound = pygame.mixer.Sound(hover_sound_path)
         self.start_button_hovered = False
         self.option_button_hovered = False
+        self.exit_button_hovered = False
 
         # Load the game music
         music_path = os.path.join('audio','01 Hei Shao.mp3')
@@ -92,6 +93,12 @@ class MainMenu:
         self.optionbutton_hover_color = (255, 170, 0)
         self.optionbutton_text = "Options"
         self.optionbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 500), (250, 70))
+
+        # Exit Button properties
+        self.exitbutton_color = (255, 200, 0)
+        self.exitbutton_hover_color = (255, 170, 0)
+        self.exitbutton_text = "Exit Game"
+        self.exitbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 600), (250, 70))
 
     def stop_sounds(self):
         self.main_menu_bgm.stop()
@@ -193,6 +200,17 @@ class MainMenu:
 
         self.draw_button(self.optionbutton_text, self.font, self.optionbutton_rect, option_button_color, border_radius = 20)
 
+        if self.exitbutton_rect.collidepoint(mouse_pos):
+            if not self.exit_button_hovered:
+                self.hover_sound.play()
+                self.exit_button_hovered = True
+            exit_button_color = self.exitbutton_hover_color
+        else:
+            exit_button_color = self.exitbutton_color
+            self.exit_button_hovered = False
+
+        self.draw_button(self.exitbutton_text, self.font, self.exitbutton_rect, exit_button_color, border_radius = 20)
+
 
         # Update and draw leaves
         for leaf in self.leaves:
@@ -226,6 +244,11 @@ class MainMenu:
                     engine.say("Options")
                     engine.runAndWait()
 
+                elif self.exitbutton_rect.collidepoint(event.pos):
+                    self.stop_sounds()
+                    print("Exit Button Clicked!")
+                    pygame.quit()
+                    sys.exit()
         # keys = pygame.key.get_pressed()
         # if keys[pygame.K_RETURN]:  # If Enter key is pressed
         #     self.gameStateManager.set_state('first-level')  # Switch to the options menu
