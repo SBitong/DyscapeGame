@@ -13,11 +13,12 @@ class Game:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("DyscapeTheGame")
 
-        self.gameStateManager = GameStateManager('main-menu')
+        self.gameStateManager = GameStateManager('fifth-level')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel}
+        self.fifthLevel = FifthLevel(self.screen, self.gameStateManager)
+        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'fifth-level': self.fifthLevel}
 
         self.clock = pygame.time.Clock()
 
@@ -365,6 +366,14 @@ class FirstLevel:
 
             # Cap the frame rate
             self.clock.tick(FPS)
+
+class FifthLevel:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+    def run(self):
+        print("running Fifth-Level") # debugging line
+        self.display.fill("Black")
 
 class GameStateManager:
     def __init__(self, currentState):
