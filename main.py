@@ -310,7 +310,6 @@ class FirstLevel:
 
         # Function to extract frames from the sprite sheet
 
-
     def get_frame(self, sheet, frame, width, height, scale, flip=False):
         frame_surface = pygame.Surface((width, height), pygame.SRCALPHA)
         frame_surface.blit(sheet, (0, 0), (frame * width, 0, width, height))
@@ -318,7 +317,6 @@ class FirstLevel:
         if flip:
             scaled_surface = pygame.transform.flip(scaled_surface, True, False)
         return scaled_surface
-
 
     def run(self):
 
