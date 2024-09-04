@@ -482,9 +482,80 @@ class FifthLevel:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
+        self.font = pygame.font.Font(None, 36)
+        self.white = (255, 255, 255)
+        self.black = (0, 0, 0)
+
+        # Questions with multiple choices and the correct answer
+        self.qa_dict = {
+            "How many words are in this sentence? The big brown fox jumps over the lazy dog.": {
+                "choices": ["5 (Five)", "6 (Six)", "8 (Eight)", "9 (Nine)"],
+                "answer": "9 (Nine)"
+            },
+            "What is 2 + 2?": {
+                "choices": ["3", "4", "5", "6"],
+                "answer": "4"
+            },
+            "Ako pa ba?? :((": {
+                "choices": ["Oo. Ikaw lang.", "Siguro. Hindi ako sure.", "Hindi. May iba na ako.", "#ILoveBiniAiah"],
+                "answer": "Oo. Ikaw lang."
+            }
+        }
+
+        self.questions = list(self.qa_dict.keys())
+        self.current_question_index = 0
+        self.choice_rects = []  # List to store the rectangles for each choice
+
     def run(self):
-        print("running Fifth-Level") # debugging line
-        self.display.fill("Black")
+        running = True
+        while running:
+            self.display.fill(self.white)
+
+            # Get the current question and choices
+            question = self.questions[self.current_question_index]
+            choices = self.qa_dict[question]["choices"]
+
+            # Render the question
+            question_surface = self.font.render(question, True, self.black)
+            self.display.blit(question_surface, (50, 50))
+
+            # Render the choices and create rectangles for mouse collision detection
+            self.choice_rects = []
+            for i, choice in enumerate(choices):
+                choice_surface = self.font.render(choice, True, self.black)
+                choice_rect = choice_surface.get_rect(topleft=(50, 150 + i * 40))
+                self.display.blit(choice_surface, choice_rect.topleft)
+                self.choice_rects.append(choice_rect)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = event.pos
+                    for i, rect in enumerate(self.choice_rects):
+                        if rect.collidepoint(mouse_pos):
+                            selected_choice = choices[i]
+                            correct_answer = self.qa_dict[question]["answer"]
+
+                            if selected_choice == correct_answer:  # Check if the selected answer is correct
+                                print("Correct!")
+                            else:
+                                print("Incorrect!")
+
+                            # Move to the next question
+                            self.current_question_index += 1
+                            if self.current_question_index >= len(self.questions):
+                                print("All questions answered. Ending level.")
+                                running = False  # End the game loop
+                            break
+
+            pygame.display.flip()  # Ensure the display updates with the latest changes
+
+
+
+
 
 class GameStateManager:
     def __init__(self, currentState):
