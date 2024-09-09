@@ -1,3 +1,4 @@
+
 import pygame
 import sys
 import os
@@ -361,121 +362,172 @@ class Options:
         pass
 
 class FirstLevel:
-    def __init__(self, display, gameStateManager):
-        self.display = display
-        self.gameStateManager = gameStateManager
+        def __init__(self, display, gameStateManager):
+            self.display = display
+            self.gameStateManager = gameStateManager
 
-        self.player_x, self.player_y = WIDTH // 2, HEIGHT // 2
-        self.player_speed = 3.5  # Adjusted speed for better visibility
+            # Ladder positions for correct words (on the bridge)
+            self.ladder_slots = [
+                {"word": "POOF", "rect": pygame.Rect(600, 100, 120, 40), "correct_word": "ROOF", "occupied": False},
+                {"word": "CAT", "rect": pygame.Rect(600, 180, 120, 40), "correct_word": "BAT", "occupied": False},
+                {"word": "GOWN", "rect": pygame.Rect(600, 260, 120, 40), "correct_word": "CROWN", "occupied": False},
+                {"word": "MEAT", "rect": pygame.Rect(600, 340, 120, 40), "correct_word": "SEAT", "occupied": False},
+                {"word": "HOG", "rect": pygame.Rect(600, 420, 120, 40), "correct_word": "DOG", "occupied": False},
+            ]
 
-        # Load the sprite sheets from the specified path
-        self.sprite_sheet_path_Idle = os.path.join('graphics', 'Idle.png')
-        self.sprite_sheet_path_Run = os.path.join('graphics', 'Run.png')
-        # -- self.sprite_sheet_path_Run = r'C:\Users\hp\Documents\Dyscape\DyscapeTheGame\graphics\Run.png'
-        self.sprite_sheet_Idle = pygame.image.load(self.sprite_sheet_path_Idle).convert_alpha()
-        self.sprite_sheet_Run = pygame.image.load(self.sprite_sheet_path_Run).convert_alpha()
+            # Draggable words scattered
+            self.draggable_words = [
+                {"word": "ROOF", "rect": pygame.Rect(300, 500, 120, 40), "dragging": False, "original_pos": (50, 500)},
+                {"word": "BAT", "rect": pygame.Rect(450, 500, 120, 40), "dragging": False, "original_pos": (200, 500)},
+                {"word": "CROWN", "rect": pygame.Rect(600, 500, 120, 40), "dragging": False, "original_pos": (350, 500)},
+                {"word": "SEAT", "rect": pygame.Rect(750, 500, 120, 40), "dragging": False, "original_pos": (500, 500)},
+                {"word": "DOG", "rect": pygame.Rect(900, 500, 120, 40), "dragging": False, "original_pos": (650, 500)},
+            ]
 
-        # Animation parameters
-        self.frame_width = 48  # Width of a single frame in the sprite sheet
-        self.frame_height = 48  # Height of a single frame in the sprite sheet
-        self.scale = 1.5  # Scale factor for enlarging the sprite
-        self.num_frames_Idle = 9  # Number of frames in the idle sprite sheet
-        self.num_frames_Run = 9  # Number of frames in the run sprite sheet
-        self.animation_speed = 0.1  # Seconds per frame
-        self.current_frame = 0
-        self.elapsed_time = 0
-        self.last_time = pygame.time.get_ticks()
-        self.clock = pygame.time.Clock()
+            # Load images for ladder (bridge) and hearts
+            self.ladder_image = pygame.image.load(os.path.join('graphics', 'ladder.png')).convert_alpha()
+            self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
+            self.heart_image = pygame.transform.scale(self.heart_image, (40, 40))
 
-        self.idle = True
-        self.facing_right = True  # Assume the character starts facing right
+            # Scale the ladder image appropriately
+            self.ladder_image = pygame.transform.scale(self.ladder_image, (650, 500))  # Adjust to fit the bridge
 
-        # Shadow parameters
-        self.shadow_width = 30  # Width of the shadow ellipse
-        self.shadow_height = 10  # Height of the shadow ellipse
-        self.shadow_surface = pygame.Surface((self.shadow_width, self.shadow_height), pygame.SRCALPHA)
-        pygame.draw.ellipse(self.shadow_surface, (0, 0, 0, 100), [0, 0, self.shadow_width, self.shadow_height])
+            # Lives and other game variables
+            self.lives = 3
+            self.selected_word = None
+            self.offset_x = 0
+            self.offset_y = 0
 
-        # Function to extract frames from the sprite sheet
+            # Game Over or Win state
+            self.game_over = False
+            self.win = False
 
+            # Load the Arial font
+            font_path = os.path.join('fonts', 'ARIAL.TTF')
+            self.font = pygame.font.Font(font_path, 20)
 
-    def get_frame(self, sheet, frame, width, height, scale, flip=False):
-        frame_surface = pygame.Surface((width, height), pygame.SRCALPHA)
-        frame_surface.blit(sheet, (0, 0), (frame * width, 0, width, height))
-        scaled_surface = pygame.transform.scale(frame_surface, (width * scale, height * scale))
-        if flip:
-            scaled_surface = pygame.transform.flip(scaled_surface, True, False)
-        return scaled_surface
+        def run(self):
+            if self.game_over or self.win:
+                self.show_end_screen()
+                return
 
+            # Background: Green for land, brown for ground, with bridge
+            self.display.fill((100, 40, 0))  # Brown ground background
+            pygame.draw.rect(self.display, (34, 139, 34), (0, 450, 1300, 650))  # Green top "hill" part
 
-    def run(self):
+            # Draw the ladder/bridge image in place
+            self.display.blit(self.ladder_image, (330, 10))
 
-        # Example of handling user input to return to the main menu
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE]:  # If Escape key is pressed
-            self.gameStateManager.set_state('main-menu')  # Return to the main menu
+            # Draw the hearts/lives
+            for i in range(self.lives):
+                self.display.blit(self.heart_image, (10 + i * 45, 10))
 
-        while True:
-            # Event loop
-            # print("Running First Level state")
+            # Draw the ladder slots and words
+            for slot in self.ladder_slots:
+                pygame.draw.rect(self.display, (139, 69, 19), slot["rect"], 0)  # Transparent boxes over the ladder
+                text_surface = self.font.render(slot["word"], True, (255, 255, 255))
+                self.display.blit(text_surface, (slot["rect"].x + 15, slot["rect"].y + 5))
+
+            # Draw the draggable words
+            for word_data in self.draggable_words:
+                pygame.draw.rect(self.display, (139, 0, 0), word_data["rect"])  # Dark red boxes for draggable words
+                text_surface = self.font.render(word_data["word"], True, (255, 255, 255))
+                self.display.blit(text_surface, (word_data["rect"].x + 10, word_data["rect"].y + 5))
+
+            # Handle dragging logic
+            mouse_pos = pygame.mouse.get_pos()
+            if self.selected_word:
+                self.selected_word["rect"].x = mouse_pos[0] + self.offset_x
+                self.selected_word["rect"].y = mouse_pos[1] + self.offset_y
+
+            # Event handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if not self.selected_word:
+                        for word_data in self.draggable_words:
+                            if word_data["rect"].collidepoint(event.pos):
+                                self.selected_word = word_data
+                                self.offset_x = word_data["rect"].x - event.pos[0]
+                                self.offset_y = word_data["rect"].y - event.pos[1]
+                                break
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    if self.selected_word:
+                        # Check if the selected word is placed in any of the ladder slots
+                        placed = False
+                        for slot in self.ladder_slots:
+                            if slot["rect"].colliderect(self.selected_word["rect"]) and not slot["occupied"]:
+                                if slot["correct_word"] == self.selected_word["word"]:
+                                    # Snap the word into the correct slot
+                                    slot["word"] = self.selected_word["word"]
+                                    slot["occupied"] = True  # Mark slot as occupied
+                                    self.draggable_words.remove(
+                                        self.selected_word)  # Remove the word from the draggable list
+                                    placed = True
+                                    break
+                                else:
+                                    # Wrong word placement, deduct a life
+                                    self.lives -= 1
+                                    placed = True
+                                    if self.lives <= 0:
+                                        self.game_over = True
+                                        print("Game Over!")
+                        # Snap back to original position if not placed correctly
+                        if not placed:
+                            self.selected_word["rect"].x, self.selected_word["rect"].y = self.selected_word[
+                                "original_pos"]
+                        self.selected_word = None
 
+            # Check for win condition (all words placed correctly)
+            if len(self.draggable_words) == 0:
+                self.win = True
+                print("You Win!")
 
-
-            # Get the current key presses
-            keys = pygame.key.get_pressed()
-            moving = False
-            if keys[pygame.K_w]:
-                self.player_y -= self.player_speed
-                moving = True
-            if keys[pygame.K_s]:
-                self.player_y += self.player_speed
-                moving = True
-            if keys[pygame.K_a]:
-                self.player_x -= self.player_speed
-                moving = True
-                self.facing_right = False
-            if keys[pygame.K_d]:
-                self.player_x += self.player_speed
-                moving = True
-                self.facing_right = True
-
-            self.idle = not moving
-
-            # Update the animation frame
-            current_time = pygame.time.get_ticks()
-            self.elapsed_time += (current_time - self.last_time) / 1000.0
-            self.last_time = current_time
-
-            if self.elapsed_time > self.animation_speed:
-                self.current_frame = (self.current_frame + 1) % (
-                    self.num_frames_Idle if self.idle else self.num_frames_Run)  # Loop to the next frame
-                self.elapsed_time = 0
-
-            sprite_sheet = self.sprite_sheet_Idle if self.idle else self.sprite_sheet_Run
-            frame_image = self.get_frame(sprite_sheet, self.current_frame, self.frame_width, self.frame_height, self.scale,
-                                         not self.facing_right)
-
-            # Fill the screen with the background color
-            self.display.fill(FERN_GREEN)
-
-            # Update shadow position
-            shadow_offset_x = 37  # Adjust the shadow offset as needed
-            shadow_offset_y = 65
-            self.display.blit(self.shadow_surface,
-                             (self.player_x - self.shadow_width // 2 + shadow_offset_x, self.player_y + shadow_offset_y))
-
-            # Blit the current animation frame onto the screen
-            self.display.blit(frame_image, (self.player_x, self.player_y))
-
-            # Update the display
             pygame.display.update()
 
-            # Cap the frame rate
-            self.clock.tick(FPS)
+        def show_end_screen(self):
+            self.display.fill((0, 0, 0))
+            if self.game_over:
+                message = "Game Over!"
+            else:
+                message = "You Win!"
+
+            text_surface = self.font.render(message, True, (255, 255, 255))
+            self.display.blit(text_surface, (
+            self.display.get_width() // 2 - text_surface.get_width() // 2, self.display.get_height() // 3))
+
+            # Draw Restart and Exit buttons
+            restart_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2, 200, 50)
+            exit_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2 + 70, 200, 50)
+
+            pygame.draw.rect(self.display, (0, 128, 0), restart_button)  # Green for restart
+            pygame.draw.rect(self.display, (128, 0, 0), exit_button)  # Red for exit
+
+            restart_text = self.font.render("Restart", True, (255, 255, 255))
+            exit_text = self.font.render("Exit", True, (255, 255, 255))
+
+            self.display.blit(restart_text, (restart_button.x + 50, restart_button.y + 10))
+            self.display.blit(exit_text, (exit_button.x + 70, exit_button.y + 10))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if restart_button.collidepoint(event.pos):
+                        self.restart_level()
+                    elif exit_button.collidepoint(event.pos):
+                        pygame.quit()
+                        sys.exit()
+
+            pygame.display.update()
+
+        def restart_level(self):
+            self.__init__(self.display, self.gameStateManager)
+            self.gameStateManager.set_state('first-level')
+
 
 class GameStateManager:
     def __init__(self, currentState):
