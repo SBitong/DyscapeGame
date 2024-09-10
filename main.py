@@ -483,47 +483,308 @@ class FifthLevel:
         self.display = display
         self.gameStateManager = gameStateManager
         self.font = pygame.font.Font(None, 36)
-        self.white = (255, 255, 255)
-        self.black = (0, 0, 0)
+        self.white = WHITE
+        self.black = BLACK
+
+        # Number of lives the player has
+        self.lives = 3
+
+        background_image_path = os.path.join('graphics','cave-background.png')
+        self.background_image = pygame.image.load(background_image_path).convert_alpha()
+        self.background_image = pygame.transform.scale(self.background_image, (self.display.get_width(), self.display.get_height()))
 
         # Questions with multiple choices and the correct answer
         self.qa_dict = {
-            "How many words are in this sentence? The big brown fox jumps over the lazy dog.": {
+            "The big brown fox jumps over the lazy dog.": {
                 "choices": ["5 (Five)", "6 (Six)", "8 (Eight)", "9 (Nine)"],
                 "answer": "9 (Nine)"
             },
-            "What is 2 + 2?": {
-                "choices": ["3", "4", "5", "6"],
-                "answer": "4"
+            "My house is big and painted blue.": {
+                "choices": ["5 (Five)", "6 (Six)", "7 (Seven)", "8 (Eight)"],
+                "answer": "7 (Seven)"
             },
-            "Ako pa ba?? :((": {
-                "choices": ["Oo. Ikaw lang.", "Siguro. Hindi ako sure.", "Hindi. May iba na ako.", "#ILoveBiniAiah"],
-                "answer": "Oo. Ikaw lang."
-            }
+            "I love my mom very much.": {
+                "choices": ["4 (Four)", "3 (Three)", "10 (Ten)", "6 (Six)"],
+                "answer": "6 (Six)"
+            },
+            "My cat likes to climb.": {
+                "choices": ["5 (Five)", "6 (Six)", "7 (Seven)", "8 (Eight)"],
+                "answer": "5 (Five)"
+            },
+            "I like to drink chocolate milk.": {
+                "choices": ["4 (Four)", "3 (Three)", "10 (Ten)", "6 (Six)"],
+                "answer": "6 (Six)"
+            },
+            "Mark goes to school every morning.": {
+                "choices": ["4 (Four)", "6 (Six)", "10 (Ten)", "8 (Eight)"],
+                "answer": "6 (Six)"
+            },
+            "I fell asleep.": {
+                "choices": ["4 (Four)", "3 (Three)", "1 (One)", "9 (Nine)"],
+                "answer": "3 (Three)"
+            },
+            "They ate all the pizza.": {
+                "choices": ["5 (Five)", "3 (Three)", "10 (Ten)", "1 (One)"],
+                "answer": "5 (Five)"
+            },
         }
 
-        self.questions = list(self.qa_dict.keys())
-        self.current_question_index = 0
-        self.choice_rects = []  # List to store the rectangles for each choice
+        self.questions = list(self.qa_dict.keys())  # List of questions
+        self.choice_rects = []
 
-    def run(self):
+        # Shuffle questions when the level starts
+        self.shuffle_questions()
+
+        # Use the imported word_colors dictionary
+        self.word_colors = word_colors
+
+    def shuffle_questions(self):
+        """Shuffles the questions and resets the current question index."""
+        random.shuffle(self.questions)
+        self.current_question_index = 0  # Reset index after shuffle
+
+    def reset_level(self):
+        """Resets the level by shuffling questions and resetting lives."""
+        print("Restarting level...")  # Optional debug message
+        self.lives = 3  # Reset lives to 3
+        self.shuffle_questions()  # Shuffle the questions again
+
+    def run_title_animation(self):
+        title_heading = "Fifth Level:"
+        title_text = "THE UNKNOWN TOAD"
+        font_path = os.path.join('fonts','ARIALBLACKITALIC.TTF')
+        title_font = pygame.font.Font(font_path, 50)  # Large font for the title
+
+        alpha = 0  # Start fully transparent
+        max_alpha = 255
+        fade_speed = 5  # How fast the title fades in and out
+
         running = True
         while running:
-            self.display.fill(self.white)
+            self.display.fill(self.black)
+
+            # Render the title with fading effect
+            title_surface = title_font.render(title_text, True, self.white)
+            title_surface.set_alpha(alpha)  # Set transparency level
+            title_rect = title_surface.get_rect(center=(self.display.get_width() // 2, self.display.get_height() // 2))
+            self.display.blit(title_surface, title_rect)
+
+            # Update the alpha to create fade-in effect
+            alpha += fade_speed
+            if alpha >= max_alpha:
+                alpha = max_alpha
+                pygame.time.delay(500)  # Pause for a short moment at full opacity
+
+                # Fade out effect
+                while alpha > 0:
+                    self.display.fill(self.black)
+                    title_surface.set_alpha(alpha)  # Set transparency level
+                    self.display.blit(title_surface, title_rect)
+                    alpha -= fade_speed
+                    if alpha < 0:
+                        alpha = 0
+                    pygame.display.flip()
+                    pygame.time.delay(30)  # Control the fade-out speed
+                pygame.time.delay(80)
+                running = False  # Exit the animation loop after fade-out
+
+            pygame.display.flip()
+            pygame.time.delay(30)  # Control the fade-in speed
+
+    def run_dialogue_strip(self):
+        # Initialize pygame's mixer for audio
+        pygame.mixer.init()
+
+        # Load character images (example placeholders)
+        char1_image = pygame.image.load(os.path.join('graphics', 'character-avatar.png'))
+        char2_image = pygame.image.load(os.path.join('graphics', 'frog-avatar.png'))
+
+        # Resize character images (adjust size as needed)
+        char1_image = pygame.transform.scale(char1_image, (200, 200))
+        char2_image = pygame.transform.scale(char2_image, (300, 300))
+
+        dialogue_data = [
+            {"name": "Unknown Toad", "text": "Good Day, Traveler! May you have safe travels ahead!", "image": char2_image, "audio": "frog-dialogue-1.mp3"},
+            {"name": "You", "text": "Is this the way to the center of Dyscape??", "image": char1_image},
+            {"name": "Unknown Toad", "text": "...", "image": char2_image},
+            {"name": "Unknown Toad", "text": "Yes.. but I am afraid that I may not let you pass.", "image": char2_image, "audio": "frog-dialogue-2.mp3"},
+            {"name": "You", "text": "WHAT??!?", "image": char1_image},
+            {"name": "You", "text": "WHY???", "image": char1_image},
+            {"name": "Unknown Toad", "text": "I don't know you, mister. And I don't know what business you have inside the tower.", "image": char2_image, "audio": "frog-dialogue-3.mp3"},
+            {"name": "You", "text": "(Tower? Could it be...?)", "image": char1_image},
+            {"name": "Unknown Toad", "text": "It is my job to protect the path to the Tower of Dyslexio and the King.", "image": char2_image, "audio": "frog-dialogue-4.mp3"},
+            {"name": "You", "text": "(THAT'S IT! It is the tower of Dyslexio. So that is the name that the owl was murmuring about..)", "image": char1_image},
+            {"name": "You", "text": "Mister Toad, I respect your values but the world is in danger. Dyscape is in danger.", "image": char1_image},
+            {"name": "Unknown Toad", "text": "Danger? What are you talking about?", "image": char2_image, "audio": "frog-dialogue-5.mp3"},
+            {"name": "You", "text": "An unknown being named Confusion started to invade our world and has caused us to lose clarity for texts.", "image": char1_image},
+            {"name": "You", "text": "I was called to protect Dyscape and restore it to what it was before.", "image": char1_image},
+            {"name": "You", "text": "Dyscape is on the brink of full destruction. Confusion is here, and he is planning something evil.", "image": char1_image},
+            {"name": "Unknown Toad", "text": "Hmmm, I see. Well, it can't be helped.", "image": char2_image, "audio": "frog-dialogue-6.mp3"},
+            {"name": "Unknown Toad", "text": "Fine, I'll let you pass.", "image": char2_image, "audio": "frog-dialogue-7.mp3"},
+            {"name": "You", "text": "YES!!", "image": char1_image},
+            {"name": "Unknown Toad", "text": "But on one condition, you must answer all my questions.", "image": char2_image, "audio": "frog-dialogue-8.mp3"},
+            {"name": "Unknown Toad", "text": "This will assure me that you are not an enemy to us, but a friend.", "image": char2_image, "audio": "frog-dialogue-9.mp3"},
+            {"name": "Unknown Toad", "text": "Are you ready, traveler?", "image": char2_image, "audio": "frog-dialogue-10.mp3"},
+            {"name": "You", "text": "I am ready, Mr. Toad!", "image": char1_image},
+        ]
+
+        dialogue_box_height = 150  # Height of the dialogue box surface
+        dialogue_font = pygame.font.Font(None, 32)  # Font for dialogue text
+        name_font = pygame.font.Font(None, 36)  # Font for character names
+
+        current_line = 0
+        text_displayed = ""
+        text_index = 0
+        text_speed = 2  # Speed of text animation
+        audio_played = False  # Track if audio has been played for the current dialogue
+
+        running = True
+        clock = pygame.time.Clock()
+
+        while running:
+            self.display.blit(self.background_image, (0, 0))
+
+            # Create the dialogue box at the bottom
+            dialogue_box = pygame.Surface((self.display.get_width(), dialogue_box_height))
+            dialogue_box.fill((255, 219, 172))  # Light background for the dialogue box
+            dialogue_box_rect = dialogue_box.get_rect(topleft=(0, self.display.get_height() - dialogue_box_height))
+
+            # Draw the brown border around the dialogue box
+            border_color = (139, 69, 19)  # Brown color (RGB)
+            border_thickness = 20  # Thickness of the border
+            pygame.draw.rect(self.display, border_color, dialogue_box_rect.inflate(border_thickness, border_thickness),
+                             border_thickness)
+
+            # Get the current dialogue data
+            current_dialogue = dialogue_data[current_line]
+            character_name = current_dialogue["name"]
+            character_text = current_dialogue["text"]
+            character_image = current_dialogue["image"]
+            character_audio = current_dialogue.get("audio", None)  # Get audio if available, otherwise None
+            antagonist = "Unknown Toad"
+
+            # Play audio if it's the frog's turn and the audio hasn't been played yet
+            if character_audio and not audio_played:
+                pygame.mixer.music.load(os.path.join('audio', character_audio))  # Load the audio file
+                pygame.mixer.music.play()  # Play the audio
+                audio_played = True  # Ensure audio only plays once per dialogue line
+
+            # Render the character image on the left or right side of the dialogue box
+            if character_name == antagonist:
+                self.display.blit(character_image, (950, self.display.get_height() - dialogue_box_height - 300))
+            else:
+                self.display.blit(character_image, (50, self.display.get_height() - dialogue_box_height - 200))
+
+            # Render the character name inside the dialogue box (above the text)
+            name_surface = name_font.render(character_name, True, self.black)
+            dialogue_box.blit(name_surface, (20, 10))  # Draw name near the top inside the dialogue box
+
+            # Text animation (add one letter at a time)
+            if text_index < len(character_text):
+                text_index += text_speed  # Control how fast letters are added
+                text_displayed = character_text[:text_index]
+            else:
+                text_displayed = character_text
+
+            # Render the dialogue text below the name
+            text_surface = dialogue_font.render(text_displayed, True, self.black)
+            dialogue_box.blit(text_surface, (20, 60))  # Draw the text inside the dialogue box below the name
+
+            # Draw the dialogue box on the screen with the brown border
+            self.display.blit(dialogue_box, dialogue_box_rect.topleft)
+
+            # Event handling for advancing the dialogue
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                    if text_index >= len(character_text):
+                        # Move to the next line of dialogue if the text is fully displayed
+                        current_line += 1
+                        text_index = 0
+                        text_displayed = ""
+                        audio_played = False  # Reset audio flag for the next line
+                        if current_line >= len(dialogue_data):
+                            running = False  # Exit dialogue when all lines are done
+
+            pygame.display.flip()
+            clock.tick(60)  # Control the frame rate
+
+    def run(self):
+        # Load the paper scroll image
+        scroll_image = pygame.image.load(os.path.join('graphics', 'paper-scroll.png'))
+
+        # Resize the scroll image if needed
+        scroll_width, scroll_height = 700, 700  # Adjust these values as needed
+        scroll_image = pygame.transform.scale(scroll_image, (scroll_width, scroll_height))
+
+        # Center the scroll image
+        scroll_x = (self.display.get_width() - scroll_width) // 2
+        scroll_y = 10  # Y position for the scroll (adjust as needed)
+
+        self.run_title_animation()
+        self.run_dialogue_strip()
+
+        running = True
+        while running:
+            self.display.blit(self.background_image, (0, 0))
+
+            # Display the number of lives
+            lives_surface = self.font.render(f"Lives: {self.lives}", True, self.black)
+            self.display.blit(lives_surface, (50, 20))
+
+            # Blit the scroll image in the center
+            self.display.blit(scroll_image, (scroll_x, scroll_y))
+
+            # Center the question text on the scroll
+            main_question = "How many words are in this sentence?"
+            question_surface = self.font.render(main_question, True, self.black)
+
+            # Get the rectangle of the question surface to center it
+            question_rect = question_surface.get_rect(
+                center=(scroll_x + scroll_width // 2, 250))
+            self.display.blit(question_surface, question_rect.topleft)
 
             # Get the current question and choices
             question = self.questions[self.current_question_index]
             choices = self.qa_dict[question]["choices"]
 
-            # Render the question
-            question_surface = self.font.render(question, True, self.black)
-            self.display.blit(question_surface, (50, 50))
+            # Split the question into words
+            words = question.split()
+
+            # Calculate total width of all words
+            total_words_width = sum([self.font.render(word, True, self.black).get_width() for word in words]) + (
+                        10 * (len(words) - 1))
+
+            # Set the initial x_offset to center the words
+            x_offset = (self.display.get_width() - total_words_width) // 2
+            y_offset = scroll_y + 300  # Y position relative to the scroll
+
+            # Render each word with its assigned color, centered
+            for word in words:
+                color = self.word_colors.get(word, self.black)
+                word_surface = self.font.render(word, True, color)
+                self.display.blit(word_surface, (x_offset, y_offset))
+                x_offset += word_surface.get_width() + 10  # Add some space between words
 
             # Render the choices and create rectangles for mouse collision detection
             self.choice_rects = []
+
+            # Calculate total height for choices (if you'd like to center them vertically)
+            choices_height = len(choices) * 40  # Assuming each choice has 40px height
+
+            # Calculate the initial y_offset for choices to center them under the question
+            y_offset_choices = y_offset + 75  # Adjust as needed for spacing below the question
+
             for i, choice in enumerate(choices):
                 choice_surface = self.font.render(choice, True, self.black)
-                choice_rect = choice_surface.get_rect(topleft=(50, 150 + i * 40))
+                choice_width = choice_surface.get_width()
+
+                # Calculate x_offset to center the choices horizontally
+                x_offset_choice = (self.display.get_width() - choice_width) // 2
+                choice_rect = choice_surface.get_rect(
+                    topleft=(x_offset_choice, y_offset_choices + i * 40))  # Adjust vertical spacing (40px per choice)
                 self.display.blit(choice_surface, choice_rect.topleft)
                 self.choice_rects.append(choice_rect)
 
@@ -539,22 +800,24 @@ class FifthLevel:
                             selected_choice = choices[i]
                             correct_answer = self.qa_dict[question]["answer"]
 
-                            if selected_choice == correct_answer:  # Check if the selected answer is correct
+                            if selected_choice == correct_answer:
                                 print("Correct!")
+                                self.current_question_index += 1  # Move to next question
                             else:
                                 print("Incorrect!")
+                                self.lives -= 1  # Lose a life
+                                if self.lives <= 0:
+                                    self.reset_level()  # Restart level if no lives left
+                                    break
 
-                            # Move to the next question
-                            self.current_question_index += 1
+                            # If all questions are answered, end the level
                             if self.current_question_index >= len(self.questions):
                                 print("All questions answered. Ending level.")
-                                running = False  # End the game loop
+                                running = False
                             break
 
-            pygame.display.flip()  # Ensure the display updates with the latest changes
-
-
-
+            pygame.display.update()  # Ensure the display updates with the latest changes
+        sys.exit()
 
 
 class GameStateManager:
