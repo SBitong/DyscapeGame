@@ -2,6 +2,7 @@ import pygame
 import sys
 import os
 import random
+import time
 import pyttsx3
 from settings import *
 
@@ -17,7 +18,8 @@ class Game:
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel}
+        self.thirdLevel = ThirdLevel(self.screen, self.gameStateManager)
+        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'third-level': self.thirdLevel}
 
         self.clock = pygame.time.Clock()
 
@@ -367,20 +369,21 @@ class FirstLevel:
 
         self.player_x, self.player_y = WIDTH // 2, HEIGHT // 2
         self.player_speed = 3.5  # Adjusted speed for better visibility
+        self.level_complete = False
+
+        # Button to proceed to third level (shown after level completion)
+        self.next_level_button_rect = pygame.Rect(WIDTH // 2 - 75, HEIGHT // 2, 150, 50)
+        self.next_button_hovered = False
 
         # Load the sprite sheets from the specified path
         self.sprite_sheet_path_Idle = os.path.join('graphics', 'Idle.png')
-        self.sprite_sheet_path_Run = os.path.join('graphics', 'Run.png')
-        # -- self.sprite_sheet_path_Run = r'C:\Users\hp\Documents\Dyscape\DyscapeTheGame\graphics\Run.png'
         self.sprite_sheet_Idle = pygame.image.load(self.sprite_sheet_path_Idle).convert_alpha()
-        self.sprite_sheet_Run = pygame.image.load(self.sprite_sheet_path_Run).convert_alpha()
 
         # Animation parameters
         self.frame_width = 48  # Width of a single frame in the sprite sheet
         self.frame_height = 48  # Height of a single frame in the sprite sheet
         self.scale = 1.5  # Scale factor for enlarging the sprite
         self.num_frames_Idle = 9  # Number of frames in the idle sprite sheet
-        self.num_frames_Run = 9  # Number of frames in the run sprite sheet
         self.animation_speed = 0.1  # Seconds per frame
         self.current_frame = 0
         self.elapsed_time = 0
@@ -396,9 +399,6 @@ class FirstLevel:
         self.shadow_surface = pygame.Surface((self.shadow_width, self.shadow_height), pygame.SRCALPHA)
         pygame.draw.ellipse(self.shadow_surface, (0, 0, 0, 100), [0, 0, self.shadow_width, self.shadow_height])
 
-        # Function to extract frames from the sprite sheet
-
-
     def get_frame(self, sheet, frame, width, height, scale, flip=False):
         frame_surface = pygame.Surface((width, height), pygame.SRCALPHA)
         frame_surface.blit(sheet, (0, 0), (frame * width, 0, width, height))
@@ -407,23 +407,46 @@ class FirstLevel:
             scaled_surface = pygame.transform.flip(scaled_surface, True, False)
         return scaled_surface
 
-
     def run(self):
+        # If the level is complete, show the "Next Level" button
+        if self.level_complete:
+            self.display.fill((0, 0, 0))
+            next_level_text = pygame.font.SysFont(FONT_NAME, 40).render("Next Level", True, (255, 255, 255))
+            pygame.draw.rect(self.display, (0, 128, 0), self.next_level_button_rect)
+            self.display.blit(next_level_text, (self.next_level_button_rect.x + 10, self.next_level_button_rect.y + 10))
 
-        # Example of handling user input to return to the main menu
+            mouse_pos = pygame.mouse.get_pos()
+
+            if self.next_level_button_rect.collidepoint(mouse_pos):
+                if not self.next_button_hovered:
+                    self.next_button_hovered = True
+                next_button_color = (0, 150, 0)
+            else:
+                next_button_color = (0, 128, 0)
+                self.next_button_hovered = False
+
+            pygame.draw.rect(self.display, next_button_color, self.next_level_button_rect)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.next_level_button_rect.collidepoint(event.pos):
+                        self.gameStateManager.set_state('third-level')
+            return
+
+        # If the level is not complete, continue the first level gameplay
         keys = pygame.key.get_pressed()
         if keys[pygame.K_ESCAPE]:  # If Escape key is pressed
             self.gameStateManager.set_state('main-menu')  # Return to the main menu
 
         while True:
             # Event loop
-            # print("Running First Level state")
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-
-
 
             # Get the current key presses
             keys = pygame.key.get_pressed()
@@ -451,31 +474,204 @@ class FirstLevel:
             self.last_time = current_time
 
             if self.elapsed_time > self.animation_speed:
-                self.current_frame = (self.current_frame + 1) % (
-                    self.num_frames_Idle if self.idle else self.num_frames_Run)  # Loop to the next frame
+                self.current_frame = (self.current_frame + 1) % self.num_frames_Idle  # Loop to the next frame
                 self.elapsed_time = 0
 
-            sprite_sheet = self.sprite_sheet_Idle if self.idle else self.sprite_sheet_Run
-            frame_image = self.get_frame(sprite_sheet, self.current_frame, self.frame_width, self.frame_height, self.scale,
-                                         not self.facing_right)
+            sprite_sheet = self.sprite_sheet_Idle
+            frame_image = self.get_frame(sprite_sheet, self.current_frame, self.frame_width, self.frame_height, self.scale, not self.facing_right)
 
             # Fill the screen with the background color
-            self.display.fill(FERN_GREEN)
+            self.display.fill((0, 128, 128))
 
             # Update shadow position
             shadow_offset_x = 37  # Adjust the shadow offset as needed
             shadow_offset_y = 65
-            self.display.blit(self.shadow_surface,
-                             (self.player_x - self.shadow_width // 2 + shadow_offset_x, self.player_y + shadow_offset_y))
+            self.display.blit(self.shadow_surface, (self.player_x - self.shadow_width // 2 + shadow_offset_x, self.player_y + shadow_offset_y))
 
             # Blit the current animation frame onto the screen
             self.display.blit(frame_image, (self.player_x, self.player_y))
 
-            # Update the display
             pygame.display.update()
+
+            # Check for level completion (for testing purposes, we'll assume it completes after a keypress)
+            if keys[pygame.K_RETURN]:  # Press "Enter" to complete the level
+                self.level_complete = True
+                break
 
             # Cap the frame rate
             self.clock.tick(FPS)
+
+
+class ThirdLevel:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+
+        # Initialize the word and syllables for the level
+        self.word = "ELEPHANT"
+        self.pronunciation = "e·le·phant"
+        self.syllables = ["-phant", "le", "tron", "-toom"]  # Example syllables
+        self.correct_syllable = "-phant"  # The correct syllable for the word
+
+        # Initialize the font
+        self.font = pygame.font.SysFont(FONT_NAME, 40)  # Adjust FONT_NAME and size if needed
+        self.timer_font = pygame.font.SysFont(FONT_NAME, 30)  # Font for the timer
+
+        # Initialize the start_time attribute to None
+        self.start_time = None
+        self.time_limit = 5  # 5 seconds to make a choice
+
+        # Load the new water splash sprite sheet
+        self.splash_sprite_sheet = pygame.image.load(os.path.join('graphics', 'Water Splash 01 - Spritesheet.png')).convert_alpha()
+
+        # Get the sprite sheet size
+        sprite_sheet_width, sprite_sheet_height = self.splash_sprite_sheet.get_size()
+
+        # Splash animation settings
+        self.num_rows = 3  # The number of rows in the sprite sheet
+        self.num_cols = 5   # Number of columns (adjust if needed)
+        self.num_splash_frames = self.num_rows * self.num_cols  # Total frames
+        self.splash_frame_width = sprite_sheet_width // self.num_cols  # Width of each frame
+        self.splash_frame_height = sprite_sheet_height // self.num_rows  # Height of each frame
+
+        self.splash_frames = self.extract_splash_frames()  # Extract the frames from the sprite sheet
+        self.splash_animation_speed = 0.1  # Time in seconds between each frame
+        self.current_splash_frame = 0
+        self.splash_timer = 0
+        self.splash_active = False
+        self.splash_positions = []  # Store splash positions for incorrect syllables
+
+        # Load character image (idle sprite)
+        self.character_image = pygame.image.load(os.path.join('graphics', 'idle.png')).convert_alpha()
+        self.character_position = [WIDTH // 2 - 32, HEIGHT - 150]  # Center initial position
+
+        # Track if the player has already selected
+        self.player_selected = False
+
+        # Define the syllable positions in the center
+        self.syllable_radius = 100  # Adjust the size
+        self.syllable_positions = self.center_syllables()
+
+    def center_syllables(self):
+        """Centers the syllables horizontally and positions them properly."""
+        syllable_positions = []
+        total_width = len(self.syllables) * (self.syllable_radius * 2 + 20)  # Total width needed for the syllables
+        x_start = (WIDTH - total_width) // 2  # Start from the center horizontally
+
+        for i, syllable in enumerate(self.syllables):
+            x_position = x_start + i * (self.syllable_radius * 2 + 20)
+            y_position = HEIGHT // 2 + 50  # Adjust to place the syllables vertically
+            syllable_positions.append((x_position + self.syllable_radius, y_position))
+
+        return syllable_positions
+
+    def extract_splash_frames(self):
+        frames = []
+        for row in range(self.num_rows):
+            for col in range(self.num_cols):
+                # Extract each frame based on row and column
+                frame = self.splash_sprite_sheet.subsurface(pygame.Rect(
+                    col * self.splash_frame_width, row * self.splash_frame_height,
+                    self.splash_frame_width, self.splash_frame_height))
+                frames.append(frame)
+        return frames
+
+    def run(self):
+        # Ensure the start_time is set once when the level starts
+        if self.start_time is None:
+            self.start_time = time.time()
+
+        running = True
+        while running:
+            elapsed_time = time.time() - self.start_time
+            remaining_time = max(0, self.time_limit - elapsed_time)  # Countdown timer
+
+            self.display.fill((135, 206, 250))  # Light blue background
+
+            # Display the word and pronunciation
+            word_text = self.font.render(f"The word is: {self.word}", True, (255, 255, 0))
+            pronunciation_text = self.font.render(f"Pronunciation: {self.pronunciation}", True, (255, 255, 0))
+            self.display.blit(word_text, (WIDTH // 2 - word_text.get_width() // 2, 50))
+            self.display.blit(pronunciation_text, (WIDTH // 2 - pronunciation_text.get_width() // 2, 100))
+
+            # Display the syllables
+            for i, syllable in enumerate(self.syllables):
+                syllable_text = self.font.render(syllable, True, (255, 255, 255))
+                syllable_rect = syllable_text.get_rect(center=self.syllable_positions[i])
+                pygame.draw.circle(self.display, (0, 0, 255), syllable_rect.center, self.syllable_radius)
+                self.display.blit(syllable_text, syllable_rect)
+
+            # Display the countdown timer
+            timer_text = self.timer_font.render(f"Time: {remaining_time:.1f}", True, (255, 255, 255))
+            self.display.blit(timer_text, (WIDTH - 150, 10))
+
+            # Display the character
+            self.display.blit(self.character_image, self.character_position)
+
+            # Trigger and animate the splash effect if time runs out or player makes a selection
+            if remaining_time <= 0 and not self.player_selected:
+                self.trigger_incorrect_splashes()
+                self.splash_active = True
+
+            if self.splash_active:
+                self.animate_splash()
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN and remaining_time > 0:
+                    mouse_x, mouse_y = event.pos
+
+                    # Move character to mouse click position
+                    self.character_position = [mouse_x - 32, mouse_y - 64]
+
+                    if not self.player_selected:
+                        for i, syllable in enumerate(self.syllables):
+                            syllable_rect = self.font.render(syllable, True, (255, 255, 255)).get_rect(center=self.syllable_positions[i])
+                            if syllable_rect.collidepoint(event.pos):
+                                if syllable == self.correct_syllable:
+                                    print("Correct!")
+                                    self.player_selected = True  # Player has made the correct choice
+                                    running = False  # End the level
+                                else:
+                                    print("Incorrect!")
+                                    self.splash_positions.append(self.syllable_positions[i])  # Set splash position on incorrect syllable
+                                    self.splash_active = True  # Activate the splash animation
+                                    self.player_selected = True  # Player has made a selection
+
+            pygame.display.update()
+            pygame.time.Clock().tick(FPS)
+
+        if self.player_selected and remaining_time <= 0:
+            self.gameStateManager.set_state('main-menu')  # Reset to main menu if the player failed
+
+    def trigger_incorrect_splashes(self):
+        """Triggers splash animation for all incorrect syllables."""
+        for i, syllable in enumerate(self.syllables):
+            if syllable != self.correct_syllable:
+                self.splash_positions.append(self.syllable_positions[i])
+        self.splash_active = True
+
+    def animate_splash(self):
+        # Update the timer for frame change
+        self.splash_timer += self.splash_animation_speed
+        if self.splash_timer >= self.splash_animation_speed:
+            self.splash_timer = 0  # Reset timer
+            self.current_splash_frame += 1  # Move to next frame
+
+            if self.current_splash_frame >= len(self.splash_frames):
+                self.current_splash_frame = 0  # Loop the animation
+                self.splash_active = False  # Stop the splash animation when complete
+
+        # Draw the current frame of the splash at the given positions
+        for pos in self.splash_positions:
+            self.display.blit(self.splash_frames[self.current_splash_frame], pos)
+
+
+
+
 
 class GameStateManager:
     def __init__(self, currentState):
