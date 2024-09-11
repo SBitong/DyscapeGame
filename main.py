@@ -723,8 +723,8 @@ class FifthLevel:
         scroll_x = (self.display.get_width() - scroll_width) // 2
         scroll_y = 10  # Y position for the scroll (adjust as needed)
 
-        # self.run_title_animation()
-        # self.run_dialogue_strip()
+        self.run_title_animation()
+        self.run_dialogue_strip()
 
         running = True
         while running:
