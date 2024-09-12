@@ -367,18 +367,21 @@ class FirstLevel:
             self.screen_width, self.screen_height = self.display.get_size()  # Get screen size for responsiveness
 
             # Define ratios for positioning ladder slots and draggable words based on screen size
-            ladder_x_ratio = 0.45  # Percentage of the screen's width
-            ladder_y_start_ratio = 0.1
-            ladder_y_spacing_ratio = 0.12
+            ladder_x_ratio = 0.435  # Percentage of the screen's width
+            ladder_y_start_ratio = 0.03
+            ladder_y_spacing_ratio = 0.131
 
             draggable_x_start_ratio = 0.15
-            draggable_y_ratio = 0.85
-            draggable_x_spacing_ratio = 0.12
+            draggable_y_ratio = 0.72
+            draggable_x_spacing_ratio = 0.152
+
+            green_platform_path = os.path.join('graphics','First-Level-Platform.png')
+            self.green_platform = pygame.image.load(green_platform_path).convert_alpha()
 
 
             # Ladder slots for words with correct word answers (empty at first)
             self.ladder_slots = [
-                {"word": "", "rect": pygame.Rect(int(self.screen_width * ladder_x_ratio), int(self.screen_height * (ladder_y_start_ratio + i * ladder_y_spacing_ratio)), 120, 40),
+                {"word": "", "rect": pygame.Rect(int(self.screen_width * ladder_x_ratio), int(self.screen_height * (ladder_y_start_ratio + i * ladder_y_spacing_ratio)), 175, 30),
                  "correct_word": correct_word, "occupied": False}
                 for i, correct_word in enumerate(["ROOF", "BAT", "CROWN", "SEAT", "DOG"])
             ]
@@ -386,7 +389,7 @@ class FirstLevel:
             # Draggable words scattered across the screen (responsive positions)
             self.draggable_words = [
                 {"word": word,
-                 "rect": pygame.Rect(int(self.screen_width * (draggable_x_start_ratio + i * draggable_x_spacing_ratio)), int(self.screen_height * draggable_y_ratio), 120, 40),
+                 "rect": pygame.Rect(int(self.screen_width * (draggable_x_start_ratio + i * draggable_x_spacing_ratio)), int(self.screen_height * draggable_y_ratio), 150, 30),
                  "dragging": False,
                  "original_pos": (int(self.screen_width * (draggable_x_start_ratio + i * draggable_x_spacing_ratio)),
                                   int(self.screen_height * draggable_y_ratio))}
@@ -394,9 +397,9 @@ class FirstLevel:
             ]
 
             # Load ladder (bridge) and heart images
-            self.ladder_image = pygame.image.load(os.path.join('graphics', 'ladder.png')).convert_alpha()
+            self.ladder_image = pygame.image.load(os.path.join('graphics', 'ladder-1.png')).convert_alpha()
             self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
-            self.heart_image = pygame.transform.scale(self.heart_image, (40, 40))
+            self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))
 
             # Scale ladder image responsively
             self.ladder_image = pygame.transform.scale(self.ladder_image, (int(self.screen_width * 0.5), int(self.screen_height * 0.7)))
@@ -448,11 +451,12 @@ class FirstLevel:
                     continue  # Avoid processing the game logic when showing the end screen
 
                 # Background: Green for land, brown for ground, with bridge
-                self.display.fill((100, 40, 0))  # Brown ground background
-                pygame.draw.rect(self.display, (34, 139, 34), (0, 450, 1300, 650))  # Green top "hill" part
+                self.display.fill((100, 100, 200))  # Brown ground background
+                self.display.blit(self.green_platform, (0, 320))
+                # pygame.draw.rect(self.display, (34, 139, 34), (0, 450, 1300, 650))  # Green top "hill" part
 
                 # Draw the ladder/bridge image
-                self.display.blit(self.ladder_image, (self.screen_width * 0.25, 10))
+                self.display.blit(self.ladder_image, (self.screen_width * 0.25, 0))
 
                 # Draw lives (hearts)
                 for i in range(self.lives):
@@ -460,14 +464,14 @@ class FirstLevel:
 
                 # Draw blank rectangles on the ladder as placeholders
                 for slot in self.ladder_slots:
-                    pygame.draw.rect(self.display, (255, 255, 255), slot["rect"], 2)  # Draw white border for empty slot
+                    pygame.draw.rect(self.display, (251, 242, 54), slot["rect"], 3)  # Draw white border for empty slot
                     if slot["word"]:
                         text_surface = self.font.render(slot["word"], True, (255, 255, 255))
                         self.display.blit(text_surface, (slot["rect"].x + 15, slot["rect"].y + 5))
 
                 # Draw draggable words
                 for word_data in self.draggable_words:
-                    pygame.draw.rect(self.display, (139, 0, 0), word_data["rect"])  # Dark red for draggable words
+                    pygame.draw.rect(self.display, (143, 86, 59), word_data["rect"])  # Dark red for draggable words
                     text_surface = self.font.render(word_data["word"], True, (255, 255, 255))
                     self.display.blit(text_surface, (word_data["rect"].x + 10, word_data["rect"].y + 5))
 
