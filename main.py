@@ -549,6 +549,33 @@ class FifthLevel:
         self.lives = 3  # Reset lives to 3
         self.shuffle_questions()  # Shuffle the questions again
 
+    def init_water_droplets(self, droplet_count=5):
+        """Initialize water droplets with random positions and speeds."""
+        self.droplets = []
+        for _ in range(droplet_count):
+            x = random.randint(0, self.display.get_width())
+            y = random.randint(-100, self.display.get_height())  # Some droplets start above the screen
+            width = random.randint(2, 3)  # Droplet width
+            height = random.randint(8, 12)  # Droplet height to give it an elongated shape
+            speed = random.uniform(10, 12)  # Faster falling speed for droplets
+            color = (173, 216, 230)  # Light blue color for water droplets
+            self.droplets.append([x, y, width, height, speed, color])
+
+    def update_water_droplets(self):
+        """Update the position of water droplets, resetting them if they go off-screen."""
+        for droplet in self.droplets:
+            droplet[1] += droplet[4]  # Move droplet down based on speed
+
+            # If the droplet goes off the screen, reset it to a random position above the screen
+            if droplet[1] > self.display.get_height():
+                droplet[1] = random.uniform(-100, -10)  # Respawn above the screen
+                droplet[0] = random.randint(0, self.display.get_width())
+
+    def draw_water_droplets(self):
+        """Draw the water droplets on the screen."""
+        for droplet in self.droplets:
+            pygame.draw.ellipse(self.display, droplet[5], (int(droplet[0]), int(droplet[1]), droplet[2], droplet[3]))
+
     def run_title_animation(self):
         title_heading = "Fifth Level:"
         title_text = "THE UNKNOWN TOAD"
@@ -595,6 +622,8 @@ class FifthLevel:
         # Initialize pygame's mixer for audio
         pygame.mixer.init()
 
+        self.init_water_droplets()  # Initialize water droplets when the level starts
+
         # Load character images (example placeholders)
         char1_image = pygame.image.load(os.path.join('graphics', 'character-avatar.png'))
         char2_image = pygame.image.load(os.path.join('graphics', 'frog-avatar.png'))
@@ -640,9 +669,12 @@ class FifthLevel:
 
         running = True
         clock = pygame.time.Clock()
+        self.init_water_droplets()  # Initialize water droplets when the level starts
 
         while running:
             self.display.blit(self.background_image, (0, 0))
+            self.update_water_droplets()
+            self.draw_water_droplets()
 
             # Create the dialogue box at the bottom
             dialogue_box = pygame.Surface((self.display.get_width(), dialogue_box_height))
@@ -711,6 +743,8 @@ class FifthLevel:
             pygame.display.flip()
             clock.tick(60)  # Control the frame rate
 
+
+
     def run(self):
         # Load the paper scroll image
         scroll_image = pygame.image.load(os.path.join('graphics', 'paper-scroll.png'))
@@ -725,10 +759,14 @@ class FifthLevel:
 
         self.run_title_animation()
         self.run_dialogue_strip()
+        self.init_water_droplets()  # Initialize water droplets when the level starts
+
 
         running = True
         while running:
             self.display.blit(self.background_image, (0, 0))
+            self.update_water_droplets()
+            self.draw_water_droplets()
 
             # Display the number of lives
             lives_surface = self.font.render(f"Lives: {self.lives}", True, self.black)
