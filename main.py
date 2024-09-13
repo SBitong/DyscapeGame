@@ -378,6 +378,9 @@ class FirstLevel:
             green_platform_path = os.path.join('graphics','First-Level-Platform.png')
             self.green_platform = pygame.image.load(green_platform_path).convert_alpha()
 
+            bottom_platform_path = os.path.join('graphics', 'First-Level-Bottom-Platform.png')
+            self.bottom_platform = pygame.image.load(bottom_platform_path).convert_alpha()
+
 
             # Ladder slots for words with correct word answers (empty at first)
             self.ladder_slots = [
@@ -451,7 +454,7 @@ class FirstLevel:
                     continue  # Avoid processing the game logic when showing the end screen
 
                 # Background: Green for land, brown for ground, with bridge
-                self.display.fill((100, 100, 200))  # Brown ground background
+                self.display.blit(self.bottom_platform, (0, 0))  # Brown ground background
                 self.display.blit(self.green_platform, (0, 320))
                 # pygame.draw.rect(self.display, (34, 139, 34), (0, 450, 1300, 650))  # Green top "hill" part
 
