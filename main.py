@@ -495,37 +495,37 @@ class FifthLevel:
 
         # Questions with multiple choices and the correct answer
         self.qa_dict = {
-            "The big brown fox jumps over the lazy dog.": {
-                "choices": ["5 (Five)", "6 (Six)", "8 (Eight)", "9 (Nine)"],
+            "The Tower of Dyslexio rises above the fog, casting long shadows over the land.": {
+                "choices": ["14 (Fourteen)", "7 (Seven)", "8 (Eight)", "11 (Eleven)"],
+                "answer": "14 (Fourteen)"
+            },
+            "Oh, Dyscape. You are such a marvelous creation": {
+                "choices": ["5 (Five)", "6 (Six)", "7 (Seven)", "8 (Eight)"],
+                "answer": "8 (Eight)"
+            },
+            "Only the chosen one can restore clarity to Dyscape.": {
+                "choices": ["11 (Eleven)", "9 (Nine)", "10 (Ten)", "6 (Six)"],
                 "answer": "9 (Nine)"
             },
-            "My house is big and painted blue.": {
-                "choices": ["5 (Five)", "6 (Six)", "7 (Seven)", "8 (Eight)"],
-                "answer": "7 (Seven)"
+            "Beneath the stars, Dyscape breathes with a quiet serenity, its landscapes glowing in the gentle embrace of the moon.": {
+                "choices": ["20 (Twenty)", "15 (Fifteen)", "22 (Twenty-two)", "19 (Nineteen)"],
+                "answer": "19 (Nineteen)"
             },
-            "I love my mom very much.": {
-                "choices": ["4 (Four)", "3 (Three)", "10 (Ten)", "6 (Six)"],
-                "answer": "6 (Six)"
+            "The flowers of Dyscape bloom with a thousand colors, each petal a delicate stroke on the canvas of life.": {
+                "choices": ["19 (Nineteen)", "18 (Eighteen)", "17 (Seventeen)", "16 (Sixteen)"],
+                "answer": "19 (Nineteen)"
             },
-            "My cat likes to climb.": {
-                "choices": ["5 (Five)", "6 (Six)", "7 (Seven)", "8 (Eight)"],
-                "answer": "5 (Five)"
+            "Even in its darkest corners, Dyscape holds a secret beauty, where light and shadow dance in perfect balance.": {
+                "choices": ["14 (Fourteen)", "16 (Sixteen)", "10 (Ten)", "8 (Eighteen)"],
+                "answer": "8 (Eighteen)"
             },
-            "I like to drink chocolate milk.": {
-                "choices": ["4 (Four)", "3 (Three)", "10 (Ten)", "6 (Six)"],
-                "answer": "6 (Six)"
+            "Dyscape is wonderful and the words are in sync and in clarity.": {
+                "choices": ["14 (Fourteen)", "12 (Twelve)", "11 (Eleven)", "19 (Nineteen)"],
+                "answer": "12 (Twelve)"
             },
-            "Mark goes to school every morning.": {
-                "choices": ["4 (Four)", "6 (Six)", "10 (Ten)", "8 (Eight)"],
-                "answer": "6 (Six)"
-            },
-            "I fell asleep.": {
-                "choices": ["4 (Four)", "3 (Three)", "1 (One)", "9 (Nine)"],
-                "answer": "3 (Three)"
-            },
-            "They ate all the pizza.": {
-                "choices": ["5 (Five)", "3 (Three)", "10 (Ten)", "1 (One)"],
-                "answer": "5 (Five)"
+            "The King awaits in the Tower, his words maintains the peak of the land.": {
+                "choices": ["15 (Fiveteen)", "13 (Thirteen)", "14 (Fourteen)", "11 (Eleven)"],
+                "answer": "14 (Fourteen)"
             },
         }
 
@@ -633,7 +633,7 @@ class FifthLevel:
         char2_image = pygame.transform.scale(char2_image, (300, 300))
 
         dialogue_data = [
-            {"name": "Unknown Toad", "text": "Good Day, Traveler! May you have safe travels ahead!", "image": char2_image, "audio": "frog-dialogue-1.mp3"},
+            {"name": "Unknown Toad", "text": "Good Day, Traveler! May you have safe travels ahead of you!", "image": char2_image, "audio": "frog-dialogue-1.mp3"},
             {"name": "You", "text": "Is this the way to the center of Dyscape??", "image": char1_image},
             {"name": "Unknown Toad", "text": "...", "image": char2_image},
             {"name": "Unknown Toad", "text": "Yes.. but I am afraid that I may not let you pass.", "image": char2_image, "audio": "frog-dialogue-2.mp3"},
@@ -660,6 +660,7 @@ class FifthLevel:
         dialogue_box_height = 150  # Height of the dialogue box surface
         dialogue_font = pygame.font.Font(None, 32)  # Font for dialogue text
         name_font = pygame.font.Font(None, 36)  # Font for character names
+        space_prompt_font = pygame.font.Font(None, 28)  # Font for "Press SPACE to continue"
 
         current_line = 0
         text_displayed = ""
@@ -669,7 +670,6 @@ class FifthLevel:
 
         running = True
         clock = pygame.time.Clock()
-        self.init_water_droplets()  # Initialize water droplets when the level starts
 
         while running:
             self.display.blit(self.background_image, (0, 0))
@@ -722,6 +722,13 @@ class FifthLevel:
             text_surface = dialogue_font.render(text_displayed, True, self.black)
             dialogue_box.blit(text_surface, (20, 60))  # Draw the text inside the dialogue box below the name
 
+            # Add "Press SPACE to continue." prompt at the bottom right
+            if text_index >= len(character_text):  # Show prompt only if the text is fully displayed
+                space_prompt_surface = space_prompt_font.render("Press SPACE to continue.", True, (100, 100, 100))
+                dialogue_box.blit(space_prompt_surface,
+                                  (dialogue_box.get_width() - space_prompt_surface.get_width() - 20,
+                                   dialogue_box.get_height() - space_prompt_surface.get_height() - 10))
+
             # Draw the dialogue box on the screen with the brown border
             self.display.blit(dialogue_box, dialogue_box_rect.topleft)
 
@@ -730,35 +737,59 @@ class FifthLevel:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-                elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                    if text_index >= len(character_text):
-                        # Move to the next line of dialogue if the text is fully displayed
-                        current_line += 1
-                        text_index = 0
-                        text_displayed = ""
-                        audio_played = False  # Reset audio flag for the next line
-                        if current_line >= len(dialogue_data):
-                            running = False  # Exit dialogue when all lines are done
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:  # Only proceed on SPACE key
+                        if text_index >= len(character_text):
+                            # Move to the next line of dialogue if the text is fully displayed
+                            current_line += 1
+                            text_index = 0
+                            text_displayed = ""
+                            audio_played = False  # Reset audio flag for the next line
+                            if current_line >= len(dialogue_data):
+                                running = False  # Exit dialogue when all lines are done
 
             pygame.display.flip()
             clock.tick(60)  # Control the frame rate
 
+    def wrap_text(self, text, font, color, max_width):
 
+        words = text.split(' ')
+        lines = []
+        current_line = []
+        current_width = 0
+
+        for word in words:
+            word_surface = font.render(word, True, color)
+            word_width = word_surface.get_width()
+
+            # If adding this word exceeds the max width, start a new line
+            if current_width + word_width > max_width:
+                lines.append(' '.join(current_line))
+                current_line = [word]
+                current_width = word_width + font.size(' ')[0]  # Include space width
+            else:
+                current_line.append(word)
+                current_width += word_width + font.size(' ')[0]
+
+        if current_line:
+            lines.append(' '.join(current_line))
+
+        return lines
 
     def run(self):
         # Load the paper scroll image
         scroll_image = pygame.image.load(os.path.join('graphics', 'paper-scroll.png'))
 
         # Resize the scroll image if needed
-        scroll_width, scroll_height = 700, 700  # Adjust these values as needed
+        scroll_width, scroll_height = 1000, 700  # Adjust these values as needed
         scroll_image = pygame.transform.scale(scroll_image, (scroll_width, scroll_height))
 
         # Center the scroll image
         scroll_x = (self.display.get_width() - scroll_width) // 2
         scroll_y = 10  # Y position for the scroll (adjust as needed)
 
-        self.run_title_animation()
-        self.run_dialogue_strip()
+        # self.run_title_animation()
+        # self.run_dialogue_strip()
         self.init_water_droplets()  # Initialize water droplets when the level starts
 
 
@@ -781,39 +812,30 @@ class FifthLevel:
 
             # Get the rectangle of the question surface to center it
             question_rect = question_surface.get_rect(
-                center=(scroll_x + scroll_width // 2, 250))
+                center=(scroll_x + scroll_width // 2, 100))
             self.display.blit(question_surface, question_rect.topleft)
 
             # Get the current question and choices
             question = self.questions[self.current_question_index]
             choices = self.qa_dict[question]["choices"]
 
-            # Split the question into words
-            words = question.split()
+            # Wrap the question text to fit within the scroll width
+            wrapped_question_lines = self.wrap_text(question, self.font, self.black,
+                                                    scroll_width - 500)  # 20px padding on both sides
 
-            # Calculate total width of all words
-            total_words_width = sum([self.font.render(word, True, self.black).get_width() for word in words]) + (
-                        10 * (len(words) - 1))
-
-            # Set the initial x_offset to center the words
-            x_offset = (self.display.get_width() - total_words_width) // 2
-            y_offset = scroll_y + 300  # Y position relative to the scroll
-
-            # Render each word with its assigned color, centered
-            for word in words:
-                color = self.word_colors.get(word, self.black)
-                word_surface = self.font.render(word, True, color)
-                self.display.blit(word_surface, (x_offset, y_offset))
-                x_offset += word_surface.get_width() + 10  # Add some space between words
+            # Render each line of the wrapped question, centered on the scroll
+            y_offset = scroll_y + 225  # Start position inside the scroll for the question
+            for line in wrapped_question_lines:
+                question_surface = self.font.render(line, True, self.black)
+                question_rect = question_surface.get_rect(center=(scroll_x + scroll_width // 2, y_offset))
+                self.display.blit(question_surface, question_rect.topleft)
+                y_offset += self.font.get_height() + 5  # Move to the next line
 
             # Render the choices and create rectangles for mouse collision detection
             self.choice_rects = []
 
-            # Calculate total height for choices (if you'd like to center them vertically)
-            choices_height = len(choices) * 40  # Assuming each choice has 40px height
-
-            # Calculate the initial y_offset for choices to center them under the question
-            y_offset_choices = y_offset + 75  # Adjust as needed for spacing below the question
+            # Calculate the initial y_offset for choices
+            y_offset_choices = y_offset + 50  # Adjust as needed for spacing below the question
 
             for i, choice in enumerate(choices):
                 choice_surface = self.font.render(choice, True, self.black)

@@ -33,7 +33,7 @@ TTS_ENABLED = True
 # Set colors for words to be more distinguishable
 word_colors = {
     "The": GRAY,
-    "big": DEEP_VIOLET,
+    "Tower": DEEP_VIOLET,
     "brown": DARK_COPPER,
     "fox": FOREST_GREEN,
     "jumps": DARK_MAGENTA,
