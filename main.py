@@ -375,24 +375,25 @@ class FirstLevel:
             draggable_y_ratio = 0.72
             draggable_x_spacing_ratio = 0.152
 
-            green_platform_path = os.path.join('graphics','First-Level-Platform.png')
+            green_platform_path = os.path.join('graphics', 'First-Level-Platform.png')
             self.green_platform = pygame.image.load(green_platform_path).convert_alpha()
 
             bottom_platform_path = os.path.join('graphics', 'First-Level-Bottom-Platform.png')
             self.bottom_platform = pygame.image.load(bottom_platform_path).convert_alpha()
 
-
             # Ladder slots for words with correct word answers (empty at first)
             self.ladder_slots = [
-                {"word": "", "rect": pygame.Rect(int(self.screen_width * ladder_x_ratio), int(self.screen_height * (ladder_y_start_ratio + i * ladder_y_spacing_ratio)), 175, 30),
-                 "correct_word": correct_word, "occupied": False}
+                {"word": "", "rect": pygame.Rect(int(self.screen_width * ladder_x_ratio), int(self.screen_height * (
+                            ladder_y_start_ratio + i * ladder_y_spacing_ratio)), 175, 30),
+                 "correct_word": correct_word, "occupied": False, "color": (251, 242, 54)}  # Initial color is yellow
                 for i, correct_word in enumerate(["ROOF", "BAT", "CROWN", "SEAT", "DOG"])
             ]
 
             # Draggable words scattered across the screen (responsive positions)
             self.draggable_words = [
                 {"word": word,
-                 "rect": pygame.Rect(int(self.screen_width * (draggable_x_start_ratio + i * draggable_x_spacing_ratio)), int(self.screen_height * draggable_y_ratio), 150, 30),
+                 "rect": pygame.Rect(int(self.screen_width * (draggable_x_start_ratio + i * draggable_x_spacing_ratio)),
+                                     int(self.screen_height * draggable_y_ratio), 150, 30),
                  "dragging": False,
                  "original_pos": (int(self.screen_width * (draggable_x_start_ratio + i * draggable_x_spacing_ratio)),
                                   int(self.screen_height * draggable_y_ratio))}
@@ -405,7 +406,8 @@ class FirstLevel:
             self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))
 
             # Scale ladder image responsively
-            self.ladder_image = pygame.transform.scale(self.ladder_image, (int(self.screen_width * 0.5), int(self.screen_height * 0.7)))
+            self.ladder_image = pygame.transform.scale(self.ladder_image,
+                                                       (int(self.screen_width * 0.5), int(self.screen_height * 0.7)))
 
             # Game variables
             self.lives = 3
@@ -429,8 +431,10 @@ class FirstLevel:
                 self.display.get_width() // 2 - text_surface.get_width() // 2, self.display.get_height() // 3))
 
             # Draw Restart and Exit buttons
-            self.restart_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2, 200, 50)
-            self.exit_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2 + 70, 200, 50)
+            self.restart_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2, 200,
+                                              50)
+            self.exit_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2 + 70,
+                                           200, 50)
 
             pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)  # Green for restart
             pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)  # Red for exit
@@ -446,6 +450,15 @@ class FirstLevel:
             self.gameStateManager.set_state('first-level')
 
         def run(self):
+            # Define the correct word mapping
+            correct_word_mapping = {
+                "ROOF": "POOF",
+                "BAT": "CAT",
+                "CROWN": "GOWN",
+                "SEAT": "MEAT",
+                "DOG": "HOG"
+            }
+
             running = True
             while running:
                 if self.game_over or self.win:
@@ -456,7 +469,6 @@ class FirstLevel:
                 # Background: Green for land, brown for ground, with bridge
                 self.display.blit(self.bottom_platform, (0, 0))  # Brown ground background
                 self.display.blit(self.green_platform, (0, 320))
-                # pygame.draw.rect(self.display, (34, 139, 34), (0, 450, 1300, 650))  # Green top "hill" part
 
                 # Draw the ladder/bridge image
                 self.display.blit(self.ladder_image, (self.screen_width * 0.25, 0))
@@ -467,16 +479,23 @@ class FirstLevel:
 
                 # Draw blank rectangles on the ladder as placeholders
                 for slot in self.ladder_slots:
-                    pygame.draw.rect(self.display, (251, 242, 54), slot["rect"], 3)  # Draw white border for empty slot
+                    # Draw the rectangle with its dynamic color (green for correct, yellow for empty)
+                    pygame.draw.rect(self.display, slot["color"], slot["rect"], 3)
                     if slot["word"]:
                         text_surface = self.font.render(slot["word"], True, (255, 255, 255))
                         self.display.blit(text_surface, (slot["rect"].x + 15, slot["rect"].y + 5))
+                    # Draw the corresponding correct word pair below each blank rectangle
+                    pair_word = correct_word_mapping.get(slot["correct_word"], "")
+                    if pair_word:
+                        pair_word_surface = self.font.render(pair_word, True, (255, 255, 255))
+                        self.display.blit(pair_word_surface,
+                                          (slot["rect"].x + 50, slot["rect"].y + 50))  # Display below the rectangle
 
                 # Draw draggable words
                 for word_data in self.draggable_words:
                     pygame.draw.rect(self.display, (143, 86, 59), word_data["rect"])  # Dark red for draggable words
                     text_surface = self.font.render(word_data["word"], True, (255, 255, 255))
-                    self.display.blit(text_surface, (word_data["rect"].x + 10, word_data["rect"].y + 5))
+                    self.display.blit(text_surface, (word_data["rect"].x + 35, word_data["rect"].y + 5))
 
                 # Handle dragging logic
                 mouse_pos = pygame.mouse.get_pos()
@@ -515,30 +534,26 @@ class FirstLevel:
                                         # Snap word into correct slot
                                         slot["word"] = self.selected_word["word"]
                                         slot["occupied"] = True
+                                        slot["color"] = (0, 255, 0)  # Change color to green for correct placement
                                         self.draggable_words.remove(self.selected_word)
                                         placed = True
                                         break
                                     else:
-                                        # Incorrect placement, deduct a life
+                                        # Incorrect placement, deduct a life and snap back the word
                                         self.lives -= 1
                                         placed = True
-                                        if self.lives <= 0:
-                                            self.game_over = True
-                                            print("Game Over!")
-                            # Snap back if not placed correctly
                             if not placed:
+                                # Snap word back to its original position if not placed in a valid slot
                                 self.selected_word["rect"].x, self.selected_word["rect"].y = self.selected_word[
                                     "original_pos"]
                             self.selected_word = None
 
-                # Check win condition
-                if len(self.draggable_words) == 0:
+                # Check for win condition
+                if all(slot["occupied"] for slot in self.ladder_slots):
                     self.win = True
                     print("You Win!")
 
-                # Refresh the display
-                pygame.display.update()
-
+                pygame.display.update()  # Update the display
 
 
 class GameStateManager:
