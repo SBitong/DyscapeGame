@@ -4,6 +4,7 @@ import os
 import random
 import time
 import pyttsx3
+import settings
 from settings import *
 
 # Initialize Pygame
@@ -266,7 +267,7 @@ class Options:
         self.background_image = pygame.transform.scale(self.background_image, (self.display.get_width(), self.display.get_height()))
 
         # Load the specified font
-        self.font = pygame.font.SysFont(FONT_NAME, FONT_SIZE)
+        self.font = pygame.font.SysFont(settings.FONT_NAME, settings.FONT_SIZE)
 
         # Volume slider properties
         self.slider_length = 300
@@ -276,18 +277,18 @@ class Options:
         self.knob_radius = 10
 
         # Center the volume slider
-        self.slider_x = (WIDTH - self.slider_length) // 2
-        self.slider_y = HEIGHT // 3
-        self.knob_position = self.slider_x + int(MASTER_VOLUME * self.slider_length)
+        self.slider_x = (self.display.get_width() - self.slider_length) // 2
+        self.slider_y = self.display.get_height() // 3
+        self.knob_position = self.slider_x + int(settings.MASTER_VOLUME * self.slider_length)
 
         # TTS toggle button properties
-        self.tts_toggle_rect = pygame.Rect((WIDTH - 150) // 2, self.slider_y + 100, 150, 50)
-        self.tts_enabled = TTS_ENABLED
+        self.tts_toggle_rect = pygame.Rect((self.display.get_width() - 150) // 2, self.slider_y + 100, 150, 50)
+        self.tts_enabled = settings.TTS_ENABLED
 
         # Font selection properties
         self.fonts = ["Arial", "Courier", "Comic Sans MS", "Georgia", "Times New Roman"]
-        self.current_font_index = self.fonts.index(FONT_NAME) if FONT_NAME in self.fonts else 0
-        self.font_rect = pygame.Rect((WIDTH - 300) // 2, self.tts_toggle_rect.y + 100, 300, 50)
+        self.current_font_index = self.fonts.index(settings.FONT_NAME) if settings.FONT_NAME in self.fonts else 0
+        self.font_rect = pygame.Rect((self.display.get_width() - 300) // 2, self.tts_toggle_rect.y + 100, 300, 50)
 
     def run(self):
         running = True
@@ -299,8 +300,8 @@ class Options:
             pygame.draw.circle(self.display, self.knob_color, (self.knob_position, self.slider_y + self.slider_height // 2), self.knob_radius)
 
             # Display volume label
-            volume_label = self.font.render("Master Volume", True, (255, 255, 255),)
-            volume_label_rect = volume_label.get_rect(center=(WIDTH // 2, self.slider_y - 40))
+            volume_label = self.font.render("Master Volume", True, (255, 255, 255))
+            volume_label_rect = volume_label.get_rect(center=(self.display.get_width() // 2, self.slider_y - 40))
             self.display.blit(volume_label, volume_label_rect)
 
             # Draw TTS toggle
@@ -346,21 +347,25 @@ class Options:
 
     def adjust_volume(self, mouse_pos):
         self.knob_position = max(self.slider_x, min(mouse_pos[0], self.slider_x + self.slider_length))
-        MASTER_VOLUME = (self.knob_position - self.slider_x) / self.slider_length
-        pygame.mixer.music.set_volume(MASTER_VOLUME)
+        settings.MASTER_VOLUME = (self.knob_position - self.slider_x) / self.slider_length
+        pygame.mixer.music.set_volume(settings.MASTER_VOLUME)
 
     def toggle_tts(self):
         self.tts_enabled = not self.tts_enabled
-        TTS_ENABLED = self.tts_enabled
+        settings.TTS_ENABLED = self.tts_enabled
 
     def cycle_font(self):
         self.current_font_index = (self.current_font_index + 1) % len(self.fonts)
-        FONT_NAME = self.fonts[self.current_font_index]
-        self.font = pygame.font.SysFont(FONT_NAME, FONT_SIZE)
+        settings.FONT_NAME = self.fonts[self.current_font_index]
+        self.font = pygame.font.SysFont(settings.FONT_NAME, settings.FONT_SIZE)
 
     def save_settings(self):
-        # Save the settings back to settings.py or some other persistent storage
-        pass
+        # Save the settings back to settings.py
+        with open('settings.py', 'w') as f:
+            f.write(f"MASTER_VOLUME = {settings.MASTER_VOLUME}\n")
+            f.write(f"TTS_ENABLED = {settings.TTS_ENABLED}\n")
+            f.write(f"FONT_NAME = '{settings.FONT_NAME}'\n")
+            f.write(f"FONT_SIZE = {settings.FONT_SIZE}\n")
 
 class FirstLevel:
     def __init__(self, display, gameStateManager):
@@ -502,97 +507,130 @@ class FirstLevel:
             self.clock.tick(FPS)
 
 
+
+
 class ThirdLevel:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
 
-        # Initialize the word and syllables for the level
-        self.word = "ELEPHANT"
-        self.pronunciation = "e·le·phant"
-        self.syllables = ["-phant", "le", "tron", "-toom"]  # Example syllables
-        self.correct_syllable = "-phant"  # The correct syllable for the word
+        # Load the background image
+        background_image_path = os.path.join('graphics', 'snowy.PNG')
+        self.background_image = pygame.image.load(background_image_path).convert_alpha()
+        self.background_image = pygame.transform.scale(self.background_image,(self.display.get_width(), self.display.get_height()))
 
-        # Initialize the font
-        self.font = pygame.font.SysFont(FONT_NAME, 40)  # Adjust FONT_NAME and size if needed
-        self.timer_font = pygame.font.SysFont(FONT_NAME, 30)  # Font for the timer
+        # Words and their syllables
+        self.word_list = [
+            {"word": "ELEPHANT", "pronunciation": "e·le·_____", "syllables": ["-phant", "le", "tron", "-toom"], "correct": "-phant"},
+            {"word": "BANANA", "pronunciation": "ba·na·__", "syllables": ["ba-", "na-", "-na", "ra-"], "correct": "-na"},
+            {"word": "CROCODILE", "pronunciation": "cro·co·____", "syllables": ["cro-", "-co", "-dile", "cre-"], "correct": "-dile"}
+        ]
+        self.current_word_index = 0  # Track which word we are currently on
 
-        # Initialize the start_time attribute to None
+        # Set the current word and correct syllable
+        self.word_data = self.word_list[self.current_word_index]
+        self.word = self.word_data["word"]
+        self.pronunciation = self.word_data["pronunciation"]
+        self.syllables = self.word_data["syllables"]
+        self.correct_syllable = self.word_data["correct"]
+
+        # Font for text display
+        self.font = pygame.font.SysFont('Arial', 40)
+        self.timer_font = pygame.font.SysFont('Arial', 30)
+
+        # Timer for the countdown
         self.start_time = None
-        self.time_limit = 5  # 5 seconds to make a choice
+        self.selection_made = False  # Track if the player has clicked
+        self.reveal_time = 5  # Time after which the correct answer and splashes are revealed
+        self.post_reveal_delay = 5  # Time to wait after revealing correct/incorrect answers
+        self.word_completed = False  # Track whether a word is completed
 
-        # Load the new water splash sprite sheet
+        # Water splash effect
         self.splash_sprite_sheet = pygame.image.load(os.path.join('graphics', 'Water Splash 01 - Spritesheet.png')).convert_alpha()
-
-        # Get the sprite sheet size
-        sprite_sheet_width, sprite_sheet_height = self.splash_sprite_sheet.get_size()
-
-        # Splash animation settings
-        self.num_rows = 3  # The number of rows in the sprite sheet
-        self.num_cols = 5   # Number of columns (adjust if needed)
-        self.num_splash_frames = self.num_rows * self.num_cols  # Total frames
-        self.splash_frame_width = sprite_sheet_width // self.num_cols  # Width of each frame
-        self.splash_frame_height = sprite_sheet_height // self.num_rows  # Height of each frame
-
-        self.splash_frames = self.extract_splash_frames()  # Extract the frames from the sprite sheet
-        self.splash_animation_speed = 0.1  # Time in seconds between each frame
+        self.splash_frames = self.extract_splash_frames(self.splash_sprite_sheet, 5, 3)  # Adjust rows/cols based on sprite sheet
+        self.splash_animation_speed = 0.1
         self.current_splash_frame = 0
-        self.splash_timer = 0
         self.splash_active = False
+        self.splash_timer = 0
         self.splash_positions = []  # Store splash positions for incorrect syllables
 
-        # Load character image (idle sprite)
+        # Character image for the player
         self.character_image = pygame.image.load(os.path.join('graphics', 'idle.png')).convert_alpha()
-        self.character_position = [WIDTH // 2 - 32, HEIGHT - 150]  # Center initial position
+        self.character_position = [self.display.get_width() // 2 - 32, self.display.get_height() - 150]
 
-        # Track if the player has already selected
-        self.player_selected = False
-
-        # Define the syllable positions in the center
-        self.syllable_radius = 100  # Adjust the size
+        # Syllable button positions
+        self.syllable_radius = 100
         self.syllable_positions = self.center_syllables()
+        self.player_selected = False  # Track if the player has already selected
+        self.reveal_timer_started = False  # Whether the post-reveal timer has started
 
-    def center_syllables(self):
-        """Centers the syllables horizontally and positions them properly."""
-        syllable_positions = []
-        total_width = len(self.syllables) * (self.syllable_radius * 2 + 20)  # Total width needed for the syllables
-        x_start = (WIDTH - total_width) // 2  # Start from the center horizontally
-
-        for i, syllable in enumerate(self.syllables):
-            x_position = x_start + i * (self.syllable_radius * 2 + 20)
-            y_position = HEIGHT // 2 + 50  # Adjust to place the syllables vertically
-            syllable_positions.append((x_position + self.syllable_radius, y_position))
-
-        return syllable_positions
-
-    def extract_splash_frames(self):
+    def extract_splash_frames(self, sprite_sheet, num_cols, num_rows):
+        """Extracts frames from the sprite sheet and scales them up to make a bigger splash."""
         frames = []
-        for row in range(self.num_rows):
-            for col in range(self.num_cols):
-                # Extract each frame based on row and column
-                frame = self.splash_sprite_sheet.subsurface(pygame.Rect(
-                    col * self.splash_frame_width, row * self.splash_frame_height,
-                    self.splash_frame_width, self.splash_frame_height))
-                frames.append(frame)
+        frame_width = sprite_sheet.get_width() // num_cols
+        frame_height = sprite_sheet.get_height() // num_rows
+        for row in range(num_rows):
+            for col in range(num_cols):
+                frame = sprite_sheet.subsurface(pygame.Rect(col * frame_width, row * frame_height, frame_width, frame_height))
+                # Scale the frame to be larger
+                scaled_frame = pygame.transform.scale(frame, (int(frame_width * 2), int(frame_height * 2)))  # Increase size by 2x
+                frames.append(scaled_frame)
         return frames
 
+    def center_syllables(self):
+        """Center syllables horizontally on the screen."""
+        syllable_positions = []
+        total_width = len(self.syllables) * (self.syllable_radius * 2 + 20)
+        x_start = (self.display.get_width() - total_width) // 2
+        for i in range(len(self.syllables)):
+            x_position = x_start + i * (self.syllable_radius * 2 + 20)
+            y_position = self.display.get_height() // 2 + 50
+            syllable_positions.append((x_position + self.syllable_radius, y_position))
+        return syllable_positions
+
+    def load_next_word(self):
+        """Loads the next word in the word list."""
+        self.current_word_index += 1
+        if self.current_word_index >= len(self.word_list):
+            # All words have been completed
+            print("All words completed!")
+            self.gameStateManager.set_state('main-menu')  # Or move to another level
+            return
+
+        # Load the next word and syllables
+        self.word_data = self.word_list[self.current_word_index]
+        self.word = self.word_data["word"]
+        self.pronunciation = self.word_data["pronunciation"]
+        self.syllables = self.word_data["syllables"]
+        self.correct_syllable = self.word_data["correct"]
+
+        # Reset positions and start time
+        self.syllable_positions = self.center_syllables()
+        self.player_selected = False
+        self.start_time = time.time()
+        self.splash_active = False  # Reset the splash animation for the new word
+        self.splash_positions = []  # Clear splash positions
+        self.selection_made = False  # Reset selection state
+        self.word_completed = False  # Reset word completion state
+        self.reveal_timer_started = False  # Reset the post-reveal timer state
+
     def run(self):
-        # Ensure the start_time is set once when the level starts
         if self.start_time is None:
             self.start_time = time.time()
 
         running = True
         while running:
             elapsed_time = time.time() - self.start_time
-            remaining_time = max(0, self.time_limit - elapsed_time)  # Countdown timer
+            remaining_time = max(0, self.reveal_time - elapsed_time)
 
+            # Clear screen and draw background
             self.display.fill((135, 206, 250))  # Light blue background
 
             # Display the word and pronunciation
             word_text = self.font.render(f"The word is: {self.word}", True, (255, 255, 0))
             pronunciation_text = self.font.render(f"Pronunciation: {self.pronunciation}", True, (255, 255, 0))
-            self.display.blit(word_text, (WIDTH // 2 - word_text.get_width() // 2, 50))
-            self.display.blit(pronunciation_text, (WIDTH // 2 - pronunciation_text.get_width() // 2, 100))
+            self.display.blit(word_text, (self.display.get_width() // 2 - word_text.get_width() // 2, 50))
+            self.display.blit(pronunciation_text, (self.display.get_width() // 2 - pronunciation_text.get_width() // 2, 100))
 
             # Display the syllables
             for i, syllable in enumerate(self.syllables):
@@ -603,18 +641,29 @@ class ThirdLevel:
 
             # Display the countdown timer
             timer_text = self.timer_font.render(f"Time: {remaining_time:.1f}", True, (255, 255, 255))
-            self.display.blit(timer_text, (WIDTH - 150, 10))
+            self.display.blit(timer_text, (self.display.get_width() - 150, 10))
 
-            # Display the character
-            self.display.blit(self.character_image, self.character_position)
-
-            # Trigger and animate the splash effect if time runs out or player makes a selection
-            if remaining_time <= 0 and not self.player_selected:
+            # If selection has been made or time is up, reveal correct and incorrect answers
+            if remaining_time <= 0 and not self.selection_made:
                 self.trigger_incorrect_splashes()
                 self.splash_active = True
+                self.selection_made = True
+                self.reveal_timer_start_time = time.time()  # Start the post-reveal timer
+                print("Time's up! Revealing answers.")  # Debugging line
 
+            # Animate the water splash if active
             if self.splash_active:
                 self.animate_splash()
+
+            # Start post-reveal timer (to wait for 5 seconds before moving to next word)
+            if self.selection_made and not self.reveal_timer_started:
+                self.reveal_timer_started = True
+
+            # Check if the post-reveal timer is over (5 seconds delay after revealing answers)
+            if self.reveal_timer_started:
+                post_reveal_elapsed_time = time.time() - self.reveal_timer_start_time
+                if post_reveal_elapsed_time >= self.post_reveal_delay:
+                    self.load_next_word()  # Move to the next word after post-reveal delay
 
             # Event handling
             for event in pygame.event.get():
@@ -622,56 +671,44 @@ class ThirdLevel:
                     pygame.quit()
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN and remaining_time > 0:
-                    mouse_x, mouse_y = event.pos
+                    # Handle syllable selection
+                    for i, syllable in enumerate(self.syllables):
+                        syllable_rect = self.font.render(syllable, True, (255, 255, 255)).get_rect(center=self.syllable_positions[i])
+                        if syllable_rect.collidepoint(event.pos):
+                            # Move the character to the clicked position
+                            self.character_position = [self.syllable_positions[i][0] - 32, self.syllable_positions[i][1] - 64]
+                            self.player_selected = True
+                            self.word_completed = True  # Mark the word as completed after a click
 
-                    # Move character to mouse click position
-                    self.character_position = [mouse_x - 32, mouse_y - 64]
-
-                    if not self.player_selected:
-                        for i, syllable in enumerate(self.syllables):
-                            syllable_rect = self.font.render(syllable, True, (255, 255, 255)).get_rect(center=self.syllable_positions[i])
-                            if syllable_rect.collidepoint(event.pos):
-                                if syllable == self.correct_syllable:
-                                    print("Correct!")
-                                    self.player_selected = True  # Player has made the correct choice
-                                    running = False  # End the level
-                                else:
-                                    print("Incorrect!")
-                                    self.splash_positions.append(self.syllable_positions[i])  # Set splash position on incorrect syllable
-                                    self.splash_active = True  # Activate the splash animation
-                                    self.player_selected = True  # Player has made a selection
+            # Draw the character at the clicked position
+            self.display.blit(self.character_image, self.character_position)
 
             pygame.display.update()
-            pygame.time.Clock().tick(FPS)
-
-        if self.player_selected and remaining_time <= 0:
-            self.gameStateManager.set_state('main-menu')  # Reset to main menu if the player failed
+            pygame.time.Clock().tick(60)
 
     def trigger_incorrect_splashes(self):
-        """Triggers splash animation for all incorrect syllables."""
+        """Trigger splash effect on all incorrect syllables."""
         for i, syllable in enumerate(self.syllables):
             if syllable != self.correct_syllable:
                 self.splash_positions.append(self.syllable_positions[i])
         self.splash_active = True
 
     def animate_splash(self):
-        # Update the timer for frame change
+        """Animates the splash effect on incorrect syllables."""
         self.splash_timer += self.splash_animation_speed
         if self.splash_timer >= self.splash_animation_speed:
-            self.splash_timer = 0  # Reset timer
-            self.current_splash_frame += 1  # Move to next frame
-
+            self.splash_timer = 0
+            self.current_splash_frame += 1
             if self.current_splash_frame >= len(self.splash_frames):
-                self.current_splash_frame = 0  # Loop the animation
-                self.splash_active = False  # Stop the splash animation when complete
+                self.current_splash_frame = 0
+                self.splash_active = False  # Stop the splash animation when it ends
 
-        # Draw the current frame of the splash at the given positions
+        # Draw the current frame of the splash at each incorrect syllable position
         for pos in self.splash_positions:
             self.display.blit(self.splash_frames[self.current_splash_frame], pos)
 
-
-
-
+            pygame.display.update()
+            pygame.time.Clock().tick(60)
 
 class GameStateManager:
     def __init__(self, currentState):
