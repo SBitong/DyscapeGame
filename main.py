@@ -485,7 +485,7 @@ class FourthLevel:
         self.gameStateManager = gameStateManager
         self.light_radius = 100  # Define the radius of the light (adjust as needed)
 
-        background_image_path = os.path.join('graphics', 'main-menu-background-1.jpg')
+        background_image_path = os.path.join('graphics', 'forest-of-nolite.png')
         self.background_image = pygame.image.load(background_image_path).convert_alpha()
         self.background_image = pygame.transform.scale(self.background_image,(self.display.get_width(), self.display.get_height()))
 
