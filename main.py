@@ -13,11 +13,12 @@ class Game:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("DyscapeTheGame")
 
-        self.gameStateManager = GameStateManager('main-menu')
+        self.gameStateManager = GameStateManager('fourth-level')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel}
+        self.fourthLevel = FourthLevel(self.screen, self.gameStateManager)
+        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'fourth-level': self.fourthLevel}
 
         self.clock = pygame.time.Clock()
 
@@ -476,6 +477,46 @@ class FirstLevel:
 
             # Cap the frame rate
             self.clock.tick(FPS)
+
+
+class FourthLevel:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.light_radius = 100  # Define the radius of the light (adjust as needed)
+
+        background_image_path = os.path.join('graphics', 'main-menu-background-1.jpg')
+        self.background_image = pygame.image.load(background_image_path).convert_alpha()
+        self.background_image = pygame.transform.scale(self.background_image,(self.display.get_width(), self.display.get_height()))
+
+    def run(self):
+        running = True
+        while running:
+            # Get the current position of the cursor
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+
+            # Fill the entire display with the background color (FERN_GREEN)
+            self.display.blit(self.background_image, (0, 0))
+
+            # Create a surface for the pitch-black screen with transparency
+            darkness = pygame.Surface(self.display.get_size(), pygame.SRCALPHA)
+            darkness.fill((0, 0, 0, 255))  # Solid black
+
+            # Cut out a circular area around the cursor to reveal the background
+            pygame.draw.circle(darkness, (0, 0, 0, 0), (mouse_x, mouse_y), self.light_radius)
+
+            # Blit the darkness layer on top of the display
+            self.display.blit(darkness, (0, 0))
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+
+            pygame.display.update()  # Update the display with the latest changes
+
+        pygame.quit()
+        sys.exit()
 
 class GameStateManager:
     def __init__(self, currentState):
