@@ -13,7 +13,7 @@ class Game:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("DyscapeTheGame")
 
-        self.gameStateManager = GameStateManager('fifth-level')
+        self.gameStateManager = GameStateManager('main-menu')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
@@ -232,7 +232,7 @@ class MainMenu:
                 # Check if the start button is clicked
                 if self.startbutton_rect.collidepoint(event.pos):
                     self.stop_sounds()
-                    self.gameStateManager.set_state('first-level')
+                    self.gameStateManager.set_state('fifth-level')
                     print("Start Button Clicked!")
                     engine.say("Start")
                     engine.runAndWait()
@@ -782,6 +782,62 @@ class FifthLevel:
 
         return lines
 
+    def show_game_over_prompt(self):
+        # Fill the background with a semi-transparent overlay
+        overlay = pygame.Surface(self.display.get_size())
+        overlay.set_alpha(200)  # Set transparency level
+        overlay.fill((0, 0, 0))  # Black background
+        self.display.blit(overlay, (0, 0))
+
+        # Render the "You lost" message
+        game_over_text = "You Lost"
+        game_over_surface = self.font.render(game_over_text, True, (255, 255, 255))
+        game_over_rect = game_over_surface.get_rect(center=(self.display.get_width() // 2, 200))
+        self.display.blit(game_over_surface, game_over_rect)
+
+        # Define button positions and sizes
+        button_width, button_height = 200, 50
+        restart_button_rect = pygame.Rect(
+            (self.display.get_width() // 2 - button_width // 2, 300), (button_width, button_height))
+        main_menu_button_rect = pygame.Rect(
+            (self.display.get_width() // 2 - button_width // 2, 400), (button_width, button_height))
+
+        # Render buttons
+        pygame.draw.rect(self.display, (0, 255, 0), restart_button_rect)
+        restart_text_surface = self.font.render("Restart", True, (0, 0, 0))
+        restart_text_rect = restart_text_surface.get_rect(center=restart_button_rect.center)
+        self.display.blit(restart_text_surface, restart_text_rect)
+
+        pygame.draw.rect(self.display, (255, 0, 0), main_menu_button_rect)
+        main_menu_text_surface = self.font.render("Main Menu", True, (0, 0, 0))
+        main_menu_text_rect = main_menu_text_surface.get_rect(center=main_menu_button_rect.center)
+        self.display.blit(main_menu_text_surface, main_menu_text_rect)
+
+
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = event.pos
+                    if restart_button_rect.collidepoint(mouse_pos):
+                        engine.say("Restart")
+                        self.reset_level()
+                        engine.runAndWait()
+                        running = False
+                    elif main_menu_button_rect.collidepoint(mouse_pos):
+                        engine.say("Return")
+                        self.reset_level()
+                        self.gameStateManager.set_state('main-menu')
+                        engine.runAndWait()
+                        running = False
+
+            pygame.display.update()
+
     def run(self):
 
         heart_image = pygame.image.load(os.path.join('graphics', 'heart.png'))
@@ -799,11 +855,11 @@ class FifthLevel:
         scroll_y = 10  # Y position for the scroll (adjust as needed)
 
         green_overlay = pygame.Surface(self.display.get_size())
-        green_overlay.set_alpha(128)  # Transparency level (0 fully transparent, 255 fully opaque)
+        green_overlay.set_alpha(50)  # Transparency level (0 fully transparent, 255 fully opaque)
         green_overlay.fill((0, 255, 0))  # Fill with green
 
         red_overlay = pygame.Surface(self.display.get_size())
-        red_overlay.set_alpha(128)
+        red_overlay.set_alpha(50)
         red_overlay.fill((255, 0, 0))
 
         show_green_overlay = False  # Flag to show the green overlay
@@ -814,8 +870,8 @@ class FifthLevel:
         correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
         wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
 
-        self.run_title_animation()
-        self.run_dialogue_strip()
+        # self.run_title_animation()
+        # self.run_dialogue_strip()
         self.init_water_droplets()  # Initialize water droplets when the level starts
 
 
@@ -959,7 +1015,8 @@ class FifthLevel:
                                 overlay_start_time = pygame.time.get_ticks()
                                 self.lives -= 1  # Lose a life
                                 if self.lives <= 0:
-                                    self.reset_level()  # Restart level if no lives left
+                                    self.show_game_over_prompt()
+                                    running = False
                                     break
 
                             # If all questions are answered, end the level
@@ -969,7 +1026,7 @@ class FifthLevel:
                             break
 
             pygame.display.update()  # Ensure the display updates with the latest changes
-        sys.exit()
+
 
 
 class GameStateManager:
