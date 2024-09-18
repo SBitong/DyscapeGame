@@ -651,9 +651,9 @@ class FifthLevel:
             {"name": "You", "text": "(THAT'S IT! It is the tower of Dyslexio. So that is the name that the owl was murmuring about..)", "image": char1_image},
             {"name": "You", "text": "Mister Toad, I respect your values but the world is in danger. Dyscape is in danger.", "image": char1_image},
             {"name": "Unknown Toad", "text": "Danger? What are you talking about?", "image": char2_image, "audio": "frog-dialogue-5.mp3"},
-            {"name": "You", "text": "An unknown being named Confusion started to invade our world and has caused us to lose clarity for texts.", "image": char1_image},
+            {"name": "You", "text": "Confusion invaded our world and removed the clarity for texts.", "image": char1_image},
             {"name": "You", "text": "I was called to protect Dyscape and restore it to what it was before.", "image": char1_image},
-            {"name": "You", "text": "Dyscape is on the brink of full destruction. Confusion is here, and he is planning something evil.", "image": char1_image},
+            {"name": "You", "text": "Dyscape is on slowly dying. Confusion is here, and he is planning something evil.", "image": char1_image},
             {"name": "Unknown Toad", "text": "Hmmm, I see. Well, it can't be helped.", "image": char2_image, "audio": "frog-dialogue-6.mp3"},
             {"name": "Unknown Toad", "text": "Fine, I'll let you pass.", "image": char2_image, "audio": "frog-dialogue-7.mp3"},
             {"name": "You", "text": "YES!!", "image": char1_image},
@@ -757,31 +757,6 @@ class FifthLevel:
             pygame.display.flip()
             clock.tick(60)  # Control the frame rate
 
-    def wrap_text(self, text, font, color, max_width):
-
-        words = text.split(' ')
-        lines = []
-        current_line = []
-        current_width = 0
-
-        for word in words:
-            word_surface = font.render(word, True, color)
-            word_width = word_surface.get_width()
-
-            # If adding this word exceeds the max width, start a new line
-            if current_width + word_width > max_width:
-                lines.append(' '.join(current_line))
-                current_line = [word]
-                current_width = word_width + font.size(' ')[0]  # Include space width
-            else:
-                current_line.append(word)
-                current_width += word_width + font.size(' ')[0]
-
-        if current_line:
-            lines.append(' '.join(current_line))
-
-        return lines
-
     def show_game_over_prompt(self):
         # Fill the background with a semi-transparent overlay
         overlay = pygame.Surface(self.display.get_size())
@@ -790,7 +765,7 @@ class FifthLevel:
         self.display.blit(overlay, (0, 0))
 
         # Render the "You lost" message
-        game_over_text = "You Lost"
+        game_over_text = "YOU LOST"
         game_over_surface = self.font.render(game_over_text, True, (255, 255, 255))
         game_over_rect = game_over_surface.get_rect(center=(self.display.get_width() // 2, 200))
         self.display.blit(game_over_surface, game_over_rect)
@@ -803,12 +778,12 @@ class FifthLevel:
             (self.display.get_width() // 2 - button_width // 2, 400), (button_width, button_height))
 
         # Render buttons
-        pygame.draw.rect(self.display, (0, 255, 0), restart_button_rect)
+        pygame.draw.rect(self.display, (50, 255, 50), restart_button_rect)
         restart_text_surface = self.font.render("Restart", True, (0, 0, 0))
         restart_text_rect = restart_text_surface.get_rect(center=restart_button_rect.center)
         self.display.blit(restart_text_surface, restart_text_rect)
 
-        pygame.draw.rect(self.display, (255, 0, 0), main_menu_button_rect)
+        pygame.draw.rect(self.display, (236, 112, 22), main_menu_button_rect)
         main_menu_text_surface = self.font.render("Main Menu", True, (0, 0, 0))
         main_menu_text_rect = main_menu_text_surface.get_rect(center=main_menu_button_rect.center)
         self.display.blit(main_menu_text_surface, main_menu_text_rect)
@@ -835,7 +810,6 @@ class FifthLevel:
                         self.gameStateManager.set_state('main-menu')
                         engine.runAndWait()
                         running = False
-
             pygame.display.update()
 
     def run(self):
@@ -870,8 +844,8 @@ class FifthLevel:
         correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
         wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
 
-        # self.run_title_animation()
-        # self.run_dialogue_strip()
+        self.run_title_animation()
+        self.run_dialogue_strip()
         self.init_water_droplets()  # Initialize water droplets when the level starts
 
 
