@@ -7,6 +7,8 @@ FPS = 60
 # Colors
 GRAY = (128, 128, 128)
 FERN_GREEN = (79, 121, 66)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
 
 # Master Volume (0.0 to 1.0)
 MASTER_VOLUME = 0.5
