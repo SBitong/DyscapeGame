@@ -487,6 +487,11 @@ class FifthLevel:
         self.black = BLACK
         pygame.mixer.init()
 
+        self.continue_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() - 100, 200,
+                                           50)
+        self.countdown_font = pygame.font.Font(None, 100)
+        self.is_restart = False  # Track if the game is a restart
+
         # Number of lives the player has
         self.lives = 3
 
@@ -554,6 +559,7 @@ class FifthLevel:
         print("Restarting level...")  # Optional debug message
         self.lives = 3  # Reset lives to 3
         self.shuffle_questions()  # Shuffle the questions again
+        self.is_restart = True
 
     def init_water_droplets(self, droplet_count=5):
         """Initialize water droplets with random positions and speeds."""
@@ -812,6 +818,59 @@ class FifthLevel:
                         running = False
             pygame.display.update()
 
+    def show_how_to_play(self):
+        """Displays the 'how to play' instructions with a continue button."""
+        running = True
+        while running:
+            self.display.blit(self.background_image, (0, 0))
+            overlay = pygame.Surface(self.display.get_size())
+            overlay.set_alpha(150)  # Set transparency level
+            overlay.fill((0, 0, 0))  # Black background
+            self.display.blit(overlay, (0, 0))  # Fill the screen with black
+
+            # Display instructions
+            instructions = [
+                "Welcome to the Fifth Level",
+                "1. In this game, your task is to answer all of the toad's questions",
+                "2. Pick one out of all the choices.",
+                "3. If you guess wrong, you'll lose a life! You have 3 lives in total.",
+                "Good luck, adventurer!"
+            ]
+
+            for i, line in enumerate(instructions):
+                instruction_surface = self.font.render(line, True, (255, 255, 255))
+                self.display.blit(instruction_surface,
+                                  (self.display.get_width() // 2 - instruction_surface.get_width() // 2, 100 + i * 50))
+
+            # Draw the continue button
+            pygame.draw.rect(self.display, (255, 165, 0), self.continue_button)  # Orange button
+            continue_text = self.font.render("Continue", True, (0, 0, 0))  # Black text
+            self.display.blit(continue_text, (self.continue_button.x + 35, self.continue_button.y + 10))
+
+            # Event handling for button click
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.continue_button.collidepoint(event.pos):
+                        self.start_countdown()  # Start the countdown before the game
+                        return
+
+            pygame.display.update()
+
+    def start_countdown(self):
+        """Displays a 3-2-1 countdown before the game starts."""
+        for count in range(3, 0, -1):
+            self.display.fill((0, 0, 0))  # Black background
+            countdown_surface = self.countdown_font.render(str(count), True, (255, 255, 255))  # White countdown number
+            self.display.blit(countdown_surface, (self.display.get_width() // 2 - countdown_surface.get_width() // 2,
+                                                  self.display.get_height() // 2 - countdown_surface.get_height() // 2))
+            pygame.display.update()
+            pygame.time.wait(1000)  # Wait 1 second for each countdown step
+
+        pass
+
     def run(self):
 
         heart_image = pygame.image.load(os.path.join('graphics', 'heart.png'))
@@ -844,8 +903,14 @@ class FifthLevel:
         correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
         wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
 
-        self.run_title_animation()
-        self.run_dialogue_strip()
+        # Skip the animations if this is a restart
+        if not self.is_restart:
+            self.run_title_animation()
+            self.run_dialogue_strip()
+        else:
+            self.is_restart = False  # Reset the flag
+
+        self.show_how_to_play()
         self.init_water_droplets()  # Initialize water droplets when the level starts
 
 
@@ -1000,7 +1065,6 @@ class FifthLevel:
                             break
 
             pygame.display.update()  # Ensure the display updates with the latest changes
-
 
 
 class GameStateManager:
