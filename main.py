@@ -435,7 +435,13 @@ class FirstLevel:
             self.tts_engine.runAndWait()
 
         def show_end_screen(self):
-            self.display.fill((0, 0, 0))  # Fill the screen with black
+            self.display.blit(self.bottom_platform, (0, 0))  # Draw the bottom platform
+            self.display.blit(self.green_platform, (0, 320))  # Draw the green platform
+            self.display.blit(self.ladder_image, (self.screen_width * 0.25, 0))  # Draw the ladder image
+            overlay = pygame.Surface(self.display.get_size())
+            overlay.set_alpha(150)  # Set transparency level
+            overlay.fill((0, 0, 0))  # Black background
+            self.display.blit(overlay, (0, 0))  # Fill the screen with black
 
             # Display the appropriate message based on win or loss
             message = "You Win!" if self.win else "Game Over!"
@@ -466,10 +472,135 @@ class FirstLevel:
             # Change the game state to 'main-menu'
             self.gameStateManager.set_state('main-menu')
 
+        def run_dialogue_strip_1(self):
+            self.dialogue_font = pygame.font.Font(None, 36)
+
+            # Dialogue list (narrating the FourthLevel)
+            self.dialogue_lines = [
+                "Dyscape was once a bright and wonderful place, a world full of words, learning, and light.",
+                "Its kingdom was amazingly ruled by a king. Its skies were vibrant, and the land was abundant and filled with knowledge.",
+                "Every citizen were living in prosper, and the community is thriving, showing the power of learning.",
+                "But something bad was coming. An unknown being called Confusion infiltrated Dyscape.",
+                "He destroyed the city, polluted the forest, and scrambled the landscapes.",
+                "He hypnotized every citizen in the kingdom and stole their capability to sustain knowledge",
+                "Under his will, Confusion took the king as the hostage and now resides in the tower",
+                "Now, the world of Dyscape is engulfed in chaos, and it's only a matter of time before the world will drown into darkness.",
+                "In an alternate world, there was a man who was camping in the woods near a lake.",
+                "He was setting up his campfire when he heard a strange sound from the lake.",
+                "He looked behind his back and saw a mysterious glow near the side of the lake.",
+                "He went near the lake, and as soon as he was close, he heard a voice.",
+                "'Help us, our world is in danger', the unknown voice said.",
+                "He touched the water out of curiosity and suddenly, the water pulled him into the depths."
+            ]
+
+            # Corresponding images for each dialogue line
+            self.dialogue_images = [
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+            ]
+
+            # Corresponding narration files for each dialogue line
+            self.dialogue_sounds = [
+                pygame.mixer.Sound(os.path.join('audio', 'fourth-narrator-1.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'fourth-narrator-2.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'fourth-narrator-3.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'fourth-narrator-4.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'fourth-narrator-5.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'fourth-narrator-6.mp3'))
+            ]
+
+            # Scale the images to fit the screen
+            self.dialogue_images = [
+                pygame.transform.scale(img, (self.display.get_width(), self.display.get_height())) for img in
+                self.dialogue_images
+            ]
+
+            self.dialogue_index = 0
+            running = True
+
+            # Initialize the mixer for playing audio
+            pygame.mixer.init()
+
+            # Flag to check if narration is playing
+            self.narration_playing = False
+
+            def play_narration():
+                """Play the narration for the current dialogue line."""
+                self.narration_playing = True
+                self.dialogue_sounds[self.dialogue_index].play()
+                pygame.time.set_timer(pygame.USEREVENT,
+                                      int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
+
+            # Play the first narration automatically
+            play_narration()
+
+            while running:
+                self.display.fill((0, 0, 0))  # Black background for the dialogue screen
+
+                # Display the corresponding image
+                self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
+
+                # Create and display the dialogue box
+                dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
+                pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
+
+                # Render the current dialogue line
+                dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
+                                                          (255, 255, 255))  # White font
+                dialogue_rect = dialogue_text.get_rect(
+                    center=(self.display.get_width() // 2, self.display.get_height() - 75))
+                self.display.blit(dialogue_text, dialogue_rect)
+
+                # Event handling
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                        sys.exit()
+
+                    # Allow the player to skip the narration and move to the next slide with the spacebar
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_SPACE:
+                            self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
+                            self.narration_playing = False
+                            self.dialogue_index += 1
+                            if self.dialogue_index >= len(self.dialogue_lines):
+                                running = False  # End the dialogue and start the game
+                            else:
+                                play_narration()  # Play the next narration
+
+                    # Check if narration finished
+                    if event.type == pygame.USEREVENT and self.narration_playing:
+                        self.narration_playing = False
+                        self.dialogue_index += 1
+                        if self.dialogue_index >= len(self.dialogue_lines):
+                            running = False  # End the dialogue and start the game
+                        else:
+                            play_narration()  # Play the next narration
+
+                pygame.display.update()
+
         def run(self):
             """Main game loop for the first level."""
+
+            correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
+            wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
+
+            # self.run_dialogue_strip_1()
             running = True
             while running:
+
                 if self.game_over or self.win:
                     self.show_end_screen()  # Display the end screen when game is over or won
                     pygame.display.update()
@@ -483,10 +614,12 @@ class FirstLevel:
                             # Check if the Restart button is clicked
                             if self.restart_button.collidepoint(event.pos):
                                 self.restart_level()  # Restart the level if clicked
+                                running = False
 
                             # Check if the Exit button is clicked
                             elif self.exit_button.collidepoint(event.pos):
                                 self.exit_to_main_menu()  # Exit to the main menu if clicked
+                                running = False
 
                     continue  # Skip the rest of the game loop while in the end screen
 
@@ -551,28 +684,43 @@ class FirstLevel:
                             if pair_word_rect.collidepoint(event.pos):
                                 self.speak_word(slot["pair_word"])
 
+
+
+
                     elif event.type == pygame.MOUSEBUTTONUP:
+
                         # Handle word placement logic
+
                         if self.selected_word:
-                            placed = False
+                            placed_in_slot = False
+                            wrong_slot = False  # Flag to track if the word was placed in the wrong slot
                             for slot in self.ladder_slots:
                                 if slot["rect"].colliderect(self.selected_word["rect"]) and not slot["occupied"]:
+                                    placed_in_slot = True
                                     if slot["correct_word"] == self.selected_word["word"]:
                                         # Snap word into place if correct
+                                        correct_answer_sound.play()
                                         self.selected_word["rect"].center = slot["rect"].center
                                         slot["word"] = self.selected_word["word"]
                                         slot["occupied"] = True
                                         slot["color"] = (143, 86, 59)  # Change color to brown for correct placement
                                         self.selected_word["placed"] = True
-                                        placed = True
-                                        break
-                            if not placed:
-                                # Snap word back to its original position and lose a life for incorrect placement
+                                    else:
+                                        # Word was placed in a wrong slot
+                                        wrong_answer_sound.play()
+                                        wrong_slot = True
+                                        self.selected_word["rect"].x, self.selected_word["rect"].y = self.selected_word[
+                                            "original_pos"]
+                            # If the word was placed in a slot but it's wrong, deduct a life
+                            if wrong_slot:
+                                self.lives -= 1
+                            # If the word was not placed in any slot, snap it back to its original position (no life deduction)
+                            if not placed_in_slot:
                                 self.selected_word["rect"].x, self.selected_word["rect"].y = self.selected_word[
                                     "original_pos"]
-                                self.lives -= 1
 
                             self.selected_word = None
+                # Reset the selected word after placement
 
                 # Check game over conditions
                 if self.lives <= 0:
