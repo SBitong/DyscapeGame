@@ -480,160 +480,185 @@ class FirstLevel:
             self.clock.tick(FPS)
 
 class SecondLevel:
-        def __init__(self, display, gameStateManager):
-            self.display = display
-            self.gameStateManager = gameStateManager
-            self.screen_width, self.screen_height = self.display.get_size()  # Get screen size for responsiveness
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.screen_width, self.screen_height = self.display.get_size()  # Get screen size for responsiveness
 
-            # Initialize player attributes
-            self.lives = 3  # 3 lives, displayed as hearts
-            self.time_limit = 7  # Timer for each round
-            self.current_time = 0
-            self.timer_started = False
+        # Initialize player attributes
+        self.lives = 3  # 3 lives, displayed as hearts
+        self.time_limit = 10  # Timer for each round
+        self.current_time = 0
+        self.timer_started = False
 
-            # Track current round
-            self.rounds_completed = 0
-            self.max_rounds = 10
+        # Track current round
+        self.rounds_completed = 0
+        self.max_rounds = 10
 
-            # Load the Arial font
-            font_path = os.path.join('fonts', 'ARIAL.TTF')
-            self.font = pygame.font.Font(font_path, 30)
-            self.large_font = pygame.font.Font(font_path, 40)  # Larger font for timer and flower word
+        # Load the Arial font
+        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        self.font = pygame.font.Font(font_path, 30)
+        self.large_font = pygame.font.Font(font_path, 45)  # Larger font for timer and flower word
 
-            # Load necessary assets
-            self.background = pygame.image.load(
-                os.path.join('graphics', 'garden.png')).convert_alpha()  # Background image
-            self.background = pygame.transform.scale(self.background,
-                                                     (self.display.get_width(), self.display.get_height()))
-            self.flower_image = pygame.image.load(
-                os.path.join('graphics', 'ladder-1.png')).convert_alpha()  # Red flower image
+        # Load necessary assets
+        self.background = pygame.image.load(os.path.join('graphics', 'garden.png')).convert_alpha()  # Background image
+        self.background = pygame.transform.scale(self.background, (self.display.get_width(), self.display.get_height()))
+        self.flower_image = pygame.image.load(os.path.join('graphics', 'ladder-1.png')).convert_alpha()  # Flower image
 
-            # Words for the game (no pairs, but they need to rhyme with player input)
-            self.flower_words = ["Lap", "Tree", "Ball", "Car", "Nose", "Can", "Hide", "Hug", "Kick", "Base"]
-            random.shuffle(self.flower_words)  # Shuffle the flower words for randomness in rounds
+        # Words for the game (no pairs, but they need to rhyme with player input)
+        self.flower_words = ["Lap", "Tree", "Ball", "Car", "Nose", "Can", "Hide", "Hug", "Kick", "Rope"]
+        random.shuffle(self.flower_words)  # Shuffle the flower words for randomness in rounds
+        self.current_flower_word = self.flower_words[self.rounds_completed]
 
+        # Initialize game state
+        self.input_text = ''
+        self.clock = pygame.time.Clock()
+        self.last_time = pygame.time.get_ticks()
+
+        # Load hearts for lives display and resize them
+        self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
+        self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))  # Resize hearts
+
+        # Load warrior image
+        self.warrior_image = pygame.image.load(os.path.join('graphics', 'warrior-1.png')).convert_alpha()
+        self.warrior_image = pygame.transform.scale(self.warrior_image, (350, 400))  # Resize warrior image
+
+        # Load speaker icon
+        self.speaker_image = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
+        self.speaker_image = pygame.transform.scale(self.speaker_image, (100, 100))  # Resize speaker icon
+        self.speaker_rect = self.speaker_image.get_rect(
+            center=(self.screen_width // 2, 50))  # Position speaker in the top center
+
+        # Initialize TTS (text-to-speech) engine
+        self.tts_engine = pyttsx3.init()
+
+    def draw_hearts(self):
+        # Draw hearts in the top-left corner, smaller and properly spaced
+        for i in range(self.lives):
+            self.display.blit(self.heart_image, (10 + i * 60, 10))
+
+    def draw_timer(self, time_left):
+        # Increase the font size of the timer
+        timer_text = self.large_font.render(f"Time: {time_left:.2f}", True, (255, 255, 255))
+        self.display.blit(timer_text, (30, 80))  # Timer is larger now
+
+    def draw_text_box(self):
+        # Draw the text box at the bottom center of the screen
+        pygame.draw.rect(self.display, (255, 255, 255),
+                         [self.screen_width // 2 - 175, self.screen_height - 100, 350, 50], 0)  # Draw text box
+        text_surface = self.font.render(self.input_text, True, (0, 0, 0))  # Display the user's input
+        self.display.blit(text_surface, (self.screen_width // 2 - 150, self.screen_height - 90))
+
+        # Draw the prompt above the text box
+        prompt_surface = self.font.render("Name a word that rhymes:", True, (0, 0, 0))
+        self.display.blit(prompt_surface, (self.screen_width // 2 - 175, self.screen_height - 150))
+
+    def draw_flower(self):
+        # Position the flower in the correct spot based on the reference image
+        self.display.blit(self.flower_image, (650, 200))  # Adjusted position of the flower
+
+        # Display the word on the flower with a larger font
+        word_text = self.large_font.render(self.current_flower_word, True, (255, 255, 255))  # Larger word on the flower
+        self.display.blit(word_text, (760, 220))  # Adjust position based on your image reference
+
+    def draw_warrior(self):
+        # Draw the warrior image on the left side of the screen
+        self.display.blit(self.warrior_image, (150, self.screen_height - self.warrior_image.get_height() - 1))
+
+    def draw_speaker(self):
+        # Draw the speaker icon at the top center of the screen
+        self.display.blit(self.speaker_image, self.speaker_rect.topleft)
+
+    def check_rhyme(self):
+        # Use the 'pronouncing' library to find rhymes for the current flower word
+        rhymes = pronouncing.rhymes(self.current_flower_word.lower())
+        return self.input_text.strip().lower() in rhymes
+
+    def pronounce_word(self):
+        # Use TTS engine to say the current flower word
+        self.tts_engine.say(self.current_flower_word)
+        self.tts_engine.runAndWait()
+
+    def reset_round(self):
+        # Reset for the next round
+        self.rounds_completed += 1
+        if self.rounds_completed < self.max_rounds:
             self.current_flower_word = self.flower_words[self.rounds_completed]
-
-            # Initialize game state
             self.input_text = ''
-            self.clock = pygame.time.Clock()
+            self.current_time = self.time_limit  # Reset timer
+        else:
+            self.gameStateManager.set_state('win')
+
+    def show_end_screen(self):
+        self.display.fill((0, 0, 0))  # Fill the screen with black
+
+        # Display the appropriate message based on win or loss
+        message = "You Win!" if self.rounds_completed >= self.max_rounds else "Game Over!"
+        text_surface = self.font.render(message, True, (255, 255, 255))
+        self.display.blit(text_surface,
+                          (self.screen_width // 2 - text_surface.get_width() // 2, self.screen_height // 3))
+
+        # Define Restart and Exit buttons
+        self.restart_button = pygame.Rect(self.screen_width // 2 - 100, self.screen_height // 2, 200, 50)
+        self.exit_button = pygame.Rect(self.screen_width // 2 - 100, self.screen_height // 2 + 70, 200, 50)
+
+        # Draw the Restart button (Green)
+        pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)
+        restart_text = self.font.render("Restart", True, (255, 255, 255))
+        self.display.blit(restart_text, (self.restart_button.x + 50, self.restart_button.y + 10))
+
+        # Draw the Exit button (Red)
+        pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)
+        exit_text = self.font.render("Exit", True, (255, 255, 255))
+        self.display.blit(exit_text, (self.exit_button.x + 70, self.exit_button.y + 10))
+
+    def run(self):
+        self.current_time = self.time_limit  # Start the timer
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.gameStateManager.set_state('main-menu')
+                    elif event.key == pygame.K_RETURN:  # Check when enter is pressed
+                        if self.check_rhyme():
+                            self.reset_round()
+                        else:
+                            self.lives -= 1
+                            if self.lives <= 0:
+                                self.gameStateManager.set_state('game-over')
+                            else:
+                                self.input_text = ''  # Clear input if wrong answer
+                    elif event.key == pygame.K_BACKSPACE:
+                        self.input_text = self.input_text[:-1]  # Handle backspace
+                    else:
+                        self.input_text += event.unicode  # Add typed character to input
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.speaker_rect.collidepoint(event.pos):  # Check if the speaker icon is clicked
+                        self.pronounce_word()  # Call the function to pronounce the word
+
+            # Update the timer
+            time_passed = pygame.time.get_ticks() - self.last_time
+            self.current_time -= time_passed / 1000.0
             self.last_time = pygame.time.get_ticks()
 
-            # Load hearts for lives display and resize them
-            self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
-            self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))  # Resize hearts
+            if self.current_time <= 0:  # Time ran out
+                self.lives -= 1
+                if self.lives <= 0:
+                    self.gameStateManager.set_state('game-over')
+                else:
+                    self.reset_round()
 
-        def draw_hearts(self):
-            # Draw hearts in the top-left corner, smaller and properly spaced
-            for i in range(self.lives):
-                self.display.blit(self.heart_image, (10 + i * 60, 10))
-
-        def draw_timer(self, time_left):
-            # Increase the font size of the timer
-            timer_text = self.large_font.render(f"Time: {time_left:.2f}", True, (255, 255, 255))
-            self.display.blit(timer_text, (30, 80))  # Timer is larger now
-
-        def draw_text_box(self):
-            # Draw the text box at the bottom center of the screen
-            pygame.draw.rect(self.display, (255, 255, 255),
-                             [self.screen_width // 2 - 175, self.screen_height - 100, 350, 50], 0)  # Draw text box
-            text_surface = self.font.render(self.input_text, True, (0, 0, 0))  # Display the user's input
-            self.display.blit(text_surface, (self.screen_width // 2 - 150, self.screen_height - 90))
-
-            # Draw the prompt above the text box
-            prompt_surface = self.font.render("Name a word that rhymes:", True, (0, 0, 0))
-            self.display.blit(prompt_surface, (self.screen_width // 2 - 175, self.screen_height - 150))
-
-        def draw_flower(self):
-            # Position the flower in the correct spot based on the reference image
-            self.display.blit(self.flower_image, (650, 200))  # Adjusted position of the flower
-
-            # Display the word on the flower with a larger font
-            word_text = self.large_font.render(self.current_flower_word, True,
-                                               (255, 255, 255))  # Larger word on the flower
-            self.display.blit(word_text, (760, 220))  # Adjust position based on your image reference
-
-        def check_rhyme(self):
-            # Use the 'pronouncing' library to find rhymes for the current flower word
-            rhymes = pronouncing.rhymes(self.current_flower_word.lower())
-            return self.input_text.strip().lower() in rhymes
-
-        def reset_round(self):
-            # Reset for the next round
-            self.rounds_completed += 1
-            if self.rounds_completed < self.max_rounds:
-                self.current_flower_word = self.flower_words[self.rounds_completed]
-                self.input_text = ''
-                self.current_time = self.time_limit  # Reset timer
-            else:
-                self.gameStateManager.set_state('win')
-
-        def show_end_screen(self):
-            self.display.fill((0, 0, 0))  # Fill the screen with black
-
-            # Display the appropriate message based on win or loss
-            message = "You Win!" if self.rounds_completed >= self.max_rounds else "Game Over!"
-            text_surface = self.font.render(message, True, (255, 255, 255))
-            self.display.blit(text_surface,
-                              (self.screen_width // 2 - text_surface.get_width() // 2, self.screen_height // 3))
-
-            # Define Restart and Exit buttons
-            self.restart_button = pygame.Rect(self.screen_width // 2 - 100, self.screen_height // 2, 200, 50)
-            self.exit_button = pygame.Rect(self.screen_width // 2 - 100, self.screen_height // 2 + 70, 200, 50)
-
-            # Draw the Restart button (Green)
-            pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)
-            restart_text = self.font.render("Restart", True, (255, 255, 255))
-            self.display.blit(restart_text, (self.restart_button.x + 50, self.restart_button.y + 10))
-
-            # Draw the Exit button (Red)
-            pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)
-            exit_text = self.font.render("Exit", True, (255, 255, 255))
-            self.display.blit(exit_text, (self.exit_button.x + 70, self.exit_button.y + 10))
-
-        def run(self):
-            self.current_time = self.time_limit  # Start the timer
-            while True:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        sys.exit()
-                    elif event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_ESCAPE:
-                            self.gameStateManager.set_state('main-menu')
-                        elif event.key == pygame.K_RETURN:  # Check when enter is pressed
-                            if self.check_rhyme():
-                                self.reset_round()
-                            else:
-                                self.lives -= 1
-                                if self.lives <= 0:
-                                    self.gameStateManager.set_state('game-over')
-                                else:
-                                    self.input_text = ''  # Clear input if wrong answer
-                        elif event.key == pygame.K_BACKSPACE:
-                            self.input_text = self.input_text[:-1]  # Handle backspace
-                        else:
-                            self.input_text += event.unicode  # Add typed character to input
-
-                # Update the timer
-                time_passed = pygame.time.get_ticks() - self.last_time
-                self.current_time -= time_passed / 1000.0
-                self.last_time = pygame.time.get_ticks()
-
-                if self.current_time <= 0:  # Time ran out
-                    self.lives -= 1
-                    if self.lives <= 0:
-                        self.gameStateManager.set_state('game-over')
-                    else:
-                        self.reset_round()
-
-                self.display.blit(self.background, (0, 0))  # Redraw the background
-                self.draw_hearts()  # Draw lives
-                self.draw_timer(self.current_time)  # Draw timer
-                self.draw_flower()  # Draw flower with word
-                self.draw_text_box()  # Draw text box for input
-                pygame.display.update()  # Update the display
-
+            self.display.blit(self.background, (0, 0))  # Redraw the background
+            self.draw_hearts()  # Draw lives
+            self.draw_timer(self.current_time)  # Draw timer
+            self.draw_flower()  # Draw flower with word
+            self.draw_text_box()  # Draw text box for input
+            self.draw_warrior()  # Draw warrior on the left side
+            self.draw_speaker()  # Draw the speaker icon
+            pygame.display.update()  # Update the display
 
 class GameStateManager:
     def __init__(self, currentState):
