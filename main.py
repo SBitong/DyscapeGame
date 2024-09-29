@@ -477,53 +477,61 @@ class FirstLevel:
 
             # Dialogue list (narrating the FourthLevel)
             self.dialogue_lines = [
-                "Dyscape was once a bright and wonderful place, a world full of words, learning, and light.",
-                "Its kingdom was amazingly ruled by a king. Its skies were vibrant, and the land was abundant and filled with knowledge.",
-                "Every citizen were living in prosper, and the community is thriving, showing the power of learning.",
-                "But something bad was coming. An unknown being called Confusion infiltrated Dyscape.",
-                "He destroyed the city, polluted the forest, and scrambled the landscapes.",
-                "He hypnotized every citizen in the kingdom and stole their capability to sustain knowledge",
-                "Under his will, Confusion took the king as the hostage and now resides in the tower",
-                "Now, the world of Dyscape is engulfed in chaos, and it's only a matter of time before the world will drown into darkness.",
-                "In an alternate world, there was a man who was camping in the woods near a lake.",
-                "He was setting up his campfire when he heard a strange sound from the lake.",
-                "He looked behind his back and saw a mysterious glow near the side of the lake.",
-                "He went near the lake, and as soon as he was close, he heard a voice.",
-                "'Help us, our world is in danger', the unknown voice said.",
-                "He touched the water out of curiosity and suddenly, the water pulled him into the depths."
+                "Dyscape was once a bright and wonderful place, a world full of words, learning, and light.", # 1
+                "Its kingdom was amazingly ruled by a king. Its skies were vibrant,  and the land was abundant \n and filled with knowledge.", # 2
+                "Every citizen were living in prosper, and the community is thriving, showing the power of learning.", # 3
+                "But something bad was coming. An unknown being called Confusion infiltrated Dyscape.", # 4
+                "He destroyed the city, polluted the forest, and scrambled the landscapes.", # 5
+                "He hypnotized every citizen in the kingdom and stole their capability to sustain knowledge", # 6
+                "Under his will, Confusion took the king as his hostage and now resides in the tower", # 7
+                "Now, the world of Dyscape is engulfed in chaos, and it's only a  matter of time before the world \n will drown into darkness.", # 8
+                "In an alternate world, there was a man who was camping in the woods near a lake.", # 9
+                "He was setting up his campfire when he heard a strange sound from the lake.", # 10
+                "He looked behind his back and saw a mysterious glow near the side of the lake.", # 11
+                "He went near the lake, and as soon as he was close, he heard a voice.", # 12
+                "'Help us, our world is in danger', the unknown voice said.", # 13
+                "He touched the water out of curiosity and suddenly, the water pulled him into the depths." # 14
             ]
 
             # Corresponding images for each dialogue line
             self.dialogue_images = [
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),
+                pygame.image.load(os.path.join('graphics', 'dyscape-1.png')).convert_alpha(), # 1
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 2
+                pygame.image.load(os.path.join('graphics', 'inside-dyscape.png')).convert_alpha(), # 3
+                pygame.image.load(os.path.join('graphics', 'confusion-arrives.png')).convert_alpha(), # 4
+                pygame.image.load(os.path.join('graphics', 'dyscape-under-attack.png')).convert_alpha(), # 5
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 6
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 7
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 8
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 9
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 10
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 11
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 12
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 13
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 14
             ]
 
             # Corresponding narration files for each dialogue line
             self.dialogue_sounds = [
-                pygame.mixer.Sound(os.path.join('audio', 'fourth-narrator-1.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'fourth-narrator-2.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'fourth-narrator-3.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'fourth-narrator-4.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'fourth-narrator-5.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'fourth-narrator-6.mp3'))
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-1.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-2.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-3.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-4.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-5.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-6.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-7.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-8.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-9.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-10.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-11.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-12.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-13.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-14.mp3'))
             ]
 
             # Scale the images to fit the screen
             self.dialogue_images = [
-                pygame.transform.scale(img, (self.display.get_width(), self.display.get_height())) for img in
+                pygame.transform.scale(img, (self.display.get_width(), self.display.get_height() - 100)) for img in
                 self.dialogue_images
             ]
 
@@ -597,7 +605,7 @@ class FirstLevel:
             correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
             wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
 
-            # self.run_dialogue_strip_1()
+            self.run_dialogue_strip_1()
             running = True
             while running:
 
