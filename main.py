@@ -15,7 +15,7 @@ class Game:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("DyscapeTheGame")
 
-        self.gameStateManager = GameStateManager('main-menu')
+        self.gameStateManager = GameStateManager('third-level')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
@@ -541,8 +541,8 @@ class ThirdLevel:
         # Timer for the countdown
         self.start_time = None
         self.selection_made = False  # Track if the player has clicked
-        self.reveal_time = 5  # Time after which the correct answer and splashes are revealed
-        self.post_reveal_delay = 5  # Time to wait after revealing correct/incorrect answers
+        self.reveal_time = 10  # Time after which the correct answer and splashes are revealed
+        self.post_reveal_delay = 10  # Time to wait after revealing correct/incorrect answers
         self.word_completed = False  # Track whether a word is completed
 
         # Water splash effect
