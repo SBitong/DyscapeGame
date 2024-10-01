@@ -614,7 +614,8 @@ class SecondLevel:
 
     def run(self):
         self.current_time = self.time_limit  # Start the timer
-        while True:
+        running = True
+        while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -622,13 +623,15 @@ class SecondLevel:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         self.gameStateManager.set_state('main-menu')
+                        running = False
                     elif event.key == pygame.K_RETURN:  # Check when enter is pressed
                         if self.check_rhyme():
                             self.reset_round()
                         else:
                             self.lives -= 1
                             if self.lives <= 0:
-                                self.gameStateManager.set_state('game-over')
+                                self.gameStateManager.set_state('main-menu')
+                                running = False
                             else:
                                 self.input_text = ''  # Clear input if wrong answer
                     elif event.key == pygame.K_BACKSPACE:
@@ -647,7 +650,9 @@ class SecondLevel:
             if self.current_time <= 0:  # Time ran out
                 self.lives -= 1
                 if self.lives <= 0:
-                    self.gameStateManager.set_state('game-over')
+                    self.gameStateManager.set_state('main-menu')
+                    running = False
+
                 else:
                     self.reset_round()
 
