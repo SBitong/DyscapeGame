@@ -562,6 +562,9 @@ class SecondLevel:
         word_text = self.large_font.render(self.current_flower_word, True, (255, 255, 255))  # Larger word on the flower
         self.display.blit(word_text, (720, 220))  # Adjust position based on your image reference
 
+        word_text = self.large_font.render(self.current_flower_word, True, (255, 255, 255))  # Larger word on the flower
+        self.display.blit(word_text, (900, 530))  # Adjust position based on your image reference
+
     def draw_warrior(self):
         # Draw the warrior image on the left side of the screen
         self.display.blit(self.warrior_image, (150, self.screen_height - self.warrior_image.get_height() - 1))
