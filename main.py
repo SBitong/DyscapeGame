@@ -498,12 +498,13 @@ class SecondLevel:
         # Load the Arial font
         font_path = os.path.join('fonts', 'ARIAL.TTF')
         self.font = pygame.font.Font(font_path, 30)
-        self.large_font = pygame.font.Font(font_path, 45)  # Larger font for timer and flower word
+        self.large_font = pygame.font.Font(font_path, 55)  # Larger font for timer and flower word
 
         # Load necessary assets
         self.background = pygame.image.load(os.path.join('graphics', 'garden.png')).convert_alpha()  # Background image
         self.background = pygame.transform.scale(self.background, (self.display.get_width(), self.display.get_height()))
-        self.flower_image = pygame.image.load(os.path.join('graphics', 'ladder-1.png')).convert_alpha()  # Flower image
+        self.flower_image = pygame.image.load(os.path.join('graphics', 'flower.png')).convert_alpha()  # Flower image
+        self.flower_image = pygame.transform.scale(self.flower_image, (450, 520))  # Resize flower image
 
         # Words for the game (no pairs, but they need to rhyme with player input)
         self.flower_words = ["Lap", "Tree", "Ball", "Car", "Nose", "Can", "Hide", "Hug", "Kick", "Rope"]
@@ -555,11 +556,11 @@ class SecondLevel:
 
     def draw_flower(self):
         # Position the flower in the correct spot based on the reference image
-        self.display.blit(self.flower_image, (650, 200))  # Adjusted position of the flower
+        self.display.blit(self.flower_image, (650, 100))  # Adjusted position of the flower
 
         # Display the word on the flower with a larger font
         word_text = self.large_font.render(self.current_flower_word, True, (255, 255, 255))  # Larger word on the flower
-        self.display.blit(word_text, (760, 220))  # Adjust position based on your image reference
+        self.display.blit(word_text, (720, 220))  # Adjust position based on your image reference
 
     def draw_warrior(self):
         # Draw the warrior image on the left side of the screen
