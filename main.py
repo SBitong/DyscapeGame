@@ -527,8 +527,8 @@ class ThirdLevel:
              "correct": "-zon"},
             {"word": "TOMATOES", "missing": "to·ma·_____", "syllables": ["-toes", "ma-", "to-", "to-"],
              "correct": "-toes"},
-            {"word": "SIMPSONS", "missing": "simp·____", "syllables": ["-ns", "pso-", "sim-", "so-"],
-             "correct": "-ns"},
+            {"word": "SIMPSONS", "missing": "simp·____", "syllables": ["-sons", "pso-", "sim-", "so-"],
+             "correct": "-sons"},
             {"word": "ANEMONES", "missing": "a·ne·_____", "syllables": ["-mones", "ne-", "a-", "mo-"],
              "correct": "-mones"},
             {"word": "ASTRONOMY", "missing": "as·tro·no·__", "syllables": ["-my", "ro-", "as-", "tro-"],
@@ -554,7 +554,7 @@ class ThirdLevel:
         # Idle and running animation variables
         self.idle_sprite_sheet = self.load_sprite_sheet('graphics/idle.png', 48, 48)
         self.run_sprite_sheet = self.load_sprite_sheet('graphics/Run.png', 48, 48)
-
+        print(f"Loaded {len(self.run_sprite_sheet)} frames for running animation")
         self.current_frame = 0
         self.animation_speed = 0.1
         self.moving = False
@@ -617,13 +617,14 @@ class ThirdLevel:
             for x in range(0, sheet_width, sprite_width):
                 frame = sheet.subsurface((x, y, sprite_width, sprite_height))
                 frames.append(frame)
+        print(f"Loaded {len(frames)} frames from {path}")  # Debug print
         return frames
 
     def animate_character(self, frames):
         """Handles animation by cycling through frames."""
         current_time = time.time()
         if current_time - self.last_update_time > self.animation_speed:
-            self.current_frame = (self.current_frame + 1) % len(frames)
+            self.current_frame = (self.current_frame + 1) % len(frames)  # Cycle within bounds of frames list
             self.last_update_time = current_time
         return frames[self.current_frame]
 
