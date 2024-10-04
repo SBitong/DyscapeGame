@@ -34,18 +34,3 @@ FONT_SIZE = 24
 TTS_ENABLED = True
 
 # Set colors for words to be more distinguishable
-word_colors = {
-    "the": SAPPHIRE_BLUE,
-    "Dyscape": DEEP_VIOLET,
-    "The": DARK_COPPER,
-    "in": FOREST_GREEN,
-    "a": DARK_BURGUNDY,
-    "of": GREEN,
-    "and": DARK_MAGENTA,
-    "with": DARK_TURQUOISE,
-    "words ": INDIGO,
-    "Dyslexio": FUCHSIA,
-    "can": DARK_BLUE,
-    "to": CRIMSON_RED
-
-}

@@ -501,37 +501,45 @@ class FifthLevel:
 
         # Questions with multiple choices and the correct answer
         self.qa_dict = {
-            "The Tower of Dyslexio rises above all, casting long shadows over the land.": {
-                "choices": ["14 (Fourteen)", "13 (Thirteen)", "8 (Eight)", "11 (Eleven)"],
-                "answer": "13 (Thirteen)"
+            "The dog ran fast.": {
+                "choices": ["2", "3", "4", "5"],
+                "answer": "4"
             },
-            "Oh Dyscape, you are such a marvelous creation.": {
-                "choices": ["5 (Five)", "6 (Six)", "7 (Seven)", "8 (Eight)"],
-                "answer": "8 (Eight)"
+            "He eats lunch at his own house.": {
+                "choices": ["5", "6", "7", "8"],
+                "answer": "7"
             },
-            "Only the chosen one can restore clarity to Dyscape.": {
-                "choices": ["11 (Eleven)", "9 (Nine)", "10 (Ten)", "6 (Six)"],
-                "answer": "9 (Nine)"
+            "I will help you bake cake.": {
+                "choices": ["6", "5", "8", "9"],
+                "answer": "6"
             },
-            "Beneath the stars, Dyscape breathes with a quiet serenity, its landscapes glowing in the gentle embrace of the moon.": {
-                "choices": ["20 (Twenty)", "15 (Fifteen)", "22 (Twenty-two)", "19 (Nineteen)"],
-                "answer": "19 (Nineteen)"
+            "Cats like to play with yarn.": {
+                "choices": ["6", "7", "8", "9"],
+                "answer": "6"
             },
-            "The flowers of Dyscape bloom with a thousand colors, each petal a delicate stroke on the canvas of life.": {
-                "choices": ["19 (Nineteen)", "18 (Eighteen)", "17 (Seventeen)", "16 (Sixteen)"],
-                "answer": "19 (Nineteen)"
+            "She swims in the cool lake.": {
+                "choices": ["8", "7", "6", "5"],
+                "answer": "6"
             },
-            "Even in its darkest corners, Dyscape holds a secret beauty, where light and shadow dance in perfect balance.": {
-                "choices": ["14 (Fourteen)", "16 (Sixteen)", "10 (Ten)", "18 (Eighteen)"],
-                "answer": "18 (Eighteen)"
+            "They built the shed last week.": {
+                "choices": ["2", "4", "6", "8"],
+                "answer": "6"
             },
-            "Dyscape is wonderful and the words are in sync and in clarity.": {
-                "choices": ["14 (Fourteen)", "12 (Twelve)", "11 (Eleven)", "19 (Nineteen)"],
-                "answer": "12 (Twelve)"
+            "The sun will set in the west.": {
+                "choices": ["6", "7", "8", "9"],
+                "answer": "7"
             },
-            "The King awaits in the Tower, his words maintains the peak of the land.": {
-                "choices": ["15 (Fifteen)", "13 (Thirteen)", "14 (Fourteen)", "11 (Eleven)"],
-                "answer": "14 (Fourteen)"
+            "Birds fly high in the sky at night.": {
+                "choices": ["9", "7", "5", "8"],
+                "answer": "8"
+            },
+            "We jump and run in the yard.": {
+                "choices": ["7", "8", "9", "10"],
+                "answer": "7"
+            },
+            "He gave her a red rose.": {
+                "choices": ["7", "6", "2", "3"],
+                "answer": "6"
             },
         }
 
@@ -542,7 +550,7 @@ class FifthLevel:
         self.shuffle_questions()
 
         # Use the imported word_colors dictionary
-        self.word_colors = word_colors
+
 
     def read_question_aloud(self, text):
         """Function to use pyttsx3 to read the text aloud."""
@@ -871,48 +879,57 @@ class FifthLevel:
 
         pass
 
-    def run(self):
+    def draw_rounded_rect(self, surface, color, rect, corner_radius):
+        pygame.draw.rect(surface, color, rect, border_radius=corner_radius)
 
+    def run(self):
         heart_image = pygame.image.load(os.path.join('graphics', 'heart.png'))
         heart_image = pygame.transform.scale(heart_image, (40, 40))  # Scale heart image as needed
 
         # Load the paper scroll image
         scroll_image = pygame.image.load(os.path.join('graphics', 'paper-scroll.png'))
-
-        # Resize the scroll image if needed
         scroll_width, scroll_height = 1000, 700  # Adjust these values as needed
         scroll_image = pygame.transform.scale(scroll_image, (scroll_width, scroll_height))
+
+        # Load the audio button image
+        audio_button_image = pygame.image.load(os.path.join('graphics', 'audio-logo.png'))
+        audio_button_image = pygame.transform.scale(audio_button_image, (50, 50))  # Adjust size as needed
+
+        correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
+        wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
+
+        # Set audio button position (centered below the question)
+        audio_button_x = (self.display.get_width() - 50) // 2
+        audio_button_y = 275  # Adjust this Y position to be right below the question
+
+        green_overlay = pygame.Surface(self.display.get_size())
+        green_overlay.set_alpha(50)  # Set transparency (0 fully transparent, 255 fully opaque)
+        green_overlay.fill((0, 255, 0))  # Fill with green
+
+        red_overlay = pygame.Surface(self.display.get_size())
+        red_overlay.set_alpha(50)  # Set transparency (0 fully transparent, 255 fully opaque)
+        red_overlay.fill((255, 0, 0))  # Fill with red
+
+        show_green_overlay = False  # Flag to show the green overlay
+        show_red_overlay = False  # Flag to show the red overlay
+        overlay_start_time = 0  # Track the time when the overlay is shown
+        overlay_duration = 450  # Overlay duration in milliseconds (1 second)
 
         # Center the scroll image
         scroll_x = (self.display.get_width() - scroll_width) // 2
         scroll_y = 10  # Y position for the scroll (adjust as needed)
 
-        green_overlay = pygame.Surface(self.display.get_size())
-        green_overlay.set_alpha(50)  # Transparency level (0 fully transparent, 255 fully opaque)
-        green_overlay.fill((0, 255, 0))  # Fill with green
-
-        red_overlay = pygame.Surface(self.display.get_size())
-        red_overlay.set_alpha(50)
-        red_overlay.fill((255, 0, 0))
-
-        show_green_overlay = False  # Flag to show the green overlay
-        show_red_overlay = False  # Flag to show the green overlay
-        overlay_start_time = 0  # Track the time when the overlay is shown
-        overlay_duration = 250  # Overlay duration in milliseconds
-
-        correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
-        wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
+        # Initialize pyttsx3 engine
+        engine = pyttsx3.init()
 
         # Skip the animations if this is a restart
         if not self.is_restart:
-            self.run_title_animation()
-            self.run_dialogue_strip()
+            pass
         else:
             self.is_restart = False  # Reset the flag
 
         self.show_how_to_play()
         self.init_water_droplets()  # Initialize water droplets when the level starts
-
 
         running = True
         while running:
@@ -924,94 +941,89 @@ class FifthLevel:
             for i in range(self.lives):
                 self.display.blit(heart_image, (50 + i * 45, 20))  # Position hearts with spacing
 
-            # # Display the number of lives
-            # lives_surface = self.font.render(f"Lives: {self.lives}", True, self.black)
-            # self.display.blit(lives_surface, (50, 20))
-
             # Blit the scroll image in the center
             self.display.blit(scroll_image, (scroll_x, scroll_y))
 
-            # Center the question text on the scroll
-            main_question = "How many words are in this sentence?"
-            question_surface = self.font.render(main_question, True, self.black)
-
-            # Get the rectangle of the question surface to center it
-            question_rect = question_surface.get_rect(
-                center=(scroll_x + scroll_width // 2, 225))
+            # Render the question
+            question_text = "How many words are in the sentence?"
+            question_surface = self.font.render(question_text, True, self.black)
+            question_rect = question_surface.get_rect(center=(scroll_x + scroll_width // 2, 225))
             self.display.blit(question_surface, question_rect.topleft)
 
-            # Get the current question and choices
-            question = self.questions[self.current_question_index]
-            choices = self.qa_dict[question]["choices"]
+            # Render the audio button below the question
+            self.display.blit(audio_button_image, (audio_button_x, audio_button_y))
 
-            # Define padding and maximum line width (adjust these values as needed)
-            horizontal_padding = 200  # Horizontal padding inside the scroll
-            vertical_padding = 250  # Vertical padding inside the scroll
-            max_line_width = scroll_width - 2 * horizontal_padding  # Max width for each line of text
+            # Get the current sentence
+            sentence = self.questions[self.current_question_index]
 
-            # Split the question into words
-            question_words = question.split()
+            # Render choices
+            choices = self.qa_dict[sentence]["choices"]
+            y_offset_choices = audio_button_y + 70  # Adjust for spacing below the audio button
 
-            # Variables to store the lines and the current line width
-            lines = []
-            current_line = []
-            current_line_width = 0
-
-            # Go through each word and fit it into lines based on the max_line_width
-            for word in question_words:
-                word_surface = self.font.render(word, True, BLACK)
-                word_width = word_surface.get_width()
-
-                # If adding the word exceeds the max width, start a new line
-                if current_line_width + word_width > max_line_width:
-                    lines.append(current_line)
-                    current_line = [word]
-                    current_line_width = word_width + 10  # Start new line width (plus space)
-                else:
-                    current_line.append(word)
-                    current_line_width += word_width + 10  # Add word width and space
-
-            # Add the last line
-            if current_line:
-                lines.append(current_line)
-
-            # Now, center each line and render it
-            y_offset = scroll_y + vertical_padding  # Adjust this for vertical positioning
-
-            for line in lines:
-                # Calculate the total width of the current line
-                line_width = sum(self.font.render(word, True, BLACK).get_width() for word in line) + (
-                            len(line) - 1) * 10
-
-                # Calculate the starting x position to center the line
-                x_offset = scroll_x + (scroll_width - line_width) // 2
-
-                # Render each word in the line with its corresponding color
-                for word in line:
-                    word_color = self.word_colors.get(word, BLACK)
-                    word_surface = self.font.render(word, True, word_color)
-                    self.display.blit(word_surface, (x_offset, y_offset))
-
-                    # Move the x_offset for the next word
-                    x_offset += word_surface.get_width() + 10  # Add 10px space between words
-
-                # Move the y_offset for the next line
-                y_offset += self.font.get_height() + 10  # Add space between lines
-
-            # Render the choices and create rectangles for mouse collision detection
             self.choice_rects = []
-            y_offset_choices = y_offset + 50  # Adjust for spacing below the question
-
             for i, choice in enumerate(choices):
-                choice_surface = self.font.render(choice, True, BLACK)
+                choice_surface = self.font.render(choice, True, self.black)
                 choice_width = choice_surface.get_width()
+                choice_height = choice_surface.get_height()
 
                 # Calculate x_offset to center the choices horizontally
                 x_offset_choice = (self.display.get_width() - choice_width) // 2
-                choice_rect = choice_surface.get_rect(
-                    topleft=(x_offset_choice, y_offset_choices + i * 40))  # Adjust vertical spacing
-                self.display.blit(choice_surface, choice_rect.topleft)
+
+                # Increase the left and right padding by adjusting the rectangle width
+                padding = 200  # Adjust this value for more or less padding
+
+                choice_rect = pygame.Rect(
+                    x_offset_choice - padding // 2,  # Move the x position to account for padding
+                    y_offset_choices + i * 60,  # Adjust vertical spacing
+                    choice_width + padding,  # Increase the width by the padding amount
+                    choice_height + 20  # Keep the top/bottom padding as it was
+                )
+
+                # Draw a rounded rectangle (button)
+                self.draw_rounded_rect(self.display, (207, 160, 102), choice_rect, corner_radius=15)  # Light gray button
+
+                # Center the choice text inside the rounded rectangle
+                choice_text_rect = choice_surface.get_rect(center=choice_rect.center)
+                self.display.blit(choice_surface, choice_text_rect.topleft)
                 self.choice_rects.append(choice_rect)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = event.pos
+                    if pygame.Rect(audio_button_x, audio_button_y, 50, 50).collidepoint(mouse_pos):
+                        # Speak the sentence using pyttsx3 when the audio button is clicked
+                        engine.say(sentence)
+                        engine.runAndWait()
+
+                    for i, rect in enumerate(self.choice_rects):
+                        if rect.collidepoint(mouse_pos):
+                            selected_choice = choices[i]
+                            correct_answer = self.qa_dict[sentence]["answer"]
+
+                            if selected_choice == correct_answer:
+                                # Correct answer logic
+                                correct_answer_sound.play()
+                                show_green_overlay = True
+                                overlay_start_time = pygame.time.get_ticks()
+                                self.current_question_index += 1
+                            else:
+                                # Wrong answer logic
+                                wrong_answer_sound.play()
+                                show_red_overlay = True
+                                overlay_start_time = pygame.time.get_ticks()
+                                self.lives -= 1
+                                if self.lives <= 0:
+                                    self.show_game_over_prompt()
+                                    running = False
+                                    break
+
+                            if self.current_question_index >= len(self.questions):
+                                running = False
+                            break
 
             if show_green_overlay:
                 current_time = pygame.time.get_ticks()
@@ -1028,43 +1040,7 @@ class FifthLevel:
                 # Check if the overlay duration has passed and hide it after the time is up
                 if current_time - overlay_start_time > overlay_duration:
                     show_red_overlay = False
-
-            # Event handling
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_pos = event.pos
-                    for i, rect in enumerate(self.choice_rects):
-                        if rect.collidepoint(mouse_pos):
-                            selected_choice = choices[i]
-                            correct_answer = self.qa_dict[question]["answer"]
-
-                            if selected_choice == correct_answer:
-                                print("Correct!")
-                                correct_answer_sound.play()
-                                show_green_overlay = True
-                                overlay_start_time = pygame.time.get_ticks()
-                                self.current_question_index += 1  # Move to next question
-                            else:
-                                print("Incorrect!")
-                                wrong_answer_sound.play()
-                                show_red_overlay = True
-                                overlay_start_time = pygame.time.get_ticks()
-                                self.lives -= 1  # Lose a life
-                                if self.lives <= 0:
-                                    self.show_game_over_prompt()
-                                    running = False
-                                    break
-
-                            # If all questions are answered, end the level
-                            if self.current_question_index >= len(self.questions):
-                                print("All questions answered. Ending level.")
-                                running = False
-                            break
-
-            pygame.display.update()  # Ensure the display updates with the latest changes
+            pygame.display.update()
 
 
 class GameStateManager:
