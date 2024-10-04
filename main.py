@@ -500,9 +500,9 @@ class FirstLevel:
                 pygame.image.load(os.path.join('graphics', 'inside-dyscape.png')).convert_alpha(), # 3
                 pygame.image.load(os.path.join('graphics', 'confusion-arrives.png')).convert_alpha(), # 4
                 pygame.image.load(os.path.join('graphics', 'dyscape-under-attack.png')).convert_alpha(), # 5
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 6
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 7
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 8
+                pygame.image.load(os.path.join('graphics', 'confusion-hypnotize.png')).convert_alpha(), # 6
+                pygame.image.load(os.path.join('graphics', 'king-strangle.png')).convert_alpha(), # 7
+                pygame.image.load(os.path.join('graphics', 'dyscape-in-chaos.png')).convert_alpha(), # 8
                 pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 9
                 pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 10
                 pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 11
