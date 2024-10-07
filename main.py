@@ -487,7 +487,7 @@ class SecondLevel:
 
         # Initialize player attributes
         self.lives = 3
-        self.time_limit = 10
+        self.time_limit = 15
         self.current_time = 0
         self.timer_started = False
 
@@ -577,8 +577,16 @@ class SecondLevel:
             self.display.blit(self.heart_image, (10 + i * 60, 10))
 
     def draw_timer(self, time_left):
-        timer_text = self.large_font.render(f"Time: {time_left:.2f}", True, (255, 255, 255))
+        # Calculate minutes and seconds
+        minutes = int(time_left) // 60
+        seconds = int(time_left) % 60
+
+        # Format time as MM:SS
+        timer_text = self.large_font.render(f"Time: {minutes:02}:{seconds:02}", True, (255, 255, 255))
+
+        # Render and blit the timer text
         self.display.blit(timer_text, (30, 80))
+
 
     def draw_text_box(self):
         pygame.draw.rect(self.display, (255, 255, 255),
