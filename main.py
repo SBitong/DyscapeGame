@@ -388,7 +388,7 @@ class FirstLevel:
                  "correct_word": correct_word, "occupied": False, "color": (251, 242, 54), "pair_word": pair_word}
                 # Added "pair_word"
                 for i, (correct_word, pair_word) in enumerate([
-                    ("SHOES", "MOOSE"), ("DOG", "LOG"), ("CROWN", "GOWN"), ("BALL", "TALL"), ("CAT", "MAT")
+                    ("SHOES", "SHOES"), ("DOG", "DOG"), ("CROWN", "CROWN"), ("BALL", "BALL"), ("CAT", "CAT")
                 ])
             ]
 
@@ -620,7 +620,7 @@ class FirstLevel:
             speaker_icon = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
             speaker_icon = pygame.transform.scale(speaker_icon, (30, 30))  # Resize the speaker icon to fit on the ladder
 
-            self.run_dialogue_strip_1()
+            #self.run_dialogue_strip_1()
             running = True
             while running:
 
@@ -653,7 +653,7 @@ class FirstLevel:
 
                 # Display lives (hearts)
                 for i in range(self.lives):
-                    self.display.blit(self.heart_image, (10 + i * 45, 10))
+                    self.display.blit(self.heart_image, (10 + i * 60, 10))
 
                 # Display ladder slots and draggable images
                 for slot in self.ladder_slots:
@@ -696,11 +696,11 @@ class FirstLevel:
                                     self.offset_y = word_data["rect"].y - event.pos[1]
                                     break
 
-                        # **Check if the speaker icon on the ladder is clicked for TTS**
-                        for slot in self.ladder_slots:
-                            speaker_icon_rect = pygame.Rect(slot["rect"].centerx - 15, slot["rect"].centery - 15, 30, 30)
-                            if speaker_icon_rect.collidepoint(event.pos):
-                                self.speak_word(slot["pair_word"])
+                                    # Check if mouse clicked on speaker icon
+                            for slot in self.ladder_slots:
+                                speaker_icon_rect = speaker_icon.get_rect(center=(slot["rect"].centerx, slot["rect"].centery + 45))
+                                if speaker_icon_rect.collidepoint(event.pos):
+                                    self.speak_word(slot["pair_word"])  # Trigger TTS for the word on the ladder slot
 
                     elif event.type == pygame.MOUSEBUTTONUP:
                         # Handle image placement logic
