@@ -388,29 +388,33 @@ class FirstLevel:
                  "correct_word": correct_word, "occupied": False, "color": (251, 242, 54), "pair_word": pair_word}
                 # Added "pair_word"
                 for i, (correct_word, pair_word) in enumerate([
-                    ("ROOF", "POOF"), ("BAT", "CAT"), ("CROWN", "GOWN"), ("SEAT", "MEAT"), ("DOG", "HOG")
+                    ("SHOES", "MOOSE"), ("DOG", "LOG"), ("CROWN", "GOWN"), ("BALL", "TALL"), ("CAT", "MAT")
                 ])
             ]
 
-            # Draggable words scattered across the screen
-            self.draggable_words = [
+            # Draggable images (replacing draggable words)
+            self.draggable_images = [
                 {"word": word,
+                 "image": pygame.image.load(os.path.join('graphics', f'{word.lower()}.png')).convert_alpha(),
                  "rect": pygame.Rect(int(self.screen_width * (draggable_x_start_ratio + i * draggable_x_spacing_ratio)),
-                                     int(self.screen_height * draggable_y_ratio), 150, 30),
+                                     int(self.screen_height * draggable_y_ratio), 150, 80),
                  "dragging": False,
                  "original_pos": (int(self.screen_width * (draggable_x_start_ratio + i * draggable_x_spacing_ratio)),
                                   int(self.screen_height * draggable_y_ratio)),
-                 "placed": False}  # Add a 'placed' field to track if the word is correctly placed
-                for i, word in enumerate(["ROOF", "BAT", "CROWN", "SEAT", "DOG"])
+                 "placed": False}
+                for i, word in enumerate(["SHOES", "DOG", "BALL", "CROWN", "CAT"])
             ]
+
+            # Scale the images to fit within the draggable area
+            for image_data in self.draggable_images:
+                image_data["image"] = pygame.transform.scale(image_data["image"], (100, 100))
 
             # Load ladder (bridge) and heart images
             self.ladder_image = pygame.image.load(os.path.join('graphics', 'ladder-1.png')).convert_alpha()
             self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
             self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))
 
-            self.ladder_image = pygame.transform.scale(self.ladder_image,
-                                                       (int(self.screen_width * 0.5), int(self.screen_height * 0.7)))
+            self.ladder_image = pygame.transform.scale(self.ladder_image,(int(self.screen_width * 0.5), int(self.screen_height * 0.7)))
 
             # Game variables
             self.lives = 3
@@ -428,6 +432,14 @@ class FirstLevel:
 
             # Initialize the Text-to-Speech engine
             self.tts_engine = pyttsx3.init()
+
+            # Load the speaker icon for TTS
+            self.speaker_icon = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
+            self.speaker_icon = pygame.transform.scale(self.speaker_icon, (30, 30))  # Resize speaker icon
+
+        def draw_hearts(self):
+            for i in range(self.lives):
+                self.display.blit(self.heart_image, (10 + i * 60, 10))
 
         def speak_word(self, word):
             """Pronounce the word using Text-to-Speech (TTS)."""
@@ -605,6 +617,9 @@ class FirstLevel:
             correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
             wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
 
+            speaker_icon = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
+            speaker_icon = pygame.transform.scale(speaker_icon, (30, 30))  # Resize the speaker icon to fit on the ladder
+
             self.run_dialogue_strip_1()
             running = True
             while running:
@@ -640,7 +655,7 @@ class FirstLevel:
                 for i in range(self.lives):
                     self.display.blit(self.heart_image, (10 + i * 45, 10))
 
-                # Display ladder slots and draggable words
+                # Display ladder slots and draggable images
                 for slot in self.ladder_slots:
                     # Draw slot rectangles
                     if slot["color"] == (143, 86, 59):
@@ -648,24 +663,18 @@ class FirstLevel:
                     else:
                         pygame.draw.rect(self.display, slot["color"], slot["rect"], 3)
 
-                    # Display the correct word (if any) in the slot
-                    if slot["word"]:
-                        text_surface = self.font.render(slot["word"], True, (255, 255, 255))
-                        self.display.blit(text_surface, (slot["rect"].x + 15, slot["rect"].y + 5))
+                    # **Display the speaker icon on the ladder slot (brown part)**
+                    speaker_icon_rect = speaker_icon.get_rect(center=(slot["rect"].centerx, slot["rect"].centery + 45))
+                    self.display.blit(speaker_icon, speaker_icon_rect)
 
-                    # Display the pair words next to the slots
-                    pair_word_surface = self.font.render(slot["pair_word"], True, (255, 255, 255))
-                    self.display.blit(pair_word_surface, (slot["rect"].x + 50, slot["rect"].y + 50))
-
-                # Display the draggable words
-                for word_data in self.draggable_words:
-                    pygame.draw.rect(self.display, (143, 86, 59), word_data["rect"])  # Draw word rectangles
-                    text_surface = self.font.render(word_data["word"], True, (255, 255, 255))
-                    self.display.blit(text_surface, (word_data["rect"].x + 35, word_data["rect"].y + 5))
+                # Display the draggable images (only if not placed)
+                for word_data in self.draggable_images:
+                    if not word_data["placed"]:  # Only draw the image if it hasn't been placed correctly yet
+                        self.display.blit(word_data["image"], word_data["rect"])
 
                 mouse_pos = pygame.mouse.get_pos()
 
-                # Move the selected word along with the mouse cursor
+                # **Update the selected image's position smoothly along with the mouse cursor**
                 if self.selected_word:
                     self.selected_word["rect"].x = mouse_pos[0] + self.offset_x
                     self.selected_word["rect"].y = mouse_pos[1] + self.offset_y
@@ -677,58 +686,52 @@ class FirstLevel:
                         sys.exit()
 
                     elif event.type == pygame.MOUSEBUTTONDOWN:
-                        # Handle word dragging logic
+                        # **Handle image dragging logic more responsively**
                         if not self.selected_word:
-                            for word_data in self.draggable_words:
+                            for word_data in self.draggable_images:
                                 if word_data["rect"].collidepoint(event.pos) and not word_data["placed"]:
                                     self.selected_word = word_data
+                                    # Capture the precise offset between the image and the cursor
                                     self.offset_x = word_data["rect"].x - event.pos[0]
                                     self.offset_y = word_data["rect"].y - event.pos[1]
                                     break
 
-                        # Check if the pair words (next to blank rectangles) are clicked for TTS
+                        # **Check if the speaker icon on the ladder is clicked for TTS**
                         for slot in self.ladder_slots:
-                            pair_word_rect = pygame.Rect(slot["rect"].x + 50, slot["rect"].y + 50, 100, 30)
-                            if pair_word_rect.collidepoint(event.pos):
+                            speaker_icon_rect = pygame.Rect(slot["rect"].centerx - 15, slot["rect"].centery - 15, 30, 30)
+                            if speaker_icon_rect.collidepoint(event.pos):
                                 self.speak_word(slot["pair_word"])
 
-
-
-
                     elif event.type == pygame.MOUSEBUTTONUP:
-
-                        # Handle word placement logic
-
+                        # Handle image placement logic
                         if self.selected_word:
                             placed_in_slot = False
-                            wrong_slot = False  # Flag to track if the word was placed in the wrong slot
+                            wrong_slot = False  # Flag to track if the image was placed in the wrong slot
                             for slot in self.ladder_slots:
                                 if slot["rect"].colliderect(self.selected_word["rect"]) and not slot["occupied"]:
                                     placed_in_slot = True
                                     if slot["correct_word"] == self.selected_word["word"]:
-                                        # Snap word into place if correct
+                                        # Snap image into place if correct
                                         correct_answer_sound.play()
                                         self.selected_word["rect"].center = slot["rect"].center
-                                        slot["word"] = self.selected_word["word"]
                                         slot["occupied"] = True
                                         slot["color"] = (143, 86, 59)  # Change color to brown for correct placement
-                                        self.selected_word["placed"] = True
+                                        self.selected_word["placed"] = True  # Mark the word as placed, so it disappears
                                     else:
-                                        # Word was placed in a wrong slot
+                                        # Image was placed in a wrong slot
                                         wrong_answer_sound.play()
                                         wrong_slot = True
                                         self.selected_word["rect"].x, self.selected_word["rect"].y = self.selected_word[
                                             "original_pos"]
-                            # If the word was placed in a slot but it's wrong, deduct a life
+                            # If the image was placed in a slot but it's wrong, deduct a life
                             if wrong_slot:
                                 self.lives -= 1
-                            # If the word was not placed in any slot, snap it back to its original position (no life deduction)
+                            # If the image was not placed in any slot, snap it back to its original position (no life deduction)
                             if not placed_in_slot:
                                 self.selected_word["rect"].x, self.selected_word["rect"].y = self.selected_word[
                                     "original_pos"]
 
                             self.selected_word = None
-                # Reset the selected word after placement
 
                 # Check game over conditions
                 if self.lives <= 0:
