@@ -514,26 +514,48 @@ class ThirdLevel:
         self.display = display
         self.gameStateManager = gameStateManager
         self.lives = 3
-        self.timer = 10.0  # 10 seconds timer for each word
+        self.timer = 15.0  # 15 seconds timer for each word
         self.words = [
-            {"word": "ELEPHANT", "missing": "e·le·_____", "syllables": ["-phant", "le", "tron", "-toom"],
-             "correct": "-phant"},
-            {"word": "BANANA", "missing": "ba·na·__", "syllables": ["ba-", "na-", "-na", "ra-"], "correct": "-na"},
-            {"word": "COMPUTER", "missing": "com·pu·_____", "syllables": ["-ter", "pu-", "com-", "te-"],
-             "correct": "-ter"},
-            {"word": "PARADISE", "missing": "par·a·____", "syllables": ["-dise", "a-", "ra-", "pa-"],
-             "correct": "-dise"},
-            {"word": "HORIZON", "missing": "ho·ri·___", "syllables": ["-zon", "ri-", "ho-", "zo-"],
-             "correct": "-zon"},
-            {"word": "TOMATOES", "missing": "to·ma·_____", "syllables": ["-toes", "ma-", "to-", "to-"],
-             "correct": "-toes"},
-            {"word": "SIMPSONS", "missing": "simp·____", "syllables": ["-sons", "pso-", "sim-", "so-"],
-             "correct": "-sons"},
-            {"word": "ANEMONES", "missing": "a·ne·_____", "syllables": ["-mones", "ne-", "a-", "mo-"],
-             "correct": "-mones"},
-            {"word": "ASTRONOMY", "missing": "as·tro·no·__", "syllables": ["-my", "ro-", "as-", "tro-"],
-             "correct": "-my"},
-            {"word": "AMERICAN", "missing": "a·me·ri·__", "syllables": ["-can", "me-", "ri-", "a-"], "correct": "-can"},
+            {"word": "TIGER",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-ger", "-ny", "-dy", "-red"],
+             "correct": "-ger"},
+            {"word": "RABBIT",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-ber", "-tion", "-er", "-bit"],
+             "correct": "-bit"},
+            {"word": "RAINBOW",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-drop", "-ing", "-bow", "-fall"],
+             "correct": "-bow"},
+            {"word": "PIZZA",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-ture", "-za", "-zer", "-tion"],
+             "correct": "-za"},
+            {"word": "ROCKET",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-et", "-er", "-fall", "-hard"],
+             "correct": "-et"},
+            {"word": "FLOWER",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-er", "-ing", "-state", "-s"],
+             "correct": "-er"},
+            {"word": "CHICKEN",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-ing", "-er", "-tion", "-en"],
+             "correct": "-en"},
+            {"word": "WINDOW",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-ning", "-dow", "-ner", "-some"],
+             "correct": "-dow"},
+            {"word": "TABLE",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-e", "-nned", "-ble", "-er"],
+             "correct": "-ble"},
+            {"word": "CACTUS",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-ti", "-kled", "-tus", "-ing"],
+             "correct": "-tus"},
         ]
 
         self.current_word_index = 0
@@ -738,7 +760,7 @@ class ThirdLevel:
 
             # Display word with missing syllable
             current_word_data = self.words[self.current_word_index]
-            word_text = pygame.font.SysFont('Arial', 40).render(f"Word: {current_word_data['missing']}", True,
+            word_text = pygame.font.SysFont('Arial', 40).render(f"{current_word_data['question']}", True,
                                                                 (255, 255, 255))
             self.display.blit(word_text, (self.display.get_width() // 2 - word_text.get_width() // 2, 50))
 
