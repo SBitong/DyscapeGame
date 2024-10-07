@@ -402,7 +402,7 @@ class FirstLevel:
                  "original_pos": (int(self.screen_width * (draggable_x_start_ratio + i * draggable_x_spacing_ratio)),
                                   int(self.screen_height * draggable_y_ratio)),
                  "placed": False}
-                for i, word in enumerate(["SHOES", "DOG", "BALL", "CROWN", "CAT"])
+                for i, word in enumerate(["CAT", "CROWN", "BALL", "SHOES", "DOG"])
             ]
 
             # Scale the images to fit within the draggable area
@@ -620,7 +620,7 @@ class FirstLevel:
             speaker_icon = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
             speaker_icon = pygame.transform.scale(speaker_icon, (30, 30))  # Resize the speaker icon to fit on the ladder
 
-            #self.run_dialogue_strip_1()
+            self.run_dialogue_strip_1()
             running = True
             while running:
 
