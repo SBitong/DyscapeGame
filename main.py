@@ -430,6 +430,9 @@ class FirstLevel:
             self.speaker_icon = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
             self.speaker_icon = pygame.transform.scale(self.speaker_icon, (30, 30))  # Resize speaker icon
 
+            # Track dialogue playback
+            self.dialogue_played = False
+
         def draw_hearts(self):
             for i in range(self.lives):
                 self.display.blit(self.heart_image, (10 + i * 60, 10))
@@ -454,19 +457,31 @@ class FirstLevel:
             self.display.blit(text_surface, (
                 self.display.get_width() // 2 - text_surface.get_width() // 2, self.display.get_height() // 3))
 
-            # Define Restart and Exit buttons
-            self.restart_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2, 200, 50)
-            self.exit_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2 + 70, 200, 50)
+            # Define button positions
+            self.restart_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2), self.display.get_height() // 2, 250,
+                                              50)
+            self.exit_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2), self.display.get_height() // 2 + 70,
+                                           250, 50)
+
+            if self.win:
+                # If player wins, add a Next Level button
+                self.next_level_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2),
+                                                     self.display.get_height() // 2 - 70, 250, 50)
+
+                # Draw the Next Level button (Blue)
+                pygame.draw.rect(self.display, (0, 0, 255), self.next_level_button)
+                next_level_text = self.font.render("Next Level", True, (255, 255, 255))
+                self.display.blit(next_level_text, (self.next_level_button.x + 80, self.next_level_button.y + 10))
 
             # Draw the Restart button (Green)
             pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)
-            restart_text = self.font.render("Restart", True, (255, 255, 255))
-            self.display.blit(restart_text, (self.restart_button.x + 50, self.restart_button.y + 10))
+            restart_text = self.font.render("Restart Level", True, (255, 255, 255))
+            self.display.blit(restart_text, (self.restart_button.x + 65, self.restart_button.y + 10))
 
             # Draw the Exit button (Red)
             pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)
-            exit_text = self.font.render("Exit", True, (255, 255, 255))
-            self.display.blit(exit_text, (self.exit_button.x + 70, self.exit_button.y + 10))
+            exit_text = self.font.render("Return to Main Menu", True, (255, 255, 255))
+            self.display.blit(exit_text, (self.exit_button.x + 30, self.exit_button.y + 10))
 
         def restart_level(self):
             # Reinitialize the level to reset all variables and the game state
@@ -613,7 +628,10 @@ class FirstLevel:
             speaker_icon = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
             speaker_icon = pygame.transform.scale(speaker_icon, (30, 30))  # Resize the speaker icon to fit on the ladder
 
-            self.run_dialogue_strip_1()
+            # Only run the dialogue strip the first time the level is played
+            if not self.dialogue_played:
+                self.run_dialogue_strip_1()
+                self.dialogue_played = True  # Set flag so it doesn't run again
             running = True
             while running:
 
@@ -630,13 +648,16 @@ class FirstLevel:
                             # Check if the Restart button is clicked
                             if self.restart_button.collidepoint(event.pos):
                                 self.restart_level()  # Restart the level if clicked
+                                self.dialogue_played = True
                                 running = False
 
                             # Check if the Exit button is clicked
                             elif self.exit_button.collidepoint(event.pos):
                                 self.exit_to_main_menu()  # Exit to the main menu if clicked
                                 running = False
-
+                            elif self.win and self.next_level_button.collidepoint(event.pos):
+                                self.gameStateManager.set_state('second-level')
+                                running = False
                     continue  # Skip the rest of the game loop while in the end screen
 
                 # Main game logic
