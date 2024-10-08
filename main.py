@@ -9,6 +9,7 @@ from settings import *
 # Initialize Pygame
 pygame.init()
 engine = pyttsx3.init()
+
 class Game:
     def __init__(self):
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -17,8 +18,9 @@ class Game:
         self.gameStateManager = GameStateManager('main-menu')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
+        self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
         self.secondLevel = SecondLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'second-level': self.secondLevel}
+        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'second-level': self.secondLevel}
 
         self.clock = pygame.time.Clock()
 
@@ -34,7 +36,7 @@ class Game:
             self.states[self.gameStateManager.get_state()].run()
 
             # Update the display
-            pygame.display.update()
+            pygame.display.flip()
 
             # Cap the frame rate
             self.clock.tick(FPS)
@@ -78,9 +80,9 @@ class MainMenu:
         # Load, extract, and multiply the leaves from the spring-leaf spritesheet
         springleaf_path = os.path.join('graphics','Spring-Leaf.png')
         self.springleaf_sprite = pygame.image.load(springleaf_path).convert_alpha()
-        scale_factor = 2.5 #times two leaf size
+        scale_factor = 3 #times two leaf size
         self.leaf_frames = self.extract_leaf_frames(self.springleaf_sprite, 5, scale_factor)
-        self.leaves = [self.create_leaf() for x in range(30)]
+        self.leaves = [self.create_leaf() for x in range(40)]
 
         # Start Button properties
         self.startbutton_color = (255, 200, 0)
@@ -99,7 +101,7 @@ class MainMenu:
         self.exitbutton_color = (255, 200, 0)
         self.exitbutton_hover_color = (255, 170, 0)
         self.exitbutton_text = "Exit Game"
-        self.exitbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 600), (250, 70))
+        self.exitbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 590), (250, 70))
 
     def stop_sounds(self):
         self.main_menu_bgm.stop()
@@ -139,10 +141,10 @@ class MainMenu:
             "frame_index": 0,
             "x": random.randint(0, self.display.get_width()),
             "y": random.randint(-self.display.get_height(), 0),
-            "speed": random.uniform(1, 3),
-            "animation_speed": random.uniform(0.1, 0.2),
+            "speed": random.uniform(0.1, 0.4),
+            "animation_speed": random.uniform(1, 2),
             "animation_timer": 0,
-            "horizontal_speed": random.uniform(-1, -0.5)
+            "horizontal_speed": random.uniform(-0.5, -0.2)
         }
         return leaf
 
@@ -162,97 +164,88 @@ class MainMenu:
             leaf["x"] = random.randint(0, self.display.get_width())
 
     def run(self):
-        if not self.main_menu_bgm_isplaying:
-            self.main_menu_bgm.play(-1)
-            print("bgm playing")
-            self.main_menu_bgm_isplaying = True
+        running = True
+        while running:
+            if not self.main_menu_bgm_isplaying:
+                self.main_menu_bgm.play(-1)
+                self.main_menu_bgm_isplaying = True
 
-        if not self.ambient_sound_isplaying:
-            self.ambient_sound.play(-1)
-            print("ambient sound playing")
-            self.ambient_sound_isplaying = True
-        # print("Running MainMenu state")  # Debugging line
-        self.display.blit(self.background_image, (0, 0))
+            if not self.ambient_sound_isplaying:
+                self.ambient_sound.play(-1)
+                self.ambient_sound_isplaying = True
 
-        self.display.blit(self.game_logo, ((WIDTH // 2)-(self.logo_width // 2), 90))
+            self.display.blit(self.background_image, (0, 0))
+            self.display.blit(self.game_logo, ((WIDTH // 2) - (self.logo_width // 2), 90))
 
+            mouse_pos = pygame.mouse.get_pos()
 
-        mouse_pos = pygame.mouse.get_pos()
+            # Handle button hover and clicks
+            if self.startbutton_rect.collidepoint(mouse_pos):
+                if not self.start_button_hovered:
+                    self.hover_sound.play()
+                    self.start_button_hovered = True
+                start_button_color = self.startbutton_hover_color
+            else:
+                start_button_color = self.startbutton_color
+                self.start_button_hovered = False
 
-        if self.startbutton_rect.collidepoint(mouse_pos):
-            if not self.start_button_hovered:
-                self.hover_sound.play()
-                self.start_button_hovered = True
-            start_button_color = self.startbutton_hover_color
-        else:
-            start_button_color = self.startbutton_color
-            self.start_button_hovered = False
+            self.draw_button(self.startbutton_text, self.font, self.startbutton_rect, start_button_color)
 
-        self.draw_button(self.startbutton_text, self.font, self.startbutton_rect, start_button_color, border_radius = 20)
+            if self.optionbutton_rect.collidepoint(mouse_pos):
+                if not self.option_button_hovered:
+                    self.hover_sound.play()
+                    self.option_button_hovered = True
+                option_button_color = self.optionbutton_hover_color
+            else:
+                option_button_color = self.optionbutton_color
+                self.option_button_hovered = False
 
-        if self.optionbutton_rect.collidepoint(mouse_pos):
-            if not self.option_button_hovered:
-                self.hover_sound.play()
-                self.option_button_hovered = True
-            option_button_color = self.optionbutton_hover_color
-        else:
-            option_button_color = self.optionbutton_color
-            self.option_button_hovered = False
+            self.draw_button(self.optionbutton_text, self.font, self.optionbutton_rect, option_button_color)
 
-        self.draw_button(self.optionbutton_text, self.font, self.optionbutton_rect, option_button_color, border_radius = 20)
+            if self.exitbutton_rect.collidepoint(mouse_pos):
+                if not self.exit_button_hovered:
+                    self.hover_sound.play()
+                    self.exit_button_hovered = True
+                exit_button_color = self.exitbutton_hover_color
+            else:
+                exit_button_color = self.exitbutton_color
+                self.exit_button_hovered = False
 
-        if self.exitbutton_rect.collidepoint(mouse_pos):
-            if not self.exit_button_hovered:
-                self.hover_sound.play()
-                self.exit_button_hovered = True
-            exit_button_color = self.exitbutton_hover_color
-        else:
-            exit_button_color = self.exitbutton_color
-            self.exit_button_hovered = False
+            self.draw_button(self.exitbutton_text, self.font, self.exitbutton_rect, exit_button_color)
 
-        self.draw_button(self.exitbutton_text, self.font, self.exitbutton_rect, exit_button_color, border_radius = 20)
+            # Update and draw leaves
+            for leaf in self.leaves:
+                self.update_leaf(leaf)
+                self.display.blit(self.leaf_frames[leaf["frame_index"]], (leaf["x"], leaf["y"]))
 
-
-        # Update and draw leaves
-        for leaf in self.leaves:
-            self.update_leaf(leaf)
-            self.display.blit(self.leaf_frames[leaf["frame_index"]], (leaf["x"], leaf["y"]))
-
-        # Example of adding a simple title
-        # font = pygame.font.Font(None, 74)
-        # title_text = font.render('Main Menu', True, (255, 255, 255))
-        # self.display.blit(title_text, (100, 100))
-
-        # Event Handling
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                # Check if the start button is clicked
-                if self.startbutton_rect.collidepoint(event.pos):
-                    self.stop_sounds()
-                    self.gameStateManager.set_state('first-level')
-                    print("Start Button Clicked!")
-                    engine.say("Start")
-                    engine.runAndWait()
-
-                # Check if the options button is clicked
-                elif self.optionbutton_rect.collidepoint(event.pos):
-                    self.stop_sounds()
-                    self.gameStateManager.set_state('options')
-                    print("Options Button Clicked!")
-                    engine.say("Options")
-                    engine.runAndWait()
-
-                elif self.exitbutton_rect.collidepoint(event.pos):
-                    self.stop_sounds()
-                    print("Exit Button Clicked!")
+            # Event Handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-        # keys = pygame.key.get_pressed()
-        # if keys[pygame.K_RETURN]:  # If Enter key is pressed
-        #     self.gameStateManager.set_state('first-level')  # Switch to the options menu
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    # Check if the start button is clicked
+                    if self.startbutton_rect.collidepoint(event.pos):
+                        self.stop_sounds()
+                        self.gameStateManager.set_state('first-level')
+                        engine.say("Start")
+                        engine.runAndWait()
+                        running = False  # Exit the loop to transition to the next state
+
+                    elif self.optionbutton_rect.collidepoint(event.pos):
+                        self.stop_sounds()
+                        self.gameStateManager.set_state('options')
+                        engine.say("Options")
+                        engine.runAndWait()
+                        running = False  # Exit the loop to transition to the next state
+
+                    elif self.exitbutton_rect.collidepoint(event.pos):
+                        self.stop_sounds()
+                        pygame.quit()
+                        sys.exit()
+
+            pygame.display.update()
+
 
 class Options:
     def __init__(self, display, gameStateManager):
@@ -360,6 +353,390 @@ class Options:
     def save_settings(self):
         # Save the settings back to settings.py or some other persistent storage
         pass
+
+class FirstLevel:
+        def __init__(self, display, gameStateManager):
+            self.display = display
+            self.gameStateManager = gameStateManager
+            self.screen_width, self.screen_height = self.display.get_size()  # Get screen size for responsiveness
+
+            ladder_x_ratio = 0.435
+            ladder_y_start_ratio = 0.03
+            ladder_y_spacing_ratio = 0.131
+
+            draggable_x_start_ratio = 0.15
+            draggable_y_ratio = 0.72
+            draggable_x_spacing_ratio = 0.152
+
+            green_platform_path = os.path.join('graphics', 'First-Level-Platform.png')
+            self.green_platform = pygame.image.load(green_platform_path).convert_alpha()
+
+            bottom_platform_path = os.path.join('graphics', 'First-Level-Bottom-Platform.png')
+            self.bottom_platform = pygame.image.load(bottom_platform_path).convert_alpha()
+
+            # Ladder slots for words
+            self.ladder_slots = [
+                {"word": "", "rect": pygame.Rect(int(self.screen_width * ladder_x_ratio), int(self.screen_height * (
+                        ladder_y_start_ratio + i * ladder_y_spacing_ratio)), 175, 30),
+                 "correct_word": correct_word, "occupied": False, "color": (251, 242, 54), "pair_word": pair_word}
+                # Added "pair_word"
+                for i, (correct_word, pair_word) in enumerate([
+                    ("SHOES", "SHOES"), ("DOG", "DOG"), ("CROWN", "CROWN"), ("BALL", "BALL"), ("CAT", "CAT")
+                ])
+            ]
+
+            # Draggable images (replacing draggable words)
+            self.draggable_images = [
+                {"word": word,
+                 "image": pygame.image.load(os.path.join('graphics', f'{word.lower()}.png')).convert_alpha(),
+                 "rect": pygame.Rect(int(self.screen_width * (draggable_x_start_ratio + i * draggable_x_spacing_ratio)),
+                                     int(self.screen_height * draggable_y_ratio), 150, 80),
+                 "dragging": False,
+                 "original_pos": (int(self.screen_width * (draggable_x_start_ratio + i * draggable_x_spacing_ratio)),
+                                  int(self.screen_height * draggable_y_ratio)),
+                 "placed": False}
+                for i, word in enumerate(["CAT", "CROWN", "BALL", "SHOES", "DOG"])
+            ]
+
+            # Scale the images to fit within the draggable area
+            for image_data in self.draggable_images:
+                image_data["image"] = pygame.transform.scale(image_data["image"], (100, 100))
+
+            # Load ladder (bridge) and heart images
+            self.ladder_image = pygame.image.load(os.path.join('graphics', 'ladder-1.png')).convert_alpha()
+            self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
+            self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))
+
+            self.ladder_image = pygame.transform.scale(self.ladder_image,(int(self.screen_width * 0.5), int(self.screen_height * 0.7)))
+
+            # Game variables
+            self.lives = 3
+            self.selected_word = None
+            self.offset_x = 0
+            self.offset_y = 0
+
+            # Game state variables
+            self.game_over = False
+            self.win = False
+
+            # Load the Arial font
+            font_path = os.path.join('fonts', 'ARIAL.TTF')
+            self.font = pygame.font.Font(font_path, 20)
+
+            # Initialize the Text-to-Speech engine
+            self.tts_engine = pyttsx3.init()
+
+            # Load the speaker icon for TTS
+            self.speaker_icon = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
+            self.speaker_icon = pygame.transform.scale(self.speaker_icon, (30, 30))  # Resize speaker icon
+
+        def draw_hearts(self):
+            for i in range(self.lives):
+                self.display.blit(self.heart_image, (10 + i * 60, 10))
+
+        def speak_word(self, word):
+            """Pronounce the word using Text-to-Speech (TTS)."""
+            self.tts_engine.say(word)
+            self.tts_engine.runAndWait()
+
+        def show_end_screen(self):
+            self.display.blit(self.bottom_platform, (0, 0))  # Draw the bottom platform
+            self.display.blit(self.green_platform, (0, 320))  # Draw the green platform
+            self.display.blit(self.ladder_image, (self.screen_width * 0.25, 0))  # Draw the ladder image
+            overlay = pygame.Surface(self.display.get_size())
+            overlay.set_alpha(150)  # Set transparency level
+            overlay.fill((0, 0, 0))  # Black background
+            self.display.blit(overlay, (0, 0))  # Fill the screen with black
+
+            # Display the appropriate message based on win or loss
+            message = "You Win!" if self.win else "Game Over!"
+            text_surface = self.font.render(message, True, (255, 255, 255))
+            self.display.blit(text_surface, (
+                self.display.get_width() // 2 - text_surface.get_width() // 2, self.display.get_height() // 3))
+
+            # Define Restart and Exit buttons
+            self.restart_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2, 200, 50)
+            self.exit_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2 + 70, 200, 50)
+
+            # Draw the Restart button (Green)
+            pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)
+            restart_text = self.font.render("Restart", True, (255, 255, 255))
+            self.display.blit(restart_text, (self.restart_button.x + 50, self.restart_button.y + 10))
+
+            # Draw the Exit button (Red)
+            pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)
+            exit_text = self.font.render("Exit", True, (255, 255, 255))
+            self.display.blit(exit_text, (self.exit_button.x + 70, self.exit_button.y + 10))
+
+        def restart_level(self):
+            # Reinitialize the level to reset all variables and the game state
+            self.__init__(self.display, self.gameStateManager)
+            self.gameStateManager.set_state('first-level')  # Set the game state back to 'first-level'
+
+        def exit_to_main_menu(self):
+            # Change the game state to 'main-menu'
+            self.gameStateManager.set_state('main-menu')
+
+        def run_dialogue_strip_1(self):
+            self.dialogue_font = pygame.font.Font(None, 36)
+
+            # Dialogue list (narrating the FourthLevel)
+            self.dialogue_lines = [
+                "Dyscape was once a bright and wonderful place, a world full of words, learning, and light.", # 1
+                "Its kingdom was amazingly ruled by a king. Its skies were vibrant,  and the land was abundant \n and filled with knowledge.", # 2
+                "Every citizen were living in prosper, and the community is thriving, showing the power of learning.", # 3
+                "But something bad was coming. An unknown being called Confusion infiltrated Dyscape.", # 4
+                "He destroyed the city, polluted the forest, and scrambled the landscapes.", # 5
+                "He hypnotized every citizen in the kingdom and stole their capability to sustain knowledge", # 6
+                "Under his will, Confusion took the king as his hostage and now resides in the tower", # 7
+                "Now, the world of Dyscape is engulfed in chaos, and it's only a  matter of time before the world \n will drown into darkness.", # 8
+                "In an alternate world, there was a man who was camping in the woods near a lake.", # 9
+                "He was setting up his campfire when he heard a strange sound from the lake.", # 10
+                "He looked behind his back and saw a mysterious glow near the side of the lake.", # 11
+                "He went near the lake, and as soon as he was close, he heard a voice.", # 12
+                "'Help us, our world is in danger', the unknown voice said.", # 13
+                "He touched the water out of curiosity and suddenly, the water pulled him into the depths." # 14
+            ]
+
+            # Corresponding images for each dialogue line
+            self.dialogue_images = [
+                pygame.image.load(os.path.join('graphics', 'dyscape-1.png')).convert_alpha(), # 1
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 2
+                pygame.image.load(os.path.join('graphics', 'inside-dyscape.png')).convert_alpha(), # 3
+                pygame.image.load(os.path.join('graphics', 'confusion-arrives.png')).convert_alpha(), # 4
+                pygame.image.load(os.path.join('graphics', 'dyscape-under-attack.png')).convert_alpha(), # 5
+                pygame.image.load(os.path.join('graphics', 'confusion-hypnotize.png')).convert_alpha(), # 6
+                pygame.image.load(os.path.join('graphics', 'king-strangle.png')).convert_alpha(), # 7
+                pygame.image.load(os.path.join('graphics', 'dyscape-in-chaos.png')).convert_alpha(), # 8
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 9
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 10
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 11
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 12
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 13
+                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 14
+            ]
+
+            # Corresponding narration files for each dialogue line
+            self.dialogue_sounds = [
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-1.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-2.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-3.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-4.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-5.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-6.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-7.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-8.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-9.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-10.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-11.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-12.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-13.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-14.mp3'))
+            ]
+
+            # Scale the images to fit the screen
+            self.dialogue_images = [
+                pygame.transform.scale(img, (self.display.get_width(), self.display.get_height() - 100)) for img in
+                self.dialogue_images
+            ]
+
+            self.dialogue_index = 0
+            running = True
+
+            # Initialize the mixer for playing audio
+            pygame.mixer.init()
+
+            # Flag to check if narration is playing
+            self.narration_playing = False
+
+            def play_narration():
+                """Play the narration for the current dialogue line."""
+                self.narration_playing = True
+                self.dialogue_sounds[self.dialogue_index].play()
+                pygame.time.set_timer(pygame.USEREVENT,
+                                      int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
+
+            # Play the first narration automatically
+            play_narration()
+
+            while running:
+                self.display.fill((0, 0, 0))  # Black background for the dialogue screen
+
+                # Display the corresponding image
+                self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
+
+                # Create and display the dialogue box
+                dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
+                pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
+
+                # Render the current dialogue line
+                dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
+                                                          (255, 255, 255))  # White font
+                dialogue_rect = dialogue_text.get_rect(
+                    center=(self.display.get_width() // 2, self.display.get_height() - 75))
+                self.display.blit(dialogue_text, dialogue_rect)
+
+                # Event handling
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                        sys.exit()
+
+                    # Allow the player to skip the narration and move to the next slide with the spacebar
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_SPACE:
+                            self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
+                            self.narration_playing = False
+                            self.dialogue_index += 1
+                            if self.dialogue_index >= len(self.dialogue_lines):
+                                running = False  # End the dialogue and start the game
+                            else:
+                                play_narration()  # Play the next narration
+
+                    # Check if narration finished
+                    if event.type == pygame.USEREVENT and self.narration_playing:
+                        self.narration_playing = False
+                        self.dialogue_index += 1
+                        if self.dialogue_index >= len(self.dialogue_lines):
+                            running = False  # End the dialogue and start the game
+                        else:
+                            play_narration()  # Play the next narration
+
+                pygame.display.update()
+
+        def run(self):
+            """Main game loop for the first level."""
+
+            correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
+            wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
+
+            speaker_icon = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
+            speaker_icon = pygame.transform.scale(speaker_icon, (30, 30))  # Resize the speaker icon to fit on the ladder
+
+            self.run_dialogue_strip_1()
+            running = True
+            while running:
+
+                if self.game_over or self.win:
+                    self.show_end_screen()  # Display the end screen when game is over or won
+                    pygame.display.update()
+
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            sys.exit()
+
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            # Check if the Restart button is clicked
+                            if self.restart_button.collidepoint(event.pos):
+                                self.restart_level()  # Restart the level if clicked
+                                running = False
+
+                            # Check if the Exit button is clicked
+                            elif self.exit_button.collidepoint(event.pos):
+                                self.exit_to_main_menu()  # Exit to the main menu if clicked
+                                running = False
+
+                    continue  # Skip the rest of the game loop while in the end screen
+
+                # Main game logic
+                self.display.blit(self.bottom_platform, (0, 0))  # Draw the bottom platform
+                self.display.blit(self.green_platform, (0, 320))  # Draw the green platform
+                self.display.blit(self.ladder_image, (self.screen_width * 0.25, 0))  # Draw the ladder image
+
+                # Display lives (hearts)
+                for i in range(self.lives):
+                    self.display.blit(self.heart_image, (10 + i * 60, 10))
+
+                # Display ladder slots and draggable images
+                for slot in self.ladder_slots:
+                    # Draw slot rectangles
+                    if slot["color"] == (143, 86, 59):
+                        pygame.draw.rect(self.display, slot["color"], slot["rect"])  # Full brown for correct placement
+                    else:
+                        pygame.draw.rect(self.display, slot["color"], slot["rect"], 3)
+
+                    # **Display the speaker icon on the ladder slot (brown part)**
+                    speaker_icon_rect = speaker_icon.get_rect(center=(slot["rect"].centerx, slot["rect"].centery + 45))
+                    self.display.blit(speaker_icon, speaker_icon_rect)
+
+                # Display the draggable images (only if not placed)
+                for word_data in self.draggable_images:
+                    if not word_data["placed"]:  # Only draw the image if it hasn't been placed correctly yet
+                        self.display.blit(word_data["image"], word_data["rect"])
+
+                mouse_pos = pygame.mouse.get_pos()
+
+                # **Update the selected image's position smoothly along with the mouse cursor**
+                if self.selected_word:
+                    self.selected_word["rect"].x = mouse_pos[0] + self.offset_x
+                    self.selected_word["rect"].y = mouse_pos[1] + self.offset_y
+
+                # Event handling
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        # **Handle image dragging logic more responsively**
+                        if not self.selected_word:
+                            for word_data in self.draggable_images:
+                                if word_data["rect"].collidepoint(event.pos) and not word_data["placed"]:
+                                    self.selected_word = word_data
+                                    # Capture the precise offset between the image and the cursor
+                                    self.offset_x = word_data["rect"].x - event.pos[0]
+                                    self.offset_y = word_data["rect"].y - event.pos[1]
+                                    break
+
+                                    # Check if mouse clicked on speaker icon
+                            for slot in self.ladder_slots:
+                                speaker_icon_rect = speaker_icon.get_rect(center=(slot["rect"].centerx, slot["rect"].centery + 45))
+                                if speaker_icon_rect.collidepoint(event.pos):
+                                    self.speak_word(slot["pair_word"])  # Trigger TTS for the word on the ladder slot
+
+                    elif event.type == pygame.MOUSEBUTTONUP:
+                        # Handle image placement logic
+                        if self.selected_word:
+                            placed_in_slot = False
+                            wrong_slot = False  # Flag to track if the image was placed in the wrong slot
+                            for slot in self.ladder_slots:
+                                if slot["rect"].colliderect(self.selected_word["rect"]) and not slot["occupied"]:
+                                    placed_in_slot = True
+                                    if slot["correct_word"] == self.selected_word["word"]:
+                                        # Snap image into place if correct
+                                        correct_answer_sound.play()
+                                        self.selected_word["rect"].center = slot["rect"].center
+                                        slot["occupied"] = True
+                                        slot["color"] = (143, 86, 59)  # Change color to brown for correct placement
+                                        self.selected_word["placed"] = True  # Mark the word as placed, so it disappears
+                                    else:
+                                        # Image was placed in a wrong slot
+                                        wrong_answer_sound.play()
+                                        wrong_slot = True
+                                        self.selected_word["rect"].x, self.selected_word["rect"].y = self.selected_word[
+                                            "original_pos"]
+                            # If the image was placed in a slot but it's wrong, deduct a life
+                            if wrong_slot:
+                                self.lives -= 1
+                            # If the image was not placed in any slot, snap it back to its original position (no life deduction)
+                            if not placed_in_slot:
+                                self.selected_word["rect"].x, self.selected_word["rect"].y = self.selected_word[
+                                    "original_pos"]
+
+                            self.selected_word = None
+
+                # Check game over conditions
+                if self.lives <= 0:
+                    self.game_over = True
+                    print("Game Over!")
+
+                # Check win condition (all slots occupied)
+                if all(slot["occupied"] for slot in self.ladder_slots):
+                    self.win = True
+                    print("You Win!")
+
+                pygame.display.update()  # Update the display
 
 class SecondLevel:
     def __init__(self, display, gameStateManager):
@@ -649,7 +1026,6 @@ class SecondLevel:
 
             pygame.display.update()
             self.clock.tick(60)  # Cap frame rate at 60 FPS
-
 
 
 class GameStateManager:
