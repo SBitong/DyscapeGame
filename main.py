@@ -3,6 +3,7 @@ import sys
 import os
 import random
 import pyttsx3
+import pronouncing
 from settings import *
 
 # Initialize Pygame
@@ -18,7 +19,8 @@ class Game:
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel}
+        self.secondLevel = SecondLevel(self.screen, self.gameStateManager)
+        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'second-level': self.secondLevel}
 
         self.clock = pygame.time.Clock()
 
@@ -736,6 +738,294 @@ class FirstLevel:
 
                 pygame.display.update()  # Update the display
 
+class SecondLevel:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.screen_width, self.screen_height = self.display.get_size()
+
+        # Initialize player attributes
+        self.lives = 3
+        self.time_limit = 15
+        self.current_time = 0
+        self.timer_started = False
+        self.game_over = False
+
+        # Track current round
+        self.rounds_completed = 0
+        self.max_rounds = 10
+
+        # Load the Arial font
+        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        self.font = pygame.font.Font(font_path, 30)
+        self.large_font = pygame.font.Font(font_path, 55)
+
+        # Load necessary assets
+        self.background = pygame.image.load(os.path.join('graphics', 'garden.png')).convert_alpha()
+        self.background = pygame.transform.scale(self.background, (self.display.get_width(), self.display.get_height()))
+
+        # Words for the game
+        self.flower_words = ["Tree", "Box", "Ball", "Duck", "Cat", "Dog", "Fish", "Bird", "Bed", "House"]
+        random.shuffle(self.flower_words)
+        self.current_flower_word = self.flower_words[self.rounds_completed]
+
+        # Dictionary to map words to images
+        self.word_images = {
+            "Tree": pygame.image.load(os.path.join('graphics', 'corrupted-tree.png')).convert_alpha(),
+            "Bed": pygame.image.load(os.path.join('graphics', 'corrupted-bed.png')).convert_alpha(),
+            "Dog": pygame.image.load(os.path.join('graphics', 'corrupted-dog.png')).convert_alpha(),
+            "Box": pygame.image.load(os.path.join('graphics', 'corrupted-box.png')).convert_alpha(),
+            "Ball": pygame.image.load(os.path.join('graphics', 'corrupted-ball.png')).convert_alpha(),
+            "Duck": pygame.image.load(os.path.join('graphics', 'corrupted-duck.png')).convert_alpha(),
+            "Cat": pygame.image.load(os.path.join('graphics', 'corrupted-cat.png')).convert_alpha(),
+            "Fish": pygame.image.load(os.path.join('graphics', 'corrupted-fish.png')).convert_alpha(),
+            "Bird": pygame.image.load(os.path.join('graphics', 'corrupted-bird.png')).convert_alpha(),
+            "House": pygame.image.load(os.path.join('graphics', 'corrupted-house.png')).convert_alpha(),
+        }
+        # Scale images to fit the screen (if needed)
+        for word in self.word_images:
+            self.word_images[word] = pygame.transform.scale(self.word_images[word], (450, 520))
+
+        # Initialize game state
+        self.input_text = ''
+        self.clock = pygame.time.Clock()
+        self.last_time = pygame.time.get_ticks()
+
+        # Load hearts for lives display and resize them
+        self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
+        self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))
+
+        # Load warrior sprite sheet and initialize animation variables
+        self.warrior_spritesheet = pygame.image.load(
+            os.path.join('graphics', 'idle-character-with-sword.png')).convert_alpha()
+        self.warrior_frame_width = 400
+        self.warrior_frame_height = 426
+        self.warrior_frames = [
+            self.warrior_spritesheet.subsurface(
+                (i * self.warrior_frame_width, 0, self.warrior_frame_width, self.warrior_frame_height))
+            for i in range(9)
+        ]
+        self.warrior_current_frame = 0
+        self.warrior_animation_speed = 0.2  # Adjust speed (higher is slower)
+        self.warrior_frame_time = 0  # Time tracking for frame updates
+
+        # Load warrior attack sprite sheet and initialize animation variables
+        self.attack_spritesheet = pygame.image.load(
+            os.path.join('graphics', 'slash-animation.png')).convert_alpha()
+        self.attack_frames = [
+            self.attack_spritesheet.subsurface(
+                (i * self.warrior_frame_width, 0, self.warrior_frame_width, self.warrior_frame_height))
+            for i in range(9)
+        ]
+        self.attack_current_frame = 0
+        self.attack_animation_speed = 0.1  # Adjust as needed
+        self.is_attacking = False  # Track if attack animation is active
+
+        # Track the type of animation currently playing
+        self.current_animation = 'idle'
+
+        # Load speaker icon
+        self.speaker_image = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
+        self.speaker_image = pygame.transform.scale(self.speaker_image, (100, 100))
+        self.speaker_rect = self.speaker_image.get_rect(center=(self.screen_width // 2, 50))
+
+        # Initialize TTS (text-to-speech) engine
+        self.tts_engine = pyttsx3.init()
+
+    def draw_hearts(self):
+        for i in range(self.lives):
+            self.display.blit(self.heart_image, (10 + i * 60, 10))
+
+    def draw_timer(self, time_left):
+        # Calculate minutes and seconds
+        minutes = int(time_left) // 60
+        seconds = int(time_left) % 60
+
+        # Format time as MM:SS
+        timer_text = self.large_font.render(f"Time: {minutes:02}:{seconds:02}", True, (255, 255, 255))
+
+        # Render and blit the timer text
+        self.display.blit(timer_text, (30, 80))
+
+
+    def draw_text_box(self):
+        pygame.draw.rect(self.display, (255, 255, 255),
+                         [self.screen_width // 2 - 175, self.screen_height - 100, 350, 50], 0)
+        text_surface = self.font.render(self.input_text, True, (0, 0, 0))
+        self.display.blit(text_surface, (self.screen_width // 2 - 150, self.screen_height - 90))
+
+        prompt_surface = self.font.render("Name a word that rhymes:", True, (0, 0, 0))
+        self.display.blit(prompt_surface, (self.screen_width // 2 - 175, self.screen_height - 150))
+
+    def draw_enemy(self):
+        current_image = self.word_images[self.current_flower_word]
+        self.display.blit(current_image, (650, 100))
+
+    # Function to draw the character
+    def draw_warrior(self):
+        if self.current_animation == 'idle':
+            # Draw the idle animation
+            self.display.blit(self.warrior_frames[self.warrior_current_frame],
+                              (150, self.screen_height - self.warrior_frame_height - 1))
+        elif self.current_animation == 'attack':
+            # Draw the attack animation
+            self.display.blit(self.attack_frames[self.attack_current_frame],
+                              (150, self.screen_height - self.warrior_frame_height - 1))
+
+
+    # Function to update the warrior animation
+    def update_animation(self):
+        if self.current_animation == 'idle':
+            # Idle animation logic
+            self.warrior_frame_time += self.clock.get_time() / 1000.0
+            if self.warrior_frame_time >= self.warrior_animation_speed:
+                self.warrior_current_frame = (self.warrior_current_frame + 1) % len(self.warrior_frames)
+                self.warrior_frame_time = 0
+        elif self.current_animation == 'attack':
+            # Attack animation logic
+            self.warrior_frame_time += self.clock.get_time() / 1000.0
+            if self.warrior_frame_time >= self.attack_animation_speed:
+                if self.attack_current_frame < len(self.attack_frames) - 1:
+                    self.attack_current_frame += 1
+                else:
+                    # Reset to idle animation after the attack is complete
+                    self.current_animation = 'idle'
+                    self.attack_current_frame = 0
+                self.warrior_frame_time = 0
+    def draw_speaker(self):
+        self.display.blit(self.speaker_image, self.speaker_rect.topleft)
+
+    def check_rhyme(self):
+        rhymes = pronouncing.rhymes(self.current_flower_word.lower())
+        return self.input_text.strip().lower() in rhymes
+
+    def pronounce_word(self):
+        self.tts_engine.say(self.current_flower_word)
+        self.tts_engine.runAndWait()
+
+    def reset_round(self):
+        self.rounds_completed += 1
+        if self.rounds_completed < self.max_rounds:
+            self.current_flower_word = self.flower_words[self.rounds_completed]
+            self.input_text = ''
+            self.current_time = self.time_limit
+        else:
+            # self.gameStateManager.set_state('win')
+            print("Level done. Showing end screen")
+            self.show_end_screen()
+            self.game_over = True
+
+    def show_end_screen(self):
+        self.display.fill((0, 0, 0))
+
+        message = "You Win!" if self.rounds_completed >= self.max_rounds else "Game Over!"
+        text_surface = self.font.render(message, True, (255, 255, 255))
+        self.display.blit(text_surface,
+                          (self.screen_width // 2 - text_surface.get_width() // 2, self.screen_height // 3))
+
+        # Define Restart and Exit buttons
+        self.restart_button = pygame.Rect(self.screen_width // 2 - 100, self.screen_height // 2, 200, 50)
+        self.exit_button = pygame.Rect(self.screen_width // 2 - 100, self.screen_height // 2 + 70, 200, 50)
+
+        # Draw the Restart button (Green)
+        pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)
+        restart_text = self.font.render("Restart", True, (255, 255, 255))
+        self.display.blit(restart_text, (self.restart_button.x + 50, self.restart_button.y + 10))
+
+        # Draw the Exit button (Red)
+        pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)
+        exit_text = self.font.render("Exit", True, (255, 255, 255))
+        self.display.blit(exit_text, (self.exit_button.x + 70, self.exit_button.y + 10))
+
+    def run(self):
+        self.current_time = self.time_limit
+        running = True
+        self.game_over = False
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif not self.game_over:  # Only handle gameplay input if the game is not over
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE:
+                            self.gameStateManager.set_state('main-menu')
+                            running = False
+                        elif event.key == pygame.K_RETURN:
+                            if self.check_rhyme():
+                                self.current_animation = 'attack'
+                                self.reset_round()
+                            else:
+                                # self.lives -= 1
+                                if self.lives <= 0:
+                                    self.game_over = True
+                                else:
+                                    self.input_text = ''
+                        elif event.key == pygame.K_BACKSPACE:
+                            self.input_text = self.input_text[:-1]
+                        else:
+                            self.input_text += event.unicode
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if self.speaker_rect.collidepoint(event.pos):
+                            self.pronounce_word()
+                else:
+                    # Handle clicks on the restart or exit buttons after the game is over
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        if self.restart_button.collidepoint(event.pos):
+                            # Restart the game
+                            self.lives = 3
+                            self.rounds_completed = 0
+                            self.current_flower_word = self.flower_words[self.rounds_completed]
+                            self.input_text = ''
+                            self.current_time = self.time_limit
+                            self.game_over = False  # Exit end screen mode
+                        elif self.exit_button.collidepoint(event.pos):
+                            self.gameStateManager.set_state('main-menu')
+                            running = False
+
+            # Update the warrior animation frame
+            self.warrior_frame_time += self.clock.get_time() / 1000.0  # Increment frame time
+            if self.warrior_frame_time >= self.warrior_animation_speed:  # Check if it's time to update the frame
+                self.warrior_current_frame = (self.warrior_current_frame + 1) % len(
+                    self.warrior_frames)  # Move to the next frame
+                self.warrior_frame_time = 0  # Reset frame time
+
+            # Update the timer
+            time_passed = pygame.time.get_ticks() - self.last_time
+            self.current_time -= time_passed / 1000.0
+            self.last_time = pygame.time.get_ticks()
+
+            if not self.game_over:
+                # Update the timer
+                time_passed = pygame.time.get_ticks() - self.last_time
+                self.current_time -= time_passed / 1000.0
+                self.last_time = pygame.time.get_ticks()
+
+                if self.current_time <= 0:
+                    self.lives -= 1
+                    if self.lives <= 0:
+                        self.game_over = True
+                    else:
+                        self.reset_round()
+
+                # Update the warrior animation frame
+                self.update_animation()
+
+                # Redraw everything
+                self.display.blit(self.background, (0, 0))
+                self.draw_hearts()
+                self.draw_timer(self.current_time)
+                self.draw_enemy()
+                self.draw_text_box()
+                self.draw_warrior()  # Draw animated warrior
+                self.draw_speaker()
+
+            else:
+                # Show the end screen
+                self.show_end_screen()
+
+            pygame.display.update()
+            self.clock.tick(60)  # Cap frame rate at 60 FPS
 
 
 class GameStateManager:
