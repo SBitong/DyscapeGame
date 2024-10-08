@@ -490,6 +490,7 @@ class SecondLevel:
         self.time_limit = 15
         self.current_time = 0
         self.timer_started = False
+        self.game_over = False
 
         # Track current round
         self.rounds_completed = 0
@@ -653,6 +654,7 @@ class SecondLevel:
             # self.gameStateManager.set_state('win')
             print("Level done. Showing end screen")
             self.show_end_screen()
+            self.game_over = True
 
     def show_end_screen(self):
         self.display.fill((0, 0, 0))
@@ -679,66 +681,92 @@ class SecondLevel:
     def run(self):
         self.current_time = self.time_limit
         running = True
+        self.game_over = False
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        self.gameStateManager.set_state('main-menu')
-                        running = False
-                    elif event.key == pygame.K_RETURN:
-                        if self.check_rhyme():
-                            self.current_animation = 'attack'
-                            self.reset_round()
-                        else:
-                            # self.lives -= 1
-                            if self.lives <= 0:
-                                self.gameStateManager.set_state('main-menu')
-                                running = False
+                elif not self.game_over:  # Only handle gameplay input if the game is not over
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE:
+                            self.gameStateManager.set_state('main-menu')
+                            running = False
+                        elif event.key == pygame.K_RETURN:
+                            if self.check_rhyme():
+                                self.current_animation = 'attack'
+                                self.reset_round()
                             else:
-                                self.input_text = ''
-                    elif event.key == pygame.K_BACKSPACE:
-                        self.input_text = self.input_text[:-1]
-                    else:
-                        self.input_text += event.unicode
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if self.speaker_rect.collidepoint(event.pos):
-                        self.pronounce_word()
+                                # self.lives -= 1
+                                if self.lives <= 0:
+                                    self.game_over = True
+                                else:
+                                    self.input_text = ''
+                        elif event.key == pygame.K_BACKSPACE:
+                            self.input_text = self.input_text[:-1]
+                        else:
+                            self.input_text += event.unicode
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if self.speaker_rect.collidepoint(event.pos):
+                            self.pronounce_word()
+                else:
+                    # Handle clicks on the restart or exit buttons after the game is over
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        if self.restart_button.collidepoint(event.pos):
+                            # Restart the game
+                            self.lives = 3
+                            self.rounds_completed = 0
+                            self.current_flower_word = self.flower_words[self.rounds_completed]
+                            self.input_text = ''
+                            self.current_time = self.time_limit
+                            self.game_over = False  # Exit end screen mode
+                        elif self.exit_button.collidepoint(event.pos):
+                            self.gameStateManager.set_state('main-menu')
+                            running = False
+
+            # Update the warrior animation frame
+            self.warrior_frame_time += self.clock.get_time() / 1000.0  # Increment frame time
+            if self.warrior_frame_time >= self.warrior_animation_speed:  # Check if it's time to update the frame
+                self.warrior_current_frame = (self.warrior_current_frame + 1) % len(
+                    self.warrior_frames)  # Move to the next frame
+                self.warrior_frame_time = 0  # Reset frame time
 
             # Update the timer
             time_passed = pygame.time.get_ticks() - self.last_time
             self.current_time -= time_passed / 1000.0
             self.last_time = pygame.time.get_ticks()
 
-            if self.current_time <= 0:
-                self.lives -= 1
-                if self.lives <= 0:
-                    # self.gameStateManager.set_state('main-menu')
-                    self.show_end_screen()
-                    running = False
-                else:
-                    self.reset_round()
+            if not self.game_over:
+                # Update the timer
+                time_passed = pygame.time.get_ticks() - self.last_time
+                self.current_time -= time_passed / 1000.0
+                self.last_time = pygame.time.get_ticks()
 
-            # Update the warrior animation frame
-            self.warrior_frame_time += self.clock.get_time() / 1000.0  # Increment frame time
-            if self.warrior_frame_time >= self.warrior_animation_speed:  # Check if it's time to update the frame
-                self.warrior_current_frame = (self.warrior_current_frame + 1) % len(self.warrior_frames)  # Move to the next frame
-                self.warrior_frame_time = 0  # Reset frame time
+                if self.current_time <= 0:
+                    self.lives -= 1
+                    if self.lives <= 0:
+                        self.game_over = True
+                    else:
+                        self.reset_round()
 
-            self.update_animation()
+                # Update the warrior animation frame
+                self.update_animation()
 
-            # Redraw everything
-            self.display.blit(self.background, (0, 0))
-            self.draw_hearts()
-            self.draw_timer(self.current_time)
-            self.draw_enemy()
-            self.draw_text_box()
-            self.draw_warrior()  # Draw animated warrior
-            self.draw_speaker()
+                # Redraw everything
+                self.display.blit(self.background, (0, 0))
+                self.draw_hearts()
+                self.draw_timer(self.current_time)
+                self.draw_enemy()
+                self.draw_text_box()
+                self.draw_warrior()  # Draw animated warrior
+                self.draw_speaker()
+
+            else:
+                # Show the end screen
+                self.show_end_screen()
+
             pygame.display.update()
-            self.clock.tick(FPS)  # Cap frame rate at 60 FPS
+            self.clock.tick(60)  # Cap frame rate at 60 FPS
 
 
 
