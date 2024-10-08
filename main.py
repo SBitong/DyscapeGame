@@ -34,7 +34,7 @@ class Game:
             self.states[self.gameStateManager.get_state()].run()
 
             # Update the display
-            pygame.display.update()
+            pygame.display.flip()
 
             # Cap the frame rate
             self.clock.tick(FPS)
@@ -78,9 +78,9 @@ class MainMenu:
         # Load, extract, and multiply the leaves from the spring-leaf spritesheet
         springleaf_path = os.path.join('graphics','Spring-Leaf.png')
         self.springleaf_sprite = pygame.image.load(springleaf_path).convert_alpha()
-        scale_factor = 2.5 #times two leaf size
+        scale_factor = 3 #times two leaf size
         self.leaf_frames = self.extract_leaf_frames(self.springleaf_sprite, 5, scale_factor)
-        self.leaves = [self.create_leaf() for x in range(30)]
+        self.leaves = [self.create_leaf() for x in range(40)]
 
         # Start Button properties
         self.startbutton_color = (255, 200, 0)
@@ -99,7 +99,7 @@ class MainMenu:
         self.exitbutton_color = (255, 200, 0)
         self.exitbutton_hover_color = (255, 170, 0)
         self.exitbutton_text = "Exit Game"
-        self.exitbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 600), (250, 70))
+        self.exitbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 590), (250, 70))
 
     def stop_sounds(self):
         self.main_menu_bgm.stop()
@@ -139,10 +139,10 @@ class MainMenu:
             "frame_index": 0,
             "x": random.randint(0, self.display.get_width()),
             "y": random.randint(-self.display.get_height(), 0),
-            "speed": random.uniform(1, 3),
-            "animation_speed": random.uniform(0.1, 0.2),
+            "speed": random.uniform(0.1, 0.4),
+            "animation_speed": random.uniform(1, 2),
             "animation_timer": 0,
-            "horizontal_speed": random.uniform(-1, -0.5)
+            "horizontal_speed": random.uniform(-0.5, -0.2)
         }
         return leaf
 
@@ -162,97 +162,88 @@ class MainMenu:
             leaf["x"] = random.randint(0, self.display.get_width())
 
     def run(self):
-        if not self.main_menu_bgm_isplaying:
-            self.main_menu_bgm.play(-1)
-            print("bgm playing")
-            self.main_menu_bgm_isplaying = True
+        running = True
+        while running:
+            if not self.main_menu_bgm_isplaying:
+                self.main_menu_bgm.play(-1)
+                self.main_menu_bgm_isplaying = True
 
-        if not self.ambient_sound_isplaying:
-            self.ambient_sound.play(-1)
-            print("ambient sound playing")
-            self.ambient_sound_isplaying = True
-        # print("Running MainMenu state")  # Debugging line
-        self.display.blit(self.background_image, (0, 0))
+            if not self.ambient_sound_isplaying:
+                self.ambient_sound.play(-1)
+                self.ambient_sound_isplaying = True
 
-        self.display.blit(self.game_logo, ((WIDTH // 2)-(self.logo_width // 2), 90))
+            self.display.blit(self.background_image, (0, 0))
+            self.display.blit(self.game_logo, ((WIDTH // 2) - (self.logo_width // 2), 90))
 
+            mouse_pos = pygame.mouse.get_pos()
 
-        mouse_pos = pygame.mouse.get_pos()
+            # Handle button hover and clicks
+            if self.startbutton_rect.collidepoint(mouse_pos):
+                if not self.start_button_hovered:
+                    self.hover_sound.play()
+                    self.start_button_hovered = True
+                start_button_color = self.startbutton_hover_color
+            else:
+                start_button_color = self.startbutton_color
+                self.start_button_hovered = False
 
-        if self.startbutton_rect.collidepoint(mouse_pos):
-            if not self.start_button_hovered:
-                self.hover_sound.play()
-                self.start_button_hovered = True
-            start_button_color = self.startbutton_hover_color
-        else:
-            start_button_color = self.startbutton_color
-            self.start_button_hovered = False
+            self.draw_button(self.startbutton_text, self.font, self.startbutton_rect, start_button_color)
 
-        self.draw_button(self.startbutton_text, self.font, self.startbutton_rect, start_button_color, border_radius = 20)
+            if self.optionbutton_rect.collidepoint(mouse_pos):
+                if not self.option_button_hovered:
+                    self.hover_sound.play()
+                    self.option_button_hovered = True
+                option_button_color = self.optionbutton_hover_color
+            else:
+                option_button_color = self.optionbutton_color
+                self.option_button_hovered = False
 
-        if self.optionbutton_rect.collidepoint(mouse_pos):
-            if not self.option_button_hovered:
-                self.hover_sound.play()
-                self.option_button_hovered = True
-            option_button_color = self.optionbutton_hover_color
-        else:
-            option_button_color = self.optionbutton_color
-            self.option_button_hovered = False
+            self.draw_button(self.optionbutton_text, self.font, self.optionbutton_rect, option_button_color)
 
-        self.draw_button(self.optionbutton_text, self.font, self.optionbutton_rect, option_button_color, border_radius = 20)
+            if self.exitbutton_rect.collidepoint(mouse_pos):
+                if not self.exit_button_hovered:
+                    self.hover_sound.play()
+                    self.exit_button_hovered = True
+                exit_button_color = self.exitbutton_hover_color
+            else:
+                exit_button_color = self.exitbutton_color
+                self.exit_button_hovered = False
 
-        if self.exitbutton_rect.collidepoint(mouse_pos):
-            if not self.exit_button_hovered:
-                self.hover_sound.play()
-                self.exit_button_hovered = True
-            exit_button_color = self.exitbutton_hover_color
-        else:
-            exit_button_color = self.exitbutton_color
-            self.exit_button_hovered = False
+            self.draw_button(self.exitbutton_text, self.font, self.exitbutton_rect, exit_button_color)
 
-        self.draw_button(self.exitbutton_text, self.font, self.exitbutton_rect, exit_button_color, border_radius = 20)
+            # Update and draw leaves
+            for leaf in self.leaves:
+                self.update_leaf(leaf)
+                self.display.blit(self.leaf_frames[leaf["frame_index"]], (leaf["x"], leaf["y"]))
 
-
-        # Update and draw leaves
-        for leaf in self.leaves:
-            self.update_leaf(leaf)
-            self.display.blit(self.leaf_frames[leaf["frame_index"]], (leaf["x"], leaf["y"]))
-
-        # Example of adding a simple title
-        # font = pygame.font.Font(None, 74)
-        # title_text = font.render('Main Menu', True, (255, 255, 255))
-        # self.display.blit(title_text, (100, 100))
-
-        # Event Handling
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                # Check if the start button is clicked
-                if self.startbutton_rect.collidepoint(event.pos):
-                    self.stop_sounds()
-                    self.gameStateManager.set_state('first-level')
-                    print("Start Button Clicked!")
-                    engine.say("Start")
-                    engine.runAndWait()
-
-                # Check if the options button is clicked
-                elif self.optionbutton_rect.collidepoint(event.pos):
-                    self.stop_sounds()
-                    self.gameStateManager.set_state('options')
-                    print("Options Button Clicked!")
-                    engine.say("Options")
-                    engine.runAndWait()
-
-                elif self.exitbutton_rect.collidepoint(event.pos):
-                    self.stop_sounds()
-                    print("Exit Button Clicked!")
+            # Event Handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-        # keys = pygame.key.get_pressed()
-        # if keys[pygame.K_RETURN]:  # If Enter key is pressed
-        #     self.gameStateManager.set_state('first-level')  # Switch to the options menu
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    # Check if the start button is clicked
+                    if self.startbutton_rect.collidepoint(event.pos):
+                        self.stop_sounds()
+                        self.gameStateManager.set_state('first-level')
+                        engine.say("Start")
+                        engine.runAndWait()
+                        running = False  # Exit the loop to transition to the next state
+
+                    elif self.optionbutton_rect.collidepoint(event.pos):
+                        self.stop_sounds()
+                        self.gameStateManager.set_state('options')
+                        engine.say("Options")
+                        engine.runAndWait()
+                        running = False  # Exit the loop to transition to the next state
+
+                    elif self.exitbutton_rect.collidepoint(event.pos):
+                        self.stop_sounds()
+                        pygame.quit()
+                        sys.exit()
+
+            pygame.display.update()
+
 
 class Options:
     def __init__(self, display, gameStateManager):
@@ -744,6 +735,7 @@ class FirstLevel:
                     print("You Win!")
 
                 pygame.display.update()  # Update the display
+
 
 
 class GameStateManager:
