@@ -14,12 +14,11 @@ class Game:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("DyscapeTheGame")
 
-        self.gameStateManager = GameStateManager('second-level')
+        self.gameStateManager = GameStateManager('main-menu')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
-        self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
         self.secondLevel = SecondLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'second-level': self.secondLevel}
+        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'second-level': self.secondLevel}
 
         self.clock = pygame.time.Clock()
 
@@ -361,123 +360,6 @@ class Options:
     def save_settings(self):
         # Save the settings back to settings.py or some other persistent storage
         pass
-
-class FirstLevel:
-    def __init__(self, display, gameStateManager):
-        self.display = display
-        self.gameStateManager = gameStateManager
-
-        self.player_x, self.player_y = WIDTH // 2, HEIGHT // 2
-        self.player_speed = 3.5  # Adjusted speed for better visibility
-
-        # Load the sprite sheets from the specified path
-        self.sprite_sheet_path_Idle = os.path.join('graphics', 'Idle.png')
-        self.sprite_sheet_path_Run = os.path.join('graphics', 'Run.png')
-        # -- self.sprite_sheet_path_Run = r'C:\Users\hp\Documents\Dyscape\DyscapeTheGame\graphics\Run.png'
-        self.sprite_sheet_Idle = pygame.image.load(self.sprite_sheet_path_Idle).convert_alpha()
-        self.sprite_sheet_Run = pygame.image.load(self.sprite_sheet_path_Run).convert_alpha()
-
-        # Animation parameters
-        self.frame_width = 48  # Width of a single frame in the sprite sheet
-        self.frame_height = 48  # Height of a single frame in the sprite sheet
-        self.scale = 1.5  # Scale factor for enlarging the sprite
-        self.num_frames_Idle = 9  # Number of frames in the idle sprite sheet
-        self.num_frames_Run = 9  # Number of frames in the run sprite sheet
-        self.animation_speed = 0.1  # Seconds per frame
-        self.current_frame = 0
-        self.elapsed_time = 0
-        self.last_time = pygame.time.get_ticks()
-        self.clock = pygame.time.Clock()
-
-        self.idle = True
-        self.facing_right = True  # Assume the character starts facing right
-
-        # Shadow parameters
-        self.shadow_width = 30  # Width of the shadow ellipse
-        self.shadow_height = 10  # Height of the shadow ellipse
-        self.shadow_surface = pygame.Surface((self.shadow_width, self.shadow_height), pygame.SRCALPHA)
-        pygame.draw.ellipse(self.shadow_surface, (0, 0, 0, 100), [0, 0, self.shadow_width, self.shadow_height])
-
-        # Function to extract frames from the sprite sheet
-
-
-    def get_frame(self, sheet, frame, width, height, scale, flip=False):
-        frame_surface = pygame.Surface((width, height), pygame.SRCALPHA)
-        frame_surface.blit(sheet, (0, 0), (frame * width, 0, width, height))
-        scaled_surface = pygame.transform.scale(frame_surface, (width * scale, height * scale))
-        if flip:
-            scaled_surface = pygame.transform.flip(scaled_surface, True, False)
-        return scaled_surface
-
-
-    def run(self):
-
-        # Example of handling user input to return to the main menu
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE]:  # If Escape key is pressed
-            self.gameStateManager.set_state('main-menu')  # Return to the main menu
-
-        while True:
-            # Event loop
-            # print("Running First Level state")
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-
-
-
-            # Get the current key presses
-            keys = pygame.key.get_pressed()
-            moving = False
-            if keys[pygame.K_w]:
-                self.player_y -= self.player_speed
-                moving = True
-            if keys[pygame.K_s]:
-                self.player_y += self.player_speed
-                moving = True
-            if keys[pygame.K_a]:
-                self.player_x -= self.player_speed
-                moving = True
-                self.facing_right = False
-            if keys[pygame.K_d]:
-                self.player_x += self.player_speed
-                moving = True
-                self.facing_right = True
-
-            self.idle = not moving
-
-            # Update the animation frame
-            current_time = pygame.time.get_ticks()
-            self.elapsed_time += (current_time - self.last_time) / 1000.0
-            self.last_time = current_time
-
-            if self.elapsed_time > self.animation_speed:
-                self.current_frame = (self.current_frame + 1) % (
-                    self.num_frames_Idle if self.idle else self.num_frames_Run)  # Loop to the next frame
-                self.elapsed_time = 0
-
-            sprite_sheet = self.sprite_sheet_Idle if self.idle else self.sprite_sheet_Run
-            frame_image = self.get_frame(sprite_sheet, self.current_frame, self.frame_width, self.frame_height, self.scale,
-                                         not self.facing_right)
-
-            # Fill the screen with the background color
-            self.display.fill(FERN_GREEN)
-
-            # Update shadow position
-            shadow_offset_x = 37  # Adjust the shadow offset as needed
-            shadow_offset_y = 65
-            self.display.blit(self.shadow_surface,
-                             (self.player_x - self.shadow_width // 2 + shadow_offset_x, self.player_y + shadow_offset_y))
-
-            # Blit the current animation frame onto the screen
-            self.display.blit(frame_image, (self.player_x, self.player_y))
-
-            # Update the display
-            pygame.display.update()
-
-            # Cap the frame rate
-            self.clock.tick(FPS)
 
 class SecondLevel:
     def __init__(self, display, gameStateManager):
