@@ -381,7 +381,7 @@ class FirstLevel:
                  "correct_word": correct_word, "occupied": False, "color": (251, 242, 54), "pair_word": pair_word}
                 # Added "pair_word"
                 for i, (correct_word, pair_word) in enumerate([
-                    ("BOAT", "COAT"), ("DOG", "FOG"), ("CROWN", "GOWN"), ("BALL", "FALL"), ("CAT", "BAT")
+                    ("BOAT", "COAT"), ("DOG", "LOG"), ("CROWN", "GOWN"), ("BALL", "FALL"), ("CAT", "BAT")
                 ])
             ]
 
