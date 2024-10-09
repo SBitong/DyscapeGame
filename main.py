@@ -1022,6 +1022,8 @@ class FifthLevel:
                                     break
 
                             if self.current_question_index >= len(self.questions):
+                                print("Level completed!")
+                                self.gameStateManager.set_state('main-menu')
                                 running = False
                             break
 
