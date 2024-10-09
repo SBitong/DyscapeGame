@@ -3,13 +3,21 @@ import sys
 import os
 import random
 import pyttsx3
+import sqlite3
+import json
+import pronouncing
 from settings import *
+from database import create_tables, save_progress, load_progress, reset_progress, connect  # Import database functions
+
 
 # Initialize Pygame
 pygame.init()
 engine = pyttsx3.init()
+
 class Game:
     def __init__(self):
+        create_tables()  # Ensure the database tables are created
+
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("DyscapeTheGame")
 
@@ -17,8 +25,9 @@ class Game:
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel}
+        self.secondLevel = SecondLevel(self.screen, self.gameStateManager)
 
+        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'second-level': self.secondLevel}
         self.clock = pygame.time.Clock()
 
     def run(self):
@@ -33,7 +42,7 @@ class Game:
             self.states[self.gameStateManager.get_state()].run()
 
             # Update the display
-            pygame.display.update()
+            pygame.display.flip()
 
             # Cap the frame rate
             self.clock.tick(FPS)
@@ -77,9 +86,9 @@ class MainMenu:
         # Load, extract, and multiply the leaves from the spring-leaf spritesheet
         springleaf_path = os.path.join('graphics','Spring-Leaf.png')
         self.springleaf_sprite = pygame.image.load(springleaf_path).convert_alpha()
-        scale_factor = 2.5 #times two leaf size
+        scale_factor = 3 #times two leaf size
         self.leaf_frames = self.extract_leaf_frames(self.springleaf_sprite, 5, scale_factor)
-        self.leaves = [self.create_leaf() for x in range(30)]
+        self.leaves = [self.create_leaf() for x in range(40)]
 
         # Start Button properties
         self.startbutton_color = (255, 200, 0)
@@ -98,7 +107,8 @@ class MainMenu:
         self.exitbutton_color = (255, 200, 0)
         self.exitbutton_hover_color = (255, 170, 0)
         self.exitbutton_text = "Exit Game"
-        self.exitbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 600), (250, 70))
+        self.exitbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 590), (250, 70))
+
 
     def stop_sounds(self):
         self.main_menu_bgm.stop()
@@ -138,10 +148,10 @@ class MainMenu:
             "frame_index": 0,
             "x": random.randint(0, self.display.get_width()),
             "y": random.randint(-self.display.get_height(), 0),
-            "speed": random.uniform(1, 3),
-            "animation_speed": random.uniform(0.1, 0.2),
+            "speed": random.uniform(0.1, 0.4),
+            "animation_speed": random.uniform(1, 2),
             "animation_timer": 0,
-            "horizontal_speed": random.uniform(-1, -0.5)
+            "horizontal_speed": random.uniform(-0.5, -0.2)
         }
         return leaf
 
@@ -161,97 +171,94 @@ class MainMenu:
             leaf["x"] = random.randint(0, self.display.get_width())
 
     def run(self):
-        if not self.main_menu_bgm_isplaying:
-            self.main_menu_bgm.play(-1)
-            print("bgm playing")
-            self.main_menu_bgm_isplaying = True
+        running = True
+        while running:
+            if not self.main_menu_bgm_isplaying:
+                self.main_menu_bgm.play(-1)
+                self.main_menu_bgm_isplaying = True
 
-        if not self.ambient_sound_isplaying:
-            self.ambient_sound.play(-1)
-            print("ambient sound playing")
-            self.ambient_sound_isplaying = True
-        # print("Running MainMenu state")  # Debugging line
-        self.display.blit(self.background_image, (0, 0))
+            if not self.ambient_sound_isplaying:
+                self.ambient_sound.play(-1)
+                self.ambient_sound_isplaying = True
 
-        self.display.blit(self.game_logo, ((WIDTH // 2)-(self.logo_width // 2), 90))
+            self.display.blit(self.background_image, (0, 0))
+            self.display.blit(self.game_logo, ((WIDTH // 2) - (self.logo_width // 2), 90))
+
+            mouse_pos = pygame.mouse.get_pos()
+
+            # Handle button hover and clicks
+            if self.startbutton_rect.collidepoint(mouse_pos):
+                if not self.start_button_hovered:
+                    self.hover_sound.play()
+                    self.start_button_hovered = True
+                start_button_color = self.startbutton_hover_color
+            else:
+                start_button_color = self.startbutton_color
+                self.start_button_hovered = False
+
+            self.draw_button(self.startbutton_text, self.font, self.startbutton_rect, start_button_color)
+
+            if self.optionbutton_rect.collidepoint(mouse_pos):
+                if not self.option_button_hovered:
+                    self.hover_sound.play()
+                    self.option_button_hovered = True
+                option_button_color = self.optionbutton_hover_color
+            else:
+                option_button_color = self.optionbutton_color
+                self.option_button_hovered = False
+
+            self.draw_button(self.optionbutton_text, self.font, self.optionbutton_rect, option_button_color)
+
+            if self.exitbutton_rect.collidepoint(mouse_pos):
+                if not self.exit_button_hovered:
+                    self.hover_sound.play()
+                    self.exit_button_hovered = True
+                exit_button_color = self.exitbutton_hover_color
+            else:
+                exit_button_color = self.exitbutton_color
+                self.exit_button_hovered = False
+
+            self.draw_button(self.exitbutton_text, self.font, self.exitbutton_rect, exit_button_color)
+
+            # Update and draw leaves
+            for leaf in self.leaves:
+                self.update_leaf(leaf)
+                self.display.blit(self.leaf_frames[leaf["frame_index"]], (leaf["x"], leaf["y"]))
 
 
-        mouse_pos = pygame.mouse.get_pos()
-
-        if self.startbutton_rect.collidepoint(mouse_pos):
-            if not self.start_button_hovered:
-                self.hover_sound.play()
-                self.start_button_hovered = True
-            start_button_color = self.startbutton_hover_color
-        else:
-            start_button_color = self.startbutton_color
-            self.start_button_hovered = False
-
-        self.draw_button(self.startbutton_text, self.font, self.startbutton_rect, start_button_color, border_radius = 20)
-
-        if self.optionbutton_rect.collidepoint(mouse_pos):
-            if not self.option_button_hovered:
-                self.hover_sound.play()
-                self.option_button_hovered = True
-            option_button_color = self.optionbutton_hover_color
-        else:
-            option_button_color = self.optionbutton_color
-            self.option_button_hovered = False
-
-        self.draw_button(self.optionbutton_text, self.font, self.optionbutton_rect, option_button_color, border_radius = 20)
-
-        if self.exitbutton_rect.collidepoint(mouse_pos):
-            if not self.exit_button_hovered:
-                self.hover_sound.play()
-                self.exit_button_hovered = True
-            exit_button_color = self.exitbutton_hover_color
-        else:
-            exit_button_color = self.exitbutton_color
-            self.exit_button_hovered = False
-
-        self.draw_button(self.exitbutton_text, self.font, self.exitbutton_rect, exit_button_color, border_radius = 20)
 
 
-        # Update and draw leaves
-        for leaf in self.leaves:
-            self.update_leaf(leaf)
-            self.display.blit(self.leaf_frames[leaf["frame_index"]], (leaf["x"], leaf["y"]))
-
-        # Example of adding a simple title
-        # font = pygame.font.Font(None, 74)
-        # title_text = font.render('Main Menu', True, (255, 255, 255))
-        # self.display.blit(title_text, (100, 100))
-
-        # Event Handling
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                # Check if the start button is clicked
-                if self.startbutton_rect.collidepoint(event.pos):
-                    self.stop_sounds()
-                    self.gameStateManager.set_state('first-level')
-                    print("Start Button Clicked!")
-                    engine.say("Start")
-                    engine.runAndWait()
-
-                # Check if the options button is clicked
-                elif self.optionbutton_rect.collidepoint(event.pos):
-                    self.stop_sounds()
-                    self.gameStateManager.set_state('options')
-                    print("Options Button Clicked!")
-                    engine.say("Options")
-                    engine.runAndWait()
-
-                elif self.exitbutton_rect.collidepoint(event.pos):
-                    self.stop_sounds()
-                    print("Exit Button Clicked!")
+            # Event Handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-        # keys = pygame.key.get_pressed()
-        # if keys[pygame.K_RETURN]:  # If Enter key is pressed
-        #     self.gameStateManager.set_state('first-level')  # Switch to the options menu
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    # Check if the start button is clicked
+                    if self.startbutton_rect.collidepoint(event.pos):
+                        self.stop_sounds()
+                        self.gameStateManager.set_state('first-level')
+                        engine.say("Start")
+                        engine.runAndWait()
+                        running = False  # Exit the loop to transition to the next state
+
+                    elif self.optionbutton_rect.collidepoint(event.pos):
+                        self.stop_sounds()
+                        self.gameStateManager.set_state('options')
+                        engine.say("Options")
+                        engine.runAndWait()
+                        running = False  # Exit the loop to transition to the next state
+
+                    elif self.exitbutton_rect.collidepoint(event.pos):
+                        self.stop_sounds()
+                        pygame.quit()
+                        sys.exit()
+
+
+
+            pygame.display.update()
+
+
 
 class Options:
     def __init__(self, display, gameStateManager):
@@ -364,118 +371,330 @@ class FirstLevel:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
+        self.screen_width, self.screen_height = self.display.get_size()
 
-        self.player_x, self.player_y = WIDTH // 2, HEIGHT // 2
-        self.player_speed = 3.5  # Adjusted speed for better visibility
+        # Load platforms and background
+        green_platform_path = os.path.join('graphics', 'First-Level-Platform.png')
+        self.green_platform = pygame.image.load(green_platform_path).convert_alpha()
 
-        # Load the sprite sheets from the specified path
-        self.sprite_sheet_path_Idle = os.path.join('graphics', 'Idle.png')
-        self.sprite_sheet_path_Run = os.path.join('graphics', 'Run.png')
-        # -- self.sprite_sheet_path_Run = r'C:\Users\hp\Documents\Dyscape\DyscapeTheGame\graphics\Run.png'
-        self.sprite_sheet_Idle = pygame.image.load(self.sprite_sheet_path_Idle).convert_alpha()
-        self.sprite_sheet_Run = pygame.image.load(self.sprite_sheet_path_Run).convert_alpha()
+        bottom_platform_path = os.path.join('graphics', 'First-Level-Bottom-Platform.png')
+        self.bottom_platform = pygame.image.load(bottom_platform_path).convert_alpha()
 
-        # Animation parameters
-        self.frame_width = 48  # Width of a single frame in the sprite sheet
-        self.frame_height = 48  # Height of a single frame in the sprite sheet
-        self.scale = 1.5  # Scale factor for enlarging the sprite
-        self.num_frames_Idle = 9  # Number of frames in the idle sprite sheet
-        self.num_frames_Run = 9  # Number of frames in the run sprite sheet
-        self.animation_speed = 0.1  # Seconds per frame
-        self.current_frame = 0
-        self.elapsed_time = 0
-        self.last_time = pygame.time.get_ticks()
-        self.clock = pygame.time.Clock()
+        # Ladder slots
+        self.ladder_slots = [
+            {"word": "", "rect": pygame.Rect(int(self.screen_width * 0.435), int(self.screen_height * (0.03 + i * 0.131)), 175, 30),
+             "correct_word": correct_word, "occupied": False, "color": (251, 242, 54), "pair_word": pair_word}
+            for i, (correct_word, pair_word) in enumerate([
+                ("SHOES", "SHOES"), ("DOG", "DOG"), ("CROWN", "CROWN"), ("BALL", "BALL"), ("CAT", "CAT")
+            ])
+        ]
 
-        self.idle = True
-        self.facing_right = True  # Assume the character starts facing right
+        # Draggable images
+        self.draggable_images = [
+            {"word": word,
+             "image": pygame.image.load(os.path.join('graphics', f'{word.lower()}.png')).convert_alpha(),
+             "rect": pygame.Rect(int(self.screen_width * (0.15 + i * 0.152)), int(self.screen_height * 0.72), 150, 80),
+             "dragging": False, "original_pos": (int(self.screen_width * (0.15 + i * 0.152)), int(self.screen_height * 0.72)),
+             "placed": False}
+            for i, word in enumerate(["CAT", "CROWN", "BALL", "SHOES", "DOG"])
+        ]
 
-        # Shadow parameters
-        self.shadow_width = 30  # Width of the shadow ellipse
-        self.shadow_height = 10  # Height of the shadow ellipse
-        self.shadow_surface = pygame.Surface((self.shadow_width, self.shadow_height), pygame.SRCALPHA)
-        pygame.draw.ellipse(self.shadow_surface, (0, 0, 0, 100), [0, 0, self.shadow_width, self.shadow_height])
+        # Scale images to fit
+        for image_data in self.draggable_images:
+            image_data["image"] = pygame.transform.scale(image_data["image"], (100, 100))
 
-        # Function to extract frames from the sprite sheet
+        # Load ladder and heart images
+        self.ladder_image = pygame.image.load(os.path.join('graphics', 'ladder-1.png')).convert_alpha()
+        self.ladder_image = pygame.transform.scale(self.ladder_image, (int(self.screen_width * 0.5), int(self.screen_height * 0.7)))
+
+        self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
+        self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))
+
+        # Game variables
+        self.lives = 3
+        self.selected_word = None
+        self.offset_x = 0
+        self.offset_y = 0
+        self.game_over = False
+        self.win = False
+
+        # Load the Arial font
+        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        self.font = pygame.font.Font(font_path, 20)
+
+        # TTS engine
+        self.tts_engine = pyttsx3.init()
+
+        # Load speaker icon for TTS
+        self.speaker_icon = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
+        self.speaker_icon = pygame.transform.scale(self.speaker_icon, (30, 30))
+
+        # Load saved progress
+        self.load_progress()
+
+    def draw_hearts(self):
+        for i in range(self.lives):
+            self.display.blit(self.heart_image, (10 + i * 60, 10))
+
+    def speak_word(self, word):
+        """Pronounce the word using Text-to-Speech (TTS)."""
+        self.tts_engine.say(word)
+        self.tts_engine.runAndWait()
+
+    def save_progress(self):
+        draggable_images_json = json.dumps(self.draggable_images)  # Convert list to JSON
+        ladder_slots_json = json.dumps(self.ladder_slots)  # Convert list to JSON
+        with connect() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''INSERT INTO first_level_progress (lives, draggable_images, ladder_slots)
+                              VALUES (?, ?, ?)''', (self.lives, draggable_images_json, ladder_slots_json))
+            conn.commit()
+
+    def load_progress(self):
+        with connect() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT lives, draggable_images, ladder_slots FROM first_level_progress ORDER BY id DESC LIMIT 1')
+            progress = cursor.fetchone()
+            if progress:
+                self.lives = progress[0]
+                self.draggable_images = json.loads(progress[1])  # Convert JSON back to list
+                self.ladder_slots = json.loads(progress[2])  # Convert JSON back to list
+            else:
+                print("No saved progress found.")
+
+    def restart_level(self):
+        """Reinitialize the level to restart the game."""
+        self.__init__(self.display, self.gameStateManager)  # Reinitialize the level
+        self.gameStateManager.set_state('first-level')  # Set the game state back to the first level
+
+    def exit_to_main_menu(self):
+        """Exit the current level and return to the main menu."""
+        self.gameStateManager.set_state('main-menu')  # Set the game state to the main menu
+
+    def show_end_screen(self):
+        """Displays the end screen when the game is won or lost."""
+        self.display.fill((0, 0, 0))  # Fill screen with black
+
+        message = "You Win!" if self.win else "Game Over!"
+        text_surface = self.font.render(message, True, (255, 255, 255))  # White text
+        text_rect = text_surface.get_rect(center=(self.screen_width // 2, self.screen_height // 3))
+        self.display.blit(text_surface, text_rect)
+
+        # Define Restart and Exit buttons
+        self.restart_button = pygame.Rect(self.screen_width // 2 - 100, self.screen_height // 2, 200, 50)
+        self.exit_button = pygame.Rect(self.screen_width // 2 - 100, self.screen_height // 2 + 70, 200, 50)
+
+        # Draw the Restart button (Green)
+        pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)
+        restart_text = self.font.render("Restart", True, (255, 255, 255))
+        self.display.blit(restart_text, (self.restart_button.x + 50, self.restart_button.y + 10))
+
+        # Draw the Exit button (Red)
+        pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)
+        exit_text = self.font.render("Exit", True, (255, 255, 255))
+        self.display.blit(exit_text, (self.exit_button.x + 70, self.exit_button.y + 10))
 
 
-    def get_frame(self, sheet, frame, width, height, scale, flip=False):
-        frame_surface = pygame.Surface((width, height), pygame.SRCALPHA)
-        frame_surface.blit(sheet, (0, 0), (frame * width, 0, width, height))
-        scaled_surface = pygame.transform.scale(frame_surface, (width * scale, height * scale))
-        if flip:
-            scaled_surface = pygame.transform.flip(scaled_surface, True, False)
-        return scaled_surface
-
+        # Event handling for the buttons
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.restart_button.collidepoint(event.pos):
+                    self.restart_level()  # Restart the level
+                elif self.exit_button.collidepoint(event.pos):
+                    self.exit_to_main_menu()  # Exit to main menu
 
     def run(self):
+        correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
+        wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
 
-        # Example of handling user input to return to the main menu
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE]:  # If Escape key is pressed
-            self.gameStateManager.set_state('main-menu')  # Return to the main menu
+        running = True
+        while running:
+            if self.game_over or self.win:
+                self.show_end_screen()
+                pygame.display.update()
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+                continue
 
-        while True:
-            # Event loop
-            # print("Running First Level state")
+            # Main game logic
+            self.display.blit(self.bottom_platform, (0, 0))  # Draw bottom platform
+            self.display.blit(self.green_platform, (0, 320))  # Draw green platform
+            self.display.blit(self.ladder_image, (self.screen_width * 0.25, 0))  # Draw ladder image
+
+            # Display lives
+            self.draw_hearts()
+
+            # Display ladder slots and draggable images
+            for slot in self.ladder_slots:
+                pygame.draw.rect(self.display, slot["color"], slot["rect"], 3)
+                speaker_icon_rect = self.speaker_icon.get_rect(center=(slot["rect"].centerx, slot["rect"].centery + 45))
+                self.display.blit(self.speaker_icon, speaker_icon_rect)
+
+            for word_data in self.draggable_images:
+                if not word_data["placed"]:
+                    self.display.blit(word_data["image"], word_data["rect"])
+
+            # Event handling
+            mouse_pos = pygame.mouse.get_pos()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
 
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if not self.selected_word:  # Ensure no other word is currently selected
+                        for word_data in self.draggable_images:
+                            if word_data["rect"].collidepoint(event.pos) and not word_data["placed"]:
+                                self.selected_word = word_data
+                                self.offset_x = word_data["rect"].x - event.pos[
+                                    0]  # Capture offset between the image and mouse
+                                self.offset_y = word_data["rect"].y - event.pos[1]
+                                break
 
+                        for slot in self.ladder_slots:
+                            speaker_icon_rect = self.speaker_icon.get_rect(center=(slot["rect"].centerx, slot["rect"].centery + 45))
+                            if speaker_icon_rect.collidepoint(event.pos):
+                                self.speak_word(slot["pair_word"])
 
-            # Get the current key presses
-            keys = pygame.key.get_pressed()
-            moving = False
-            if keys[pygame.K_w]:
-                self.player_y -= self.player_speed
-                moving = True
-            if keys[pygame.K_s]:
-                self.player_y += self.player_speed
-                moving = True
-            if keys[pygame.K_a]:
-                self.player_x -= self.player_speed
-                moving = True
-                self.facing_right = False
-            if keys[pygame.K_d]:
-                self.player_x += self.player_speed
-                moving = True
-                self.facing_right = True
+                    elif event.type == pygame.MOUSEBUTTONUP:
+                        if self.selected_word:
+                            placed_in_slot = False
+                            for slot in self.ladder_slots:
+                                if slot["rect"].colliderect(self.selected_word["rect"]) and not slot["occupied"]:
+                                    if slot["correct_word"] == self.selected_word["word"]:
+                                        # Snap word into place
+                                        self.selected_word["rect"].center = slot["rect"].center
+                                        slot["occupied"] = True
+                                        slot["color"] = (143, 86, 59)  # Brown for correct placement
+                                        self.selected_word["placed"] = True
+                                        placed_in_slot = True
+                                        break
 
-            self.idle = not moving
+                            # If the word is not placed in any valid slot, reset it to its original position
+                            if not placed_in_slot:
+                                self.selected_word["rect"].x, self.selected_word["rect"].y = self.selected_word[
+                                    "original_pos"]
 
-            # Update the animation frame
-            current_time = pygame.time.get_ticks()
-            self.elapsed_time += (current_time - self.last_time) / 1000.0
-            self.last_time = current_time
+                            self.selected_word = None  # Release the selected word
 
-            if self.elapsed_time > self.animation_speed:
-                self.current_frame = (self.current_frame + 1) % (
-                    self.num_frames_Idle if self.idle else self.num_frames_Run)  # Loop to the next frame
-                self.elapsed_time = 0
+                        if not placed_in_slot:
+                            self.selected_word["rect"].x, self.selected_word["rect"].y = self.selected_word["original_pos"]
 
-            sprite_sheet = self.sprite_sheet_Idle if self.idle else self.sprite_sheet_Run
-            frame_image = self.get_frame(sprite_sheet, self.current_frame, self.frame_width, self.frame_height, self.scale,
-                                         not self.facing_right)
+                        self.selected_word = None
 
-            # Fill the screen with the background color
-            self.display.fill(FERN_GREEN)
-
-            # Update shadow position
-            shadow_offset_x = 37  # Adjust the shadow offset as needed
-            shadow_offset_y = 65
-            self.display.blit(self.shadow_surface,
-                             (self.player_x - self.shadow_width // 2 + shadow_offset_x, self.player_y + shadow_offset_y))
-
-            # Blit the current animation frame onto the screen
-            self.display.blit(frame_image, (self.player_x, self.player_y))
-
-            # Update the display
             pygame.display.update()
 
-            # Cap the frame rate
-            self.clock.tick(FPS)
+class SecondLevel:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.screen_width, self.screen_height = self.display.get_size()
+
+        # Load saved progress
+        progress = load_progress()
+        if progress and progress[0] == 'second-level':
+            self.lives = progress[1]
+            self.current_time = progress[2]
+            self.rounds_completed = progress[3]
+        else:
+            # Set default values if no saved progress exists
+            self.lives = 3
+            self.current_time = 120.0
+            self.rounds_completed = 0
+
+        # Words for the game
+        self.flower_words = ["Tree", "Box", "Ball", "Duck", "Cat", "Dog", "Fish", "Bird", "Bed", "House"]
+        random.shuffle(self.flower_words)
+        self.current_flower_word = self.flower_words[self.rounds_completed]
+
+        # Dictionary to map words to images
+        self.word_images = {
+            "Tree": pygame.image.load(os.path.join('graphics', 'corrupted-tree.png')).convert_alpha(),
+            "Bed": pygame.image.load(os.path.join('graphics', 'corrupted-bed.png')).convert_alpha(),
+            "Dog": pygame.image.load(os.path.join('graphics', 'corrupted-dog.png')).convert_alpha(),
+            "Box": pygame.image.load(os.path.join('graphics', 'corrupted-box.png')).convert_alpha(),
+            "Ball": pygame.image.load(os.path.join('graphics', 'corrupted-ball.png')).convert_alpha(),
+            "Duck": pygame.image.load(os.path.join('graphics', 'corrupted-duck.png')).convert_alpha(),
+            "Cat": pygame.image.load(os.path.join('graphics', 'corrupted-cat.png')).convert_alpha(),
+            "Fish": pygame.image.load(os.path.join('graphics', 'corrupted-fish.png')).convert_alpha(),
+            "Bird": pygame.image.load(os.path.join('graphics', 'corrupted-bird.png')).convert_alpha(),
+            "House": pygame.image.load(os.path.join('graphics', 'corrupted-house.png')).convert_alpha(),
+        }
+
+        # Scale images to fit the screen (if needed)
+        for word in self.word_images:
+            self.word_images[word] = pygame.transform.scale(self.word_images[word], (450, 520))
+
+        # Initialize other game variables
+        self.input_text = ''
+        self.clock = pygame.time.Clock()
+        self.last_time = pygame.time.get_ticks()
+
+        # Load hearts for lives display and resize them
+        self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
+        self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))
+
+        # Load warrior sprite sheet and initialize animation variables
+        self.warrior_spritesheet = pygame.image.load(
+            os.path.join('graphics', 'idle-character-with-sword.png')).convert_alpha()
+        self.warrior_frame_width = 400
+        self.warrior_frame_height = 426
+        self.warrior_frames = [
+            self.warrior_spritesheet.subsurface(
+                (i * self.warrior_frame_width, 0, self.warrior_frame_width, self.warrior_frame_height))
+            for i in range(9)
+        ]
+        self.warrior_current_frame = 0
+        self.warrior_animation_speed = 0.2  # Adjust speed (higher is slower)
+        self.warrior_frame_time = 0  # Time tracking for frame updates
+
+        # Load warrior attack sprite sheet and initialize animation variables
+        self.attack_spritesheet = pygame.image.load(
+            os.path.join('graphics', 'slash-animation.png')).convert_alpha()
+        self.attack_frames = [
+            self.attack_spritesheet.subsurface(
+                (i * self.warrior_frame_width, 0, self.warrior_frame_width, self.warrior_frame_height))
+            for i in range(9)
+        ]
+        self.attack_current_frame = 0
+        self.attack_animation_speed = 0.1  # Adjust as needed
+        self.is_attacking = False  # Track if attack animation is active
+
+        self.current_animation = 'idle'
+        self.tts_engine = pyttsx3.init()
+
+    def draw_hearts(self):
+        for i in range(self.lives):
+            self.display.blit(self.heart_image, (10 + i * 60, 10))
+
+    def run(self):
+        self.current_time = 120.0  # 2 minutes timer
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+            # Update the game logic
+            self.current_time -= self.clock.get_time() / 1000.0  # Decrease time
+
+            if self.current_time <= 0 or self.lives <= 0:
+                self.game_over = True
+                break
+
+            pygame.display.update()  # Update the display
+            self.clock.tick(60)  # Cap frame rate at 60 FPS
+
+        # Save progress when exiting the level
+        save_progress('second-level', self.lives, self.current_time, self.rounds_completed)
+
 
 class GameStateManager:
     def __init__(self, currentState):
