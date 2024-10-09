@@ -379,7 +379,7 @@ class FirstLevel:
                  "correct_word": correct_word, "occupied": False, "color": (251, 242, 54), "pair_word": pair_word}
                 # Added "pair_word"
                 for i, (correct_word, pair_word) in enumerate([
-                    ("SHOES", "SHOES"), ("DOG", "DOG"), ("CROWN", "CROWN"), ("BALL", "BALL"), ("CAT", "CAT")
+                    ("BOAT", "COAT"), ("DOG", "LOG"), ("CROWN", "GOWN"), ("BALL", "FALL"), ("CAT", "BAT")
                 ])
             ]
 
@@ -393,7 +393,7 @@ class FirstLevel:
                  "original_pos": (int(self.screen_width * (draggable_x_start_ratio + i * draggable_x_spacing_ratio)),
                                   int(self.screen_height * draggable_y_ratio)),
                  "placed": False}
-                for i, word in enumerate(["CAT", "CROWN", "BALL", "SHOES", "DOG"])
+                for i, word in enumerate(["CAT", "CROWN", "BALL", "BOAT", "DOG"])
             ]
 
             # Scale the images to fit within the draggable area
