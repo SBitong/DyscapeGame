@@ -381,7 +381,7 @@ class FirstLevel:
                  "correct_word": correct_word, "occupied": False, "color": (251, 242, 54), "pair_word": pair_word}
                 # Added "pair_word"
                 for i, (correct_word, pair_word) in enumerate([
-                    ("SHOES", "SHOES"), ("DOG", "DOG"), ("CROWN", "CROWN"), ("BALL", "BALL"), ("CAT", "CAT")
+                    ("BOAT", "GOAT"), ("DOG", "HOG"), ("CROWN", "DROWN"), ("BALL", "FALL"), ("CAT", "BAT")
                 ])
             ]
 
@@ -395,7 +395,7 @@ class FirstLevel:
                  "original_pos": (int(self.screen_width * (draggable_x_start_ratio + i * draggable_x_spacing_ratio)),
                                   int(self.screen_height * draggable_y_ratio)),
                  "placed": False}
-                for i, word in enumerate(["CAT", "CROWN", "BALL", "SHOES", "DOG"])
+                for i, word in enumerate(["CAT", "CROWN", "BALL", "BOAT", "DOG"])
             ]
 
             # Scale the images to fit within the draggable area
@@ -498,13 +498,14 @@ class FirstLevel:
             # Dialogue list (narrating the FourthLevel)
             self.dialogue_lines = [
                 "Dyscape was once a bright and wonderful place, a world full of words, learning, and light.", # 1
-                "Its kingdom was amazingly ruled by a king. Its skies were vibrant,  and the land was abundant \n and filled with knowledge.", # 2
+                "Its kingdom was amazingly ruled by a king. Its skies were vibrant, and the land was abundant \n and filled with knowledge.", # 2
                 "Every citizen were living in prosper, and the community is thriving, showing the power of learning.", # 3
                 "But something bad was coming. An unknown being called Confusion infiltrated Dyscape.", # 4
                 "He destroyed the city, polluted the forest, and scrambled the landscapes.", # 5
                 "He hypnotized every citizen in the kingdom and stole their capability to sustain knowledge", # 6
                 "Under his will, Confusion took the king as his hostage and now resides in the tower", # 7
                 "Now, the world of Dyscape is engulfed in chaos, and it's only a  matter of time before the world \n will drown into darkness.", # 8
+                " ", # Pause
                 "In an alternate world, there was a man who was camping in the woods near a lake.", # 9
                 "He was setting up his campfire when he heard a strange sound from the lake.", # 10
                 "He looked behind his back and saw a mysterious glow near the side of the lake.", # 11
@@ -523,12 +524,13 @@ class FirstLevel:
                 pygame.image.load(os.path.join('graphics', 'confusion-hypnotize.png')).convert_alpha(), # 6
                 pygame.image.load(os.path.join('graphics', 'king-strangle.png')).convert_alpha(), # 7
                 pygame.image.load(os.path.join('graphics', 'dyscape-in-chaos.png')).convert_alpha(), # 8
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 9
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 10
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 11
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 12
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 13
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 14
+                pygame.image.load(os.path.join('graphics', 'black-screen.png')).convert_alpha(), # Pause
+                pygame.image.load(os.path.join('graphics', 'character-camping.png')).convert_alpha(), # 9
+                pygame.image.load(os.path.join('graphics', 'strange-sound.png')).convert_alpha(), # 10
+                pygame.image.load(os.path.join('graphics', 'mysterious-glow.png')).convert_alpha(), # 11
+                pygame.image.load(os.path.join('graphics', 'glow-closeup.png')).convert_alpha(), # 12
+                pygame.image.load(os.path.join('graphics', 'the-glow-speaks.png')).convert_alpha(), # 13
+                pygame.image.load(os.path.join('graphics', 'glow-pulled-the-character.png')).convert_alpha(), # 14
             ]
 
             # Corresponding narration files for each dialogue line
@@ -541,6 +543,7 @@ class FirstLevel:
                 pygame.mixer.Sound(os.path.join('audio', 'first-narrator-6.mp3')),
                 pygame.mixer.Sound(os.path.join('audio', 'first-narrator-7.mp3')),
                 pygame.mixer.Sound(os.path.join('audio', 'first-narrator-8.mp3')),
+                pygame.mixer.Sound(os.path.join('audio', '500-milliseconds-of-silence.mp3')),
                 pygame.mixer.Sound(os.path.join('audio', 'first-narrator-9.mp3')),
                 pygame.mixer.Sound(os.path.join('audio', 'first-narrator-10.mp3')),
                 pygame.mixer.Sound(os.path.join('audio', 'first-narrator-11.mp3')),
