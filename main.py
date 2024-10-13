@@ -4,10 +4,13 @@ import os
 import random
 import pyttsx3
 from settings import *
+import time
 
 # Initialize Pygame
 pygame.init()
 engine = pyttsx3.init()
+
+
 class Game:
     def __init__(self):
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -15,9 +18,11 @@ class Game:
 
         self.gameStateManager = GameStateManager('main-menu')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
-        self.options = Options(self.screen, self.gameStateManager)
-        self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel}
+        self.lavaLabyrinth = LavaLabyrinth(self.screen, self.gameStateManager)  # Add LavaLabyrinth level here
+        self.states = {
+            'main-menu': self.mainMenu,
+            'lava-labyrinth': self.lavaLabyrinth  # New LavaLabyrinth state
+        }
 
         self.clock = pygame.time.Clock()
 
@@ -38,6 +43,7 @@ class Game:
             # Cap the frame rate
             self.clock.tick(FPS)
 
+
 class MainMenu:
     def __init__(self, display, gameStateManager):
         self.display = display
@@ -48,14 +54,16 @@ class MainMenu:
         self.font = pygame.font.Font(font_path, 40)
 
         # Load hover sound effect
-        hover_sound_path = os.path.join('audio', 'mouse_hover_effect_01.mp3')  # Replace with the path to your hover sound
+        hover_sound_path = os.path.join('audio',
+                                        'mouse_hover_effect_01.mp3')  # Replace with the path to your hover sound
         self.hover_sound = pygame.mixer.Sound(hover_sound_path)
         self.start_button_hovered = False
         self.option_button_hovered = False
         self.exit_button_hovered = False
+        self.second_level_button_hovered = False  # For the Lava Labyrinth level
 
         # Load the game music
-        music_path = os.path.join('audio','01 Hei Shao.mp3')
+        music_path = os.path.join('audio', '01 Hei Shao.mp3')
         self.main_menu_bgm = pygame.mixer.Sound(music_path)
         self.main_menu_bgm_isplaying = False
 
@@ -67,32 +75,25 @@ class MainMenu:
         # Load the main-menu background and adjust to fit on display
         background_image_path = os.path.join('graphics', 'main-menu-background-1.jpg')
         self.background_image = pygame.image.load(background_image_path).convert_alpha()
-        self.background_image = pygame.transform.scale(self.background_image,(self.display.get_width(), self.display.get_height()))
+        self.background_image = pygame.transform.scale(self.background_image,
+                                                       (self.display.get_width(), self.display.get_height()))
 
         # Load the game logo
         game_logo_path = os.path.join('graphics', 'DYSCAPE-LOGO2.png')
         self.game_logo = pygame.image.load(game_logo_path).convert_alpha()
         self.logo_width, self.logo_height = self.game_logo.get_size()
 
-        # Load, extract, and multiply the leaves from the spring-leaf spritesheet
-        springleaf_path = os.path.join('graphics','Spring-Leaf.png')
-        self.springleaf_sprite = pygame.image.load(springleaf_path).convert_alpha()
-        scale_factor = 2.5 #times two leaf size
-        self.leaf_frames = self.extract_leaf_frames(self.springleaf_sprite, 5, scale_factor)
-        self.leaves = [self.create_leaf() for x in range(30)]
-
         # Start Button properties
         self.startbutton_color = (255, 200, 0)
         self.startbutton_hover_color = (255, 170, 0)
         self.startbutton_text = "Start"
         self.startbutton_rect = pygame.Rect((self.display.get_width() // 2 - 150, 400), (300, 80))
-        #self.startbutton_text = self.font.render('Start', True, (0, 0, 0))
 
-        # Options Button properties
-        self.optionbutton_color = (255, 200, 0)
-        self.optionbutton_hover_color = (255, 170, 0)
-        self.optionbutton_text = "Options"
-        self.optionbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 500), (250, 70))
+        # Lava Labyrinth Button properties
+        self.lava_button_color = (255, 200, 0)
+        self.lava_button_hover_color = (255, 170, 0)
+        self.lava_button_text = "Lava Labyrinth"
+        self.lava_button_rect = pygame.Rect((self.display.get_width() // 2 - 150, 500), (300, 80))
 
         # Exit Button properties
         self.exitbutton_color = (255, 200, 0)
@@ -106,376 +107,183 @@ class MainMenu:
         self.main_menu_bgm_isplaying = False
         self.ambient_sound_isplaying = False
 
-    def draw_button(self, text, font, rect, color, border_radius = 20):
-        # Create a surface for the button with per-pixel alpha
-        button_surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-
-        # Draw the rounded rectangle on this surface
-        pygame.draw.rect(button_surface, color, button_surface.get_rect(), border_radius=border_radius)
-
-        # Render the text and get its rect
-        text_surface = font.render(text, True, (0, 0, 0))  # Black text color
-        text_rect = text_surface.get_rect(center=(rect.width // 2, rect.height // 2))
-
-        # Blit the text onto the button surface
-        button_surface.blit(text_surface, text_rect)
-
-        # Blit the button surface onto the main display
-        self.display.blit(button_surface, rect.topleft)
-
-    def extract_leaf_frames(self, sprite_sheet, num_frames, scale_factor):
-        frames = []
-        frame_width = sprite_sheet.get_width() // num_frames
-        frame_height = sprite_sheet.get_height()
-        for i in range(num_frames):
-            frame = sprite_sheet.subsurface(pygame.Rect(i * frame_width, 0, frame_width, frame_height))
-            scaled_frame = pygame.transform.scale(frame, (int(frame_width * scale_factor), int(frame_height * scale_factor)))
-            frames.append(scaled_frame)
-        return frames
-
-    def create_leaf(self):
-        leaf = {
-            "frame_index": 0,
-            "x": random.randint(0, self.display.get_width()),
-            "y": random.randint(-self.display.get_height(), 0),
-            "speed": random.uniform(1, 3),
-            "animation_speed": random.uniform(0.1, 0.2),
-            "animation_timer": 0,
-            "horizontal_speed": random.uniform(-1, -0.5)
-        }
-        return leaf
-
-    def update_leaf(self, leaf):
-        # Update the animation frame
-        leaf["animation_timer"] += 1 / FPS
-        if leaf["animation_timer"] >= leaf["animation_speed"]:
-            leaf["animation_timer"] = 0
-            leaf["frame_index"] = (leaf["frame_index"] + 1) % len(self.leaf_frames)
-
-        # Move the leaf down and slightly to the left
-        leaf["y"] += leaf["speed"]
-        leaf["x"] += leaf["horizontal_speed"]
-
-        if leaf["y"] > self.display.get_height():  # If the leaf goes off the screen, reset its position
-            leaf["y"] = random.randint(-self.display.get_height(), 0)
-            leaf["x"] = random.randint(0, self.display.get_width())
-
     def run(self):
         if not self.main_menu_bgm_isplaying:
             self.main_menu_bgm.play(-1)
-            print("bgm playing")
             self.main_menu_bgm_isplaying = True
 
         if not self.ambient_sound_isplaying:
             self.ambient_sound.play(-1)
-            print("ambient sound playing")
             self.ambient_sound_isplaying = True
-        # print("Running MainMenu state")  # Debugging line
+
         self.display.blit(self.background_image, (0, 0))
-
-        self.display.blit(self.game_logo, ((WIDTH // 2)-(self.logo_width // 2), 90))
-
+        self.display.blit(self.game_logo, ((WIDTH // 2) - (self.logo_width // 2), 90))
 
         mouse_pos = pygame.mouse.get_pos()
 
+        # Start Button hover and click logic
         if self.startbutton_rect.collidepoint(mouse_pos):
-            if not self.start_button_hovered:
-                self.hover_sound.play()
-                self.start_button_hovered = True
             start_button_color = self.startbutton_hover_color
         else:
             start_button_color = self.startbutton_color
-            self.start_button_hovered = False
 
-        self.draw_button(self.startbutton_text, self.font, self.startbutton_rect, start_button_color, border_radius = 20)
+        self.draw_button(self.startbutton_text, self.font, self.startbutton_rect, start_button_color)
 
-        if self.optionbutton_rect.collidepoint(mouse_pos):
-            if not self.option_button_hovered:
-                self.hover_sound.play()
-                self.option_button_hovered = True
-            option_button_color = self.optionbutton_hover_color
+        # Lava Labyrinth Button hover and click logic
+        if self.lava_button_rect.collidepoint(mouse_pos):
+            lava_button_color = self.lava_button_hover_color
         else:
-            option_button_color = self.optionbutton_color
-            self.option_button_hovered = False
+            lava_button_color = self.lava_button_color
 
-        self.draw_button(self.optionbutton_text, self.font, self.optionbutton_rect, option_button_color, border_radius = 20)
+        self.draw_button(self.lava_button_text, self.font, self.lava_button_rect, lava_button_color)
 
+        # Exit Button hover and click logic
         if self.exitbutton_rect.collidepoint(mouse_pos):
-            if not self.exit_button_hovered:
-                self.hover_sound.play()
-                self.exit_button_hovered = True
             exit_button_color = self.exitbutton_hover_color
         else:
             exit_button_color = self.exitbutton_color
-            self.exit_button_hovered = False
 
-        self.draw_button(self.exitbutton_text, self.font, self.exitbutton_rect, exit_button_color, border_radius = 20)
+        self.draw_button(self.exitbutton_text, self.font, self.exitbutton_rect, exit_button_color)
 
-
-        # Update and draw leaves
-        for leaf in self.leaves:
-            self.update_leaf(leaf)
-            self.display.blit(self.leaf_frames[leaf["frame_index"]], (leaf["x"], leaf["y"]))
-
-        # Example of adding a simple title
-        # font = pygame.font.Font(None, 74)
-        # title_text = font.render('Main Menu', True, (255, 255, 255))
-        # self.display.blit(title_text, (100, 100))
-
-        # Event Handling
+        # Event handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                # Check if the start button is clicked
                 if self.startbutton_rect.collidepoint(event.pos):
                     self.stop_sounds()
                     self.gameStateManager.set_state('first-level')
-                    print("Start Button Clicked!")
-                    engine.say("Start")
-                    engine.runAndWait()
-
-                # Check if the options button is clicked
-                elif self.optionbutton_rect.collidepoint(event.pos):
+                elif self.lava_button_rect.collidepoint(event.pos):
                     self.stop_sounds()
-                    self.gameStateManager.set_state('options')
-                    print("Options Button Clicked!")
-                    engine.say("Options")
-                    engine.runAndWait()
-
+                    self.gameStateManager.set_state('lava-labyrinth')  # Switch to Lava Labyrinth
                 elif self.exitbutton_rect.collidepoint(event.pos):
                     self.stop_sounds()
-                    print("Exit Button Clicked!")
                     pygame.quit()
                     sys.exit()
-        # keys = pygame.key.get_pressed()
-        # if keys[pygame.K_RETURN]:  # If Enter key is pressed
-        #     self.gameStateManager.set_state('first-level')  # Switch to the options menu
 
-class Options:
+    def draw_button(self, text, font, rect, color, border_radius=20):
+        pygame.draw.rect(self.display, color, rect, border_radius=border_radius)
+        text_surface = font.render(text, True, (0, 0, 0))
+        text_rect = text_surface.get_rect(center=rect.center)
+        self.display.blit(text_surface, text_rect)
+
+
+class LavaLabyrinth:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
 
-        # Load the background image
-        background_image_path = os.path.join('graphics', 'main-menu-background-1.jpg')
+        # Word and syllable data for Lava Labyrinth
+        self.word_list = [
+            {"word": "volcano", "syllables": ["vol", "ca", "no"]},
+            {"word": "eruption", "syllables": ["e", "rup", "tion"]},
+            {"word": "lava", "syllables": ["la", "va"]},
+            {"word": "labyrinth", "syllables": ["la", "by", "rinth"]}
+        ]
+        self.current_word_data = None
+        self.correct_syllables = []
+        self.current_syllable_selection = []
+        self.syllable_buttons = []
+
+        self.font = pygame.font.SysFont('Arial', 40)
+        self.button_font = pygame.font.SysFont('Arial', 30)
+
+        # Load background (Lava Labyrinth background)
+        background_image_path = os.path.join('graphics', 'lava_labyrinth.jpg')  # Your lava labyrinth background
         self.background_image = pygame.image.load(background_image_path).convert_alpha()
-        self.background_image = pygame.transform.scale(self.background_image, (self.display.get_width(), self.display.get_height()))
+        self.background_image = pygame.transform.scale(self.background_image,
+                                                       (self.display.get_width(), self.display.get_height()))
 
-        # Load the specified font
-        self.font = pygame.font.SysFont(FONT_NAME, FONT_SIZE)
+        self.start_time = None
+        self.lava_flow_time_limit = 10  # 10-second lava flow timer
+        self.load_new_word()
 
-        # Volume slider properties
-        self.slider_length = 300
-        self.slider_height = 10
-        self.slider_color = (200, 200, 200)
-        self.knob_color = (255, 255, 255)
-        self.knob_radius = 10
+    def load_new_word(self):
+        """Load a new word with its syllables."""
+        self.current_word_data = random.choice(self.word_list)
+        self.correct_syllables = self.current_word_data["syllables"]
+        random.shuffle(self.correct_syllables)  # Shuffle syllables for the player
+        self.create_syllable_buttons()
+        self.current_syllable_selection = []
+        self.start_time = time.time()
 
-        # Center the volume slider
-        self.slider_x = (WIDTH - self.slider_length) // 2
-        self.slider_y = HEIGHT // 3
-        self.knob_position = self.slider_x + int(MASTER_VOLUME * self.slider_length)
+    def create_syllable_buttons(self):
+        """Create buttons for each syllable."""
+        self.syllable_buttons = []
+        button_width, button_height = 100, 50
+        total_width = len(self.correct_syllables) * (button_width + 20)
+        x_start = (self.display.get_width() - total_width) // 2
 
-        # TTS toggle button properties
-        self.tts_toggle_rect = pygame.Rect((WIDTH - 150) // 2, self.slider_y + 100, 150, 50)
-        self.tts_enabled = TTS_ENABLED
+        for i, syllable in enumerate(self.correct_syllables):
+            x_position = x_start + i * (button_width + 20)
+            y_position = self.display.get_height() // 2 + 50
+            button_rect = pygame.Rect(x_position, y_position, button_width, button_height)
+            self.syllable_buttons.append({"rect": button_rect, "syllable": syllable})
 
-        # Font selection properties
-        self.fonts = ["Arial", "Courier", "Comic Sans MS", "Georgia", "Times New Roman"]
-        self.current_font_index = self.fonts.index(FONT_NAME) if FONT_NAME in self.fonts else 0
-        self.font_rect = pygame.Rect((WIDTH - 300) // 2, self.tts_toggle_rect.y + 100, 300, 50)
+    def check_answer(self):
+        """Check if the player's syllable selection is correct."""
+        return self.current_syllable_selection == self.current_word_data["syllables"]
 
     def run(self):
         running = True
         while running:
-            self.display.blit(self.background_image, (0, 0))  # Draw the background image
+            elapsed_time = time.time() - self.start_time
+            remaining_time = max(0, self.lava_flow_time_limit - elapsed_time)
 
-            # Draw the volume slider
-            pygame.draw.rect(self.display, self.slider_color, (self.slider_x, self.slider_y, self.slider_length, self.slider_height))
-            pygame.draw.circle(self.display, self.knob_color, (self.knob_position, self.slider_y + self.slider_height // 2), self.knob_radius)
+            # Draw the background image
+            self.display.blit(self.background_image, (0, 0))
 
-            # Display volume label
-            volume_label = self.font.render("Master Volume", True, (255, 255, 255),)
-            volume_label_rect = volume_label.get_rect(center=(WIDTH // 2, self.slider_y - 40))
-            self.display.blit(volume_label, volume_label_rect)
+            # Display the word to be segmented
+            word_text = self.font.render(f"Segment the word: {self.current_word_data['word']}", True, (255, 255, 255))
+            self.display.blit(word_text, (self.display.get_width() // 2 - word_text.get_width() // 2, 50))
 
-            # Draw TTS toggle
-            tts_text = self.font.render("TTS: On" if self.tts_enabled else "TTS: Off", True, (255, 255, 255))
-            pygame.draw.rect(self.display, (0, 100, 0) if self.tts_enabled else (100, 0, 0), self.tts_toggle_rect)
-            tts_text_rect = tts_text.get_rect(center=self.tts_toggle_rect.center)
-            self.display.blit(tts_text, tts_text_rect)
+            # Display the countdown timer
+            timer_text = self.font.render(f"Time: {remaining_time:.1f}", True, (255, 255, 255))
+            self.display.blit(timer_text, (self.display.get_width() - 150, 10))
 
-            # Draw font selection
-            font_text = self.font.render(f"Font: {self.fonts[self.current_font_index]}", True, (255, 255, 255))
-            pygame.draw.rect(self.display, (100, 100, 100), self.font_rect)
-            font_text_rect = font_text.get_rect(center=self.font_rect.center)
-            self.display.blit(font_text, font_text_rect)
+            # Display the syllable buttons
+            for button_data in self.syllable_buttons:
+                rect = button_data["rect"]
+                syllable = button_data["syllable"]
+                pygame.draw.rect(self.display, (200, 0, 0), rect)
+                syllable_text = self.button_font.render(syllable, True, (255, 255, 255))
+                self.display.blit(syllable_text, (rect.x + 10, rect.y + 10))
 
-            # Event Handling
+            # Display player's syllable selection
+            selection_text = self.font.render(f"Your selection: {'-'.join(self.current_syllable_selection)}", True,
+                                              (255, 255, 255))
+            self.display.blit(selection_text, (self.display.get_width() // 2 - selection_text.get_width() // 2, 150))
+
+            # Event handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    sys.exit()
+                    return
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if self.is_mouse_on_slider(event.pos):
-                        self.adjust_volume(event.pos)
-                    elif self.tts_toggle_rect.collidepoint(event.pos):
-                        self.toggle_tts()
-                    elif self.font_rect.collidepoint(event.pos):
-                        self.cycle_font()
-                elif event.type == pygame.MOUSEMOTION:
-                    if event.buttons[0] and self.is_mouse_on_slider(event.pos):
-                        self.adjust_volume(event.pos)
+                    for button_data in self.syllable_buttons:
+                        if button_data["rect"].collidepoint(event.pos):
+                            syllable = button_data["syllable"]
+                            self.current_syllable_selection.append(syllable)
 
-            pygame.display.update()
+            # Check if player has selected all syllables
+            if len(self.current_syllable_selection) == len(self.correct_syllables):
+                if self.check_answer():
+                    print("Correct! You unlocked the gate.")
+                    self.load_new_word()  # Load next word
+                else:
+                    print("Incorrect segmentation!")
+                    self.current_syllable_selection = []  # Reset selection
 
-            # Go back to the main menu
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_ESCAPE]:
+            # Check if timer runs out (lava eruption)
+            if remaining_time <= 0:
+                print("Lava erupted! You failed.")
+                self.gameStateManager.set_state('game-over')  # Set to game-over state
                 running = False
-                self.save_settings()
-                self.gameStateManager.set_state('main-menu')
 
-    def is_mouse_on_slider(self, mouse_pos):
-        return (self.slider_x <= mouse_pos[0] <= self.slider_x + self.slider_length and
-                self.slider_y - self.knob_radius <= mouse_pos[1] <= self.slider_y + self.slider_height + self.knob_radius)
-
-    def adjust_volume(self, mouse_pos):
-        self.knob_position = max(self.slider_x, min(mouse_pos[0], self.slider_x + self.slider_length))
-        MASTER_VOLUME = (self.knob_position - self.slider_x) / self.slider_length
-        pygame.mixer.music.set_volume(MASTER_VOLUME)
-
-    def toggle_tts(self):
-        self.tts_enabled = not self.tts_enabled
-        TTS_ENABLED = self.tts_enabled
-
-    def cycle_font(self):
-        self.current_font_index = (self.current_font_index + 1) % len(self.fonts)
-        FONT_NAME = self.fonts[self.current_font_index]
-        self.font = pygame.font.SysFont(FONT_NAME, FONT_SIZE)
-
-    def save_settings(self):
-        # Save the settings back to settings.py or some other persistent storage
-        pass
-
-class FirstLevel:
-    def __init__(self, display, gameStateManager):
-        self.display = display
-        self.gameStateManager = gameStateManager
-
-        self.player_x, self.player_y = WIDTH // 2, HEIGHT // 2
-        self.player_speed = 3.5  # Adjusted speed for better visibility
-
-        # Load the sprite sheets from the specified path
-        self.sprite_sheet_path_Idle = os.path.join('graphics', 'Idle.png')
-        self.sprite_sheet_path_Run = os.path.join('graphics', 'Run.png')
-        # -- self.sprite_sheet_path_Run = r'C:\Users\hp\Documents\Dyscape\DyscapeTheGame\graphics\Run.png'
-        self.sprite_sheet_Idle = pygame.image.load(self.sprite_sheet_path_Idle).convert_alpha()
-        self.sprite_sheet_Run = pygame.image.load(self.sprite_sheet_path_Run).convert_alpha()
-
-        # Animation parameters
-        self.frame_width = 48  # Width of a single frame in the sprite sheet
-        self.frame_height = 48  # Height of a single frame in the sprite sheet
-        self.scale = 1.5  # Scale factor for enlarging the sprite
-        self.num_frames_Idle = 9  # Number of frames in the idle sprite sheet
-        self.num_frames_Run = 9  # Number of frames in the run sprite sheet
-        self.animation_speed = 0.1  # Seconds per frame
-        self.current_frame = 0
-        self.elapsed_time = 0
-        self.last_time = pygame.time.get_ticks()
-        self.clock = pygame.time.Clock()
-
-        self.idle = True
-        self.facing_right = True  # Assume the character starts facing right
-
-        # Shadow parameters
-        self.shadow_width = 30  # Width of the shadow ellipse
-        self.shadow_height = 10  # Height of the shadow ellipse
-        self.shadow_surface = pygame.Surface((self.shadow_width, self.shadow_height), pygame.SRCALPHA)
-        pygame.draw.ellipse(self.shadow_surface, (0, 0, 0, 100), [0, 0, self.shadow_width, self.shadow_height])
-
-        # Function to extract frames from the sprite sheet
-
-
-    def get_frame(self, sheet, frame, width, height, scale, flip=False):
-        frame_surface = pygame.Surface((width, height), pygame.SRCALPHA)
-        frame_surface.blit(sheet, (0, 0), (frame * width, 0, width, height))
-        scaled_surface = pygame.transform.scale(frame_surface, (width * scale, height * scale))
-        if flip:
-            scaled_surface = pygame.transform.flip(scaled_surface, True, False)
-        return scaled_surface
-
-
-    def run(self):
-
-        # Example of handling user input to return to the main menu
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE]:  # If Escape key is pressed
-            self.gameStateManager.set_state('main-menu')  # Return to the main menu
-
-        while True:
-            # Event loop
-            # print("Running First Level state")
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-
-
-
-            # Get the current key presses
-            keys = pygame.key.get_pressed()
-            moving = False
-            if keys[pygame.K_w]:
-                self.player_y -= self.player_speed
-                moving = True
-            if keys[pygame.K_s]:
-                self.player_y += self.player_speed
-                moving = True
-            if keys[pygame.K_a]:
-                self.player_x -= self.player_speed
-                moving = True
-                self.facing_right = False
-            if keys[pygame.K_d]:
-                self.player_x += self.player_speed
-                moving = True
-                self.facing_right = True
-
-            self.idle = not moving
-
-            # Update the animation frame
-            current_time = pygame.time.get_ticks()
-            self.elapsed_time += (current_time - self.last_time) / 1000.0
-            self.last_time = current_time
-
-            if self.elapsed_time > self.animation_speed:
-                self.current_frame = (self.current_frame + 1) % (
-                    self.num_frames_Idle if self.idle else self.num_frames_Run)  # Loop to the next frame
-                self.elapsed_time = 0
-
-            sprite_sheet = self.sprite_sheet_Idle if self.idle else self.sprite_sheet_Run
-            frame_image = self.get_frame(sprite_sheet, self.current_frame, self.frame_width, self.frame_height, self.scale,
-                                         not self.facing_right)
-
-            # Fill the screen with the background color
-            self.display.fill(FERN_GREEN)
-
-            # Update shadow position
-            shadow_offset_x = 37  # Adjust the shadow offset as needed
-            shadow_offset_y = 65
-            self.display.blit(self.shadow_surface,
-                             (self.player_x - self.shadow_width // 2 + shadow_offset_x, self.player_y + shadow_offset_y))
-
-            # Blit the current animation frame onto the screen
-            self.display.blit(frame_image, (self.player_x, self.player_y))
-
-            # Update the display
             pygame.display.update()
+            pygame.time.Clock().tick(60)
 
-            # Cap the frame rate
-            self.clock.tick(FPS)
 
 class GameStateManager:
     def __init__(self, currentState):
@@ -485,7 +293,6 @@ class GameStateManager:
         return self.currentState
 
     def set_state(self, state):
-        print(f"Switching to state: {state}")  # Debugging line
         self.currentState = state
 
 
