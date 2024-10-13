@@ -16,8 +16,8 @@ class Game:
         self.gameStateManager = GameStateManager('main-menu')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
-        self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel}
+        self.seventhLevel = SeventhLevel(self.screen, self.gameStateManager)
+        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'seventh-level': self.seventhLevel}
 
         self.clock = pygame.time.Clock()
 
@@ -231,7 +231,7 @@ class MainMenu:
                 # Check if the start button is clicked
                 if self.startbutton_rect.collidepoint(event.pos):
                     self.stop_sounds()
-                    self.gameStateManager.set_state('first-level')
+                    self.gameStateManager.set_state('seventh-level')
                     print("Start Button Clicked!")
                     engine.say("Start")
                     engine.runAndWait()
@@ -360,122 +360,163 @@ class Options:
         # Save the settings back to settings.py or some other persistent storage
         pass
 
-class FirstLevel:
+
+class SeventhLevel:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
+        self.display = pygame.display.set_mode((1280, 720))
+        self.screen_width = 1280
+        self.screen_height = 720
 
-        self.player_x, self.player_y = WIDTH // 2, HEIGHT // 2
-        self.player_speed = 3.5  # Adjusted speed for better visibility
+        # Load background, heart, speaker, and wood sign images with resizing
+        self.background = pygame.image.load(os.path.join('graphics', 'cave.png')).convert_alpha()
+        self.heart_image = pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha(), (80, 50))
+        self.speaker_icon = pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha(), (100, 100))
 
-        # Load the sprite sheets from the specified path
-        self.sprite_sheet_path_Idle = os.path.join('graphics', 'Idle.png')
-        self.sprite_sheet_path_Run = os.path.join('graphics', 'Run.png')
-        # -- self.sprite_sheet_path_Run = r'C:\Users\hp\Documents\Dyscape\DyscapeTheGame\graphics\Run.png'
-        self.sprite_sheet_Idle = pygame.image.load(self.sprite_sheet_path_Idle).convert_alpha()
-        self.sprite_sheet_Run = pygame.image.load(self.sprite_sheet_path_Run).convert_alpha()
+        # Separate left and right wood signs
+        self.left_wood_sign = pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', 'left-wood-sign.png')).convert_alpha(), (250, 250))
+        self.right_wood_sign = pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', 'right-wood-sign.png')).convert_alpha(), (250, 250))
 
-        # Animation parameters
-        self.frame_width = 48  # Width of a single frame in the sprite sheet
-        self.frame_height = 48  # Height of a single frame in the sprite sheet
-        self.scale = 1.5  # Scale factor for enlarging the sprite
-        self.num_frames_Idle = 9  # Number of frames in the idle sprite sheet
-        self.num_frames_Run = 9  # Number of frames in the run sprite sheet
-        self.animation_speed = 0.1  # Seconds per frame
-        self.current_frame = 0
-        self.elapsed_time = 0
-        self.last_time = pygame.time.get_ticks()
-        self.clock = pygame.time.Clock()
+        self.lives = 3
+        self.current_round = 0
+        self.game_over = False
+        self.win = False
 
-        self.idle = True
-        self.facing_right = True  # Assume the character starts facing right
+        # Define the list of words, choices, and correct answers
+        self.words = [
+            {"word": "RING", "choices": ["SING", "RING"], "correct": "RING"},
+            {"word": "CAR", "choices": ["CAR", "JAR"], "correct": "CAR"},
+            {"word": "MAP", "choices": ["CAP", "MAP"], "correct": "MAP"},
+            {"word": "NAIL", "choices": ["NAIL", "MAIL"], "correct": "NAIL"},
+            {"word": "WOOD", "choices": ["FOOD", "WOOD"], "correct": "WOOD"},
+            {"word": "OWL", "choices": ["OWL", "BOWL"], "correct": "OWL"},
+            {"word": "BIKE", "choices": ["LIKE", "BIKE"], "correct": "BIKE"},
+            {"word": "BOOK", "choices": ["HOOK", "BOOK"], "correct": "BOOK"},
+            {"word": "OIL", "choices": ["OIL", "FOIL"], "correct": "OIL"},
+            {"word": "VAN", "choices": ["CAN", "VAN"], "correct": "VAN"}
+        ]
+        self.current_word_data = self.words[self.current_round]
 
-        # Shadow parameters
-        self.shadow_width = 30  # Width of the shadow ellipse
-        self.shadow_height = 10  # Height of the shadow ellipse
-        self.shadow_surface = pygame.Surface((self.shadow_width, self.shadow_height), pygame.SRCALPHA)
-        pygame.draw.ellipse(self.shadow_surface, (0, 0, 0, 100), [0, 0, self.shadow_width, self.shadow_height])
+        # Initialize pyttsx3 for text-to-speech
+        self.tts_engine = pyttsx3.init()
 
-        # Function to extract frames from the sprite sheet
+        # Load choice images, resize them to fit on the wood signs
+        self.choice_images = {choice: pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', f'{choice.lower()}.png')).convert_alpha(), (110, 110)
+        ) for word_data in self.words for choice in word_data["choices"]}
 
+        # Set the positions for the left and right wood signs
+        self.left_wood_sign_position = (self.screen_width * 0.1, 450)
+        self.right_wood_sign_position = (self.screen_width * 0.7, 450)
 
-    def get_frame(self, sheet, frame, width, height, scale, flip=False):
-        frame_surface = pygame.Surface((width, height), pygame.SRCALPHA)
-        frame_surface.blit(sheet, (0, 0), (frame * width, 0, width, height))
-        scaled_surface = pygame.transform.scale(frame_surface, (width * scale, height * scale))
-        if flip:
-            scaled_surface = pygame.transform.flip(scaled_surface, True, False)
-        return scaled_surface
+        # Button positions for restart and exit (same as first level)
+        self.restart_button = pygame.Rect(450, 500, 200, 60)
+        self.exit_button = pygame.Rect(650, 500, 200, 60)
 
+    def speak_word(self, word):
+        """Use pyttsx3 to pronounce the word."""
+        self.tts_engine.say(word)
+        self.tts_engine.runAndWait()
+
+    def next_round(self):
+        """Proceed to the next round or end the game if all rounds are done."""
+        self.current_round += 1
+        if self.current_round >= len(self.words):
+            self.win = True
+        else:
+            self.current_word_data = self.words[self.current_round]
 
     def run(self):
+        """Main game loop for the seventh level."""
+        correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
+        wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
 
-        # Example of handling user input to return to the main menu
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE]:  # If Escape key is pressed
-            self.gameStateManager.set_state('main-menu')  # Return to the main menu
+        running = True
+        while running:
+            self.display.blit(self.background, (0, 0))
 
-        while True:
-            # Event loop
-            # print("Running First Level state")
+            # Display lives (hearts) resized to 50x50
+            for i in range(self.lives):
+                self.display.blit(self.heart_image, (10 + i * 60, 10))
+
+            # Display speaker icon resized to 60x60
+            speaker_icon_rect = self.speaker_icon.get_rect(center=(self.screen_width // 2, 80))
+            self.display.blit(self.speaker_icon, speaker_icon_rect)
+
+            # Display left wood sign
+            self.display.blit(self.left_wood_sign, self.left_wood_sign_position)
+
+            # Display right wood sign
+            self.display.blit(self.right_wood_sign, self.right_wood_sign_position)
+
+            # Resize and center the choice image on the left wood sign
+            left_choice = self.current_word_data["choices"][0]
+            left_image_rect = self.choice_images[left_choice].get_rect(center=(self.left_wood_sign_position[0] + 125, self.left_wood_sign_position[1] + 85))
+            self.display.blit(self.choice_images[left_choice], left_image_rect)
+
+            # Resize and center the choice image on the right wood sign
+            right_choice = self.current_word_data["choices"][1]
+            right_image_rect = self.choice_images[right_choice].get_rect(center=(self.right_wood_sign_position[0] + 125, self.right_wood_sign_position[1] + 85))
+            self.display.blit(self.choice_images[right_choice], right_image_rect)
+
+            mouse_pos = pygame.mouse.get_pos()
+
+            # Event handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
 
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if speaker_icon_rect.collidepoint(mouse_pos):
+                        self.speak_word(self.current_word_data["word"])  # Speak the word when speaker icon is clicked
 
+                    # Check if the player clicked the left or right wood sign
+                    if left_image_rect.collidepoint(mouse_pos):
+                        if left_choice == self.current_word_data["correct"]:
+                            correct_answer_sound.play()
+                            self.next_round()  # Proceed to the next round if correct
+                        else:
+                            wrong_answer_sound.play()
+                            self.lives -= 1  # Deduct a life if incorrect
+                    elif right_image_rect.collidepoint(mouse_pos):
+                        if right_choice == self.current_word_data["correct"]:
+                            correct_answer_sound.play()
+                            self.next_round()  # Proceed to the next round if correct
+                        else:
+                            wrong_answer_sound.play()
+                            self.lives -= 1  # Deduct a life if incorrect
 
-            # Get the current key presses
-            keys = pygame.key.get_pressed()
-            moving = False
-            if keys[pygame.K_w]:
-                self.player_y -= self.player_speed
-                moving = True
-            if keys[pygame.K_s]:
-                self.player_y += self.player_speed
-                moving = True
-            if keys[pygame.K_a]:
-                self.player_x -= self.player_speed
-                moving = True
-                self.facing_right = False
-            if keys[pygame.K_d]:
-                self.player_x += self.player_speed
-                moving = True
-                self.facing_right = True
+            # Check game over condition
+            if self.lives <= 0:
+                self.game_over = True
+                self.show_end_screen()
+                running = False
 
-            self.idle = not moving
+            # Check win condition
+            if self.win:
+                self.show_end_screen()
+                running = False
 
-            # Update the animation frame
-            current_time = pygame.time.get_ticks()
-            self.elapsed_time += (current_time - self.last_time) / 1000.0
-            self.last_time = current_time
-
-            if self.elapsed_time > self.animation_speed:
-                self.current_frame = (self.current_frame + 1) % (
-                    self.num_frames_Idle if self.idle else self.num_frames_Run)  # Loop to the next frame
-                self.elapsed_time = 0
-
-            sprite_sheet = self.sprite_sheet_Idle if self.idle else self.sprite_sheet_Run
-            frame_image = self.get_frame(sprite_sheet, self.current_frame, self.frame_width, self.frame_height, self.scale,
-                                         not self.facing_right)
-
-            # Fill the screen with the background color
-            self.display.fill(FERN_GREEN)
-
-            # Update shadow position
-            shadow_offset_x = 37  # Adjust the shadow offset as needed
-            shadow_offset_y = 65
-            self.display.blit(self.shadow_surface,
-                             (self.player_x - self.shadow_width // 2 + shadow_offset_x, self.player_y + shadow_offset_y))
-
-            # Blit the current animation frame onto the screen
-            self.display.blit(frame_image, (self.player_x, self.player_y))
-
-            # Update the display
             pygame.display.update()
 
-            # Cap the frame rate
-            self.clock.tick(FPS)
+    def show_end_screen(self):
+        """Display the end screen based on win/lose state."""
+        font = pygame.font.Font(None, 74)
+        if self.win:
+            text = font.render("You Win!", True, (255, 255, 255))
+        else:
+            text = font.render("Game Over!", True, (255, 0, 0))
+
+        self.display.fill((0, 0, 0))
+        self.display.blit(text, (self.screen_width // 2 - text.get_width() // 2, self.screen_height // 2 - 50))
+
+        pygame.display.update()
 
 class GameStateManager:
     def __init__(self, currentState):
