@@ -13,11 +13,12 @@ class Game:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("DyscapeTheGame")
 
-        self.gameStateManager = GameStateManager('main-menu')
+        self.gameStateManager = GameStateManager('eighth-level')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel}
+        self.eighthlevel = EighthLevel(self.screen, self.gameStateManager)
+        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'eighth-level': self.eighthlevel}
 
         self.clock = pygame.time.Clock()
 
@@ -476,6 +477,287 @@ class FirstLevel:
 
             # Cap the frame rate
             self.clock.tick(FPS)
+
+
+import pygame
+
+
+class EighthLevel:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.lives = 3
+        self.current_gate = 1
+        self.sentence = "Iwenttothestore"  # Example sentence for the first gate
+        self.words = ["I", "went", "to", "the", "store"]  # Words to be dragged
+        self.word_slots = [None] * len(self.words)  # Empty slots for each word
+        self.dragging_word = None
+        self.drag_offset_x = 0
+        self.drag_offset_y = 0
+        self.word_positions = [(50, 400), (150, 400), (250, 400), (350, 400), (450, 400)]
+        self.slot_positions = [(50, 200), (150, 200), (250, 200), (350, 200), (450, 200)]
+
+    def check_answer(self):
+        # Check if all slots are filled correctly
+        if self.word_slots == self.words:
+            return True
+        else:
+            self.lives -= 1  # Deduct a life if the order is incorrect
+            print(f"Incorrect! Lives remaining: {self.lives}")
+            if self.lives <= 0:
+                print("Game Over")
+                pygame.quit()
+                exit()
+            return False
+
+    def handle_events(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_x, mouse_y = event.pos
+
+            # Check if clicking on a placed word to remove it from the slot
+            for i, (slot_word, slot_pos) in enumerate(zip(self.word_slots, self.slot_positions)):
+                if slot_word is not None:
+                    slot_x, slot_y = slot_pos
+                    if slot_x <= mouse_x <= slot_x + 60 and slot_y <= mouse_y <= slot_y + 40:
+                        # Remove word from slot and place it back to original area
+                        self.word_slots[i] = None
+                        self.word_positions[self.words.index(slot_word)] = (50 + 100 * i, 400)
+                        return
+
+            # Start dragging if clicking on a word in the draggable area
+            for i, word in enumerate(self.words):
+                word_x, word_y = self.word_positions[i]
+                if word_x <= mouse_x <= word_x + 60 and word_y <= mouse_y <= word_y + 40:
+                    self.dragging_word = i
+                    self.drag_offset_x = mouse_x - word_x
+                    self.drag_offset_y = mouse_y - word_y
+                    break
+
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if self.dragging_word is not None:
+                mouse_x, mouse_y = event.pos
+
+                # Snap to nearest slot if within range
+                for i, (slot_x, slot_y) in enumerate(self.slot_positions):
+                    if slot_x <= mouse_x <= slot_x + 60 and slot_y <= mouse_y <= slot_y + 40:
+                        # Place word in slot if slot is empty
+                        if self.word_slots[i] is None:
+                            self.word_slots[i] = self.words[self.dragging_word]
+                            self.word_positions[self.dragging_word] = (-100, -100)  # Temporarily move off screen
+                        break
+                self.dragging_word = None  # Stop dragging
+
+        elif event.type == pygame.MOUSEMOTION and self.dragging_word is not None:
+            mouse_x, mouse_y = event.pos
+            # Update word position based on dragging offset
+            self.word_positions[self.dragging_word] = (mouse_x - self.drag_offset_x, mouse_y - self.drag_offset_y)
+
+    def draw(self):
+        self.display.fill((255, 255, 255))
+
+        # Draw slots for words
+        for i, (slot_x, slot_y) in enumerate(self.slot_positions):
+            pygame.draw.rect(self.display, (200, 200, 200), (slot_x, slot_y, 60, 40), 2)
+            if self.word_slots[i] is not None:
+                font = pygame.font.Font(None, 36)
+                word_text = font.render(self.word_slots[i], True, (0, 0, 0))
+                word_rect = word_text.get_rect(center=(slot_x + 30, slot_y + 20))
+                self.display.blit(word_text, word_rect)
+
+        # Draw draggable word boxes
+        for i, word in enumerate(self.words):
+            if i == self.dragging_word:
+                continue  # Skip the word being dragged
+            word_x, word_y = self.word_positions[i]
+            if word_x >= 0:  # Only draw if not temporarily moved off screen
+                pygame.draw.rect(self.display, (173, 216, 230), (word_x, word_y, 60, 40))
+                font = pygame.font.Font(None, 36)
+                word_text = font.render(word, True, (0, 0, 0))
+                word_rect = word_text.get_rect(center=(word_x + 30, word_y + 20))
+                self.display.blit(word_text, word_rect)
+
+        # Draw the word box being dragged
+        if self.dragging_word is not None:
+            word_x, word_y = self.word_positions[self.dragging_word]
+            pygame.draw.rect(self.display, (173, 216, 230), (word_x, word_y, 60, 40))
+            font = pygame.font.Font(None, 36)
+            word_text = font.render(self.words[self.dragging_word], True, (0, 0, 0))
+            word_rect = word_text.get_rect(center=(word_x + 30, word_y + 20))
+            self.display.blit(word_text, word_rect)
+
+        # Draw lives
+        font = pygame.font.Font(None, 36)
+        lives_text = font.render(f"Lives: {self.lives}", True, (255, 0, 0))
+        self.display.blit(lives_text, (10, 10))
+
+        pygame.display.flip()
+
+    # def run_dialogue_strip(self):
+    #     # Initialize pygame's mixer for audio
+    #     pygame.mixer.init()
+    #
+    #     # Load character images (example placeholders)
+    #     char1_image = pygame.image.load(os.path.join('graphics', 'character-avatar.png'))
+    #     char2_image = pygame.image.load(os.path.join('graphics', 'frog-avatar.png'))
+    #
+    #     # Resize character images (adjust size as needed)
+    #     char1_image = pygame.transform.scale(char1_image, (200, 200))
+    #     char2_image = pygame.transform.scale(char2_image, (300, 300))
+    #
+    #     dialogue_data = [
+    #         {"name": "Unknown Toad", "text": "Good Day, Traveler! May you have safe travels ahead of you!",
+    #          "image": char2_image, "audio": "frog-dialogue-1.mp3"},
+    #         {"name": "You", "text": "Is this the way to the center of Dyscape??", "image": char1_image},
+    #         {"name": "Unknown Toad", "text": "...", "image": char2_image},
+    #         {"name": "Unknown Toad", "text": "Yes.. but I am afraid that I may not let you pass.", "image": char2_image,
+    #          "audio": "frog-dialogue-2.mp3"},
+    #         {"name": "You", "text": "WHAT??!?", "image": char1_image},
+    #         {"name": "You", "text": "WHY???", "image": char1_image},
+    #         {"name": "Unknown Toad",
+    #          "text": "I don't know you, mister. And I don't know what business you have inside the tower.",
+    #          "image": char2_image, "audio": "frog-dialogue-3.mp3"},
+    #         {"name": "You", "text": "(Tower? Could it be...?)", "image": char1_image},
+    #         {"name": "Unknown Toad", "text": "It is my job to protect the path to the Tower of Dyslexio and the King.",
+    #          "image": char2_image, "audio": "frog-dialogue-4.mp3"},
+    #         {"name": "You",
+    #          "text": "(THAT'S IT! It is the tower of Dyslexio. So that is the name that the owl was murmuring about..)",
+    #          "image": char1_image},
+    #         {"name": "You",
+    #          "text": "Mister Toad, I respect your values but the world is in danger. Dyscape is in danger.",
+    #          "image": char1_image},
+    #         {"name": "Unknown Toad", "text": "Danger? What are you talking about?", "image": char2_image,
+    #          "audio": "frog-dialogue-5.mp3"},
+    #         {"name": "You", "text": "Confusion invaded our world and removed the clarity for texts.",
+    #          "image": char1_image},
+    #         {"name": "You", "text": "I was called to protect Dyscape and restore it to what it was before.",
+    #          "image": char1_image},
+    #         {"name": "You", "text": "Dyscape is on slowly dying. Confusion is here, and he is planning something evil.",
+    #          "image": char1_image},
+    #         {"name": "Unknown Toad", "text": "Hmmm, I see. Well, it can't be helped.", "image": char2_image,
+    #          "audio": "frog-dialogue-6.mp3"},
+    #         {"name": "Unknown Toad", "text": "Fine, I'll let you pass.", "image": char2_image,
+    #          "audio": "frog-dialogue-7.mp3"},
+    #         {"name": "You", "text": "YES!!", "image": char1_image},
+    #         {"name": "Unknown Toad", "text": "But on one condition, you must answer all my questions.",
+    #          "image": char2_image, "audio": "frog-dialogue-8.mp3"},
+    #         {"name": "Unknown Toad", "text": "This will assure me that you are not an enemy to us, but a friend.",
+    #          "image": char2_image, "audio": "frog-dialogue-9.mp3"},
+    #         {"name": "Unknown Toad", "text": "Are you ready, traveler?", "image": char2_image,
+    #          "audio": "frog-dialogue-10.mp3"},
+    #         {"name": "You", "text": "I am ready, Mr. Toad!", "image": char1_image},
+    #     ]
+    #
+    #     dialogue_box_height = 150  # Height of the dialogue box surface
+    #     dialogue_font = pygame.font.Font(None, 32)  # Font for dialogue text
+    #     name_font = pygame.font.Font(None, 36)  # Font for character names
+    #     space_prompt_font = pygame.font.Font(None, 28)  # Font for "Press SPACE to continue"
+    #
+    #     current_line = 0
+    #     text_displayed = ""
+    #     text_index = 0
+    #     text_speed = 2  # Speed of text animation
+    #     audio_played = False  # Track if audio has been played for the current dialogue
+    #
+    #     running = True
+    #     clock = pygame.time.Clock()
+    #
+    #     while running:
+    #         self.display.blit(self.background_image, (0, 0))
+    #
+    #         # Create the dialogue box at the bottom
+    #         dialogue_box = pygame.Surface((self.display.get_width(), dialogue_box_height))
+    #         dialogue_box.fill((255, 219, 172))  # Light background for the dialogue box
+    #         dialogue_box_rect = dialogue_box.get_rect(topleft=(0, self.display.get_height() - dialogue_box_height))
+    #
+    #         # Draw the brown border around the dialogue box
+    #         border_color = (139, 69, 19)  # Brown color (RGB)
+    #         border_thickness = 20  # Thickness of the border
+    #         pygame.draw.rect(self.display, border_color, dialogue_box_rect.inflate(border_thickness, border_thickness),
+    #                          border_thickness)
+    #
+    #         # Get the current dialogue data
+    #         current_dialogue = dialogue_data[current_line]
+    #         character_name = current_dialogue["name"]
+    #         character_text = current_dialogue["text"]
+    #         character_image = current_dialogue["image"]
+    #         character_audio = current_dialogue.get("audio", None)  # Get audio if available, otherwise None
+    #         antagonist = "Unknown Toad"
+    #
+    #         # Play audio if it's the frog's turn and the audio hasn't been played yet
+    #         if character_audio and not audio_played:
+    #             pygame.mixer.music.load(os.path.join('audio', character_audio))  # Load the audio file
+    #             pygame.mixer.music.play()  # Play the audio
+    #             audio_played = True  # Ensure audio only plays once per dialogue line
+    #
+    #         # Render the character image on the left or right side of the dialogue box
+    #         if character_name == antagonist:
+    #             self.display.blit(character_image, (950, self.display.get_height() - dialogue_box_height - 300))
+    #         else:
+    #             self.display.blit(character_image, (50, self.display.get_height() - dialogue_box_height - 200))
+    #
+    #         # Render the character name inside the dialogue box (above the text)
+    #         name_surface = name_font.render(character_name, True, self.black)
+    #         dialogue_box.blit(name_surface, (20, 10))  # Draw name near the top inside the dialogue box
+    #
+    #         # Text animation (add one letter at a time)
+    #         if text_index < len(character_text):
+    #             text_index += text_speed  # Control how fast letters are added
+    #             text_displayed = character_text[:text_index]
+    #         else:
+    #             text_displayed = character_text
+    #
+    #         # Render the dialogue text below the name
+    #         text_surface = dialogue_font.render(text_displayed, True, self.black)
+    #         dialogue_box.blit(text_surface, (20, 60))  # Draw the text inside the dialogue box below the name
+    #
+    #         # Add "Press SPACE to continue." prompt at the bottom right
+    #         if text_index >= len(character_text):  # Show prompt only if the text is fully displayed
+    #             space_prompt_surface = space_prompt_font.render("Press SPACE to continue.", True, (100, 100, 100))
+    #             dialogue_box.blit(space_prompt_surface,
+    #                               (dialogue_box.get_width() - space_prompt_surface.get_width() - 20,
+    #                                dialogue_box.get_height() - space_prompt_surface.get_height() - 10))
+    #
+    #         # Draw the dialogue box on the screen with the brown border
+    #         self.display.blit(dialogue_box, dialogue_box_rect.topleft)
+    #
+    #         # Event handling for advancing the dialogue
+    #         for event in pygame.event.get():
+    #             if event.type == pygame.QUIT:
+    #                 pygame.quit()
+    #                 sys.exit()
+    #             elif event.type == pygame.KEYDOWN:
+    #                 if event.key == pygame.K_SPACE:  # Only proceed on SPACE key
+    #                     if text_index >= len(character_text):
+    #                         # Move to the next line of dialogue if the text is fully displayed
+    #                         current_line += 1
+    #                         text_index = 0
+    #                         text_displayed = ""
+    #                         audio_played = False  # Reset audio flag for the next line
+    #                         if current_line >= len(dialogue_data):
+    #                             running = False  # Exit dialogue when all lines are done
+    #
+    #         pygame.display.flip()
+    #         clock.tick(60)  # Control the frame rate
+
+    def run(self):
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sys.exit()
+                self.handle_events(event)
+
+            # Check if answer is correct
+            if all(slot is not None for slot in self.word_slots):  # All slots are filled
+                if not self.check_answer():
+                    # Optionally, add some delay here before allowing to retry
+                    print("Retrying...")
+                    self.word_slots = [None] * len(self.words)  # Reset slots for retry
+                    self.word_positions = [(50, 400), (150, 400), (250, 400), (350, 400), (450, 400)]
+
+            self.draw()
+
 
 class GameStateManager:
     def __init__(self, currentState):
