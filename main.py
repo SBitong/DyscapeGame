@@ -2,8 +2,10 @@ import pygame
 import sys
 import os
 import random
+import time
 import pyttsx3
 import pronouncing
+import settings
 from settings import *
 
 # Initialize Pygame
@@ -20,7 +22,8 @@ class Game:
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
         self.secondLevel = SecondLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'second-level': self.secondLevel}
+        self.thirdLevel = ThirdLevel(self.screen, self.gameStateManager)
+        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'second-level': self.secondLevel, 'third-level': self.thirdLevel}
 
         self.clock = pygame.time.Clock()
 
@@ -258,7 +261,7 @@ class Options:
         self.background_image = pygame.transform.scale(self.background_image, (self.display.get_width(), self.display.get_height()))
 
         # Load the specified font
-        self.font = pygame.font.SysFont(FONT_NAME, FONT_SIZE)
+        self.font = pygame.font.SysFont(settings.FONT_NAME, settings.FONT_SIZE)
 
         # Volume slider properties
         self.slider_length = 300
@@ -268,18 +271,18 @@ class Options:
         self.knob_radius = 10
 
         # Center the volume slider
-        self.slider_x = (WIDTH - self.slider_length) // 2
-        self.slider_y = HEIGHT // 3
-        self.knob_position = self.slider_x + int(MASTER_VOLUME * self.slider_length)
+        self.slider_x = (self.display.get_width() - self.slider_length) // 2
+        self.slider_y = self.display.get_height() // 3
+        self.knob_position = self.slider_x + int(settings.MASTER_VOLUME * self.slider_length)
 
         # TTS toggle button properties
-        self.tts_toggle_rect = pygame.Rect((WIDTH - 150) // 2, self.slider_y + 100, 150, 50)
-        self.tts_enabled = TTS_ENABLED
+        self.tts_toggle_rect = pygame.Rect((self.display.get_width() - 150) // 2, self.slider_y + 100, 150, 50)
+        self.tts_enabled = settings.TTS_ENABLED
 
         # Font selection properties
         self.fonts = ["Arial", "Courier", "Comic Sans MS", "Georgia", "Times New Roman"]
-        self.current_font_index = self.fonts.index(FONT_NAME) if FONT_NAME in self.fonts else 0
-        self.font_rect = pygame.Rect((WIDTH - 300) // 2, self.tts_toggle_rect.y + 100, 300, 50)
+        self.current_font_index = self.fonts.index(settings.FONT_NAME) if settings.FONT_NAME in self.fonts else 0
+        self.font_rect = pygame.Rect((self.display.get_width() - 300) // 2, self.tts_toggle_rect.y + 100, 300, 50)
 
     def run(self):
         running = True
@@ -291,8 +294,8 @@ class Options:
             pygame.draw.circle(self.display, self.knob_color, (self.knob_position, self.slider_y + self.slider_height // 2), self.knob_radius)
 
             # Display volume label
-            volume_label = self.font.render("Master Volume", True, (255, 255, 255),)
-            volume_label_rect = volume_label.get_rect(center=(WIDTH // 2, self.slider_y - 40))
+            volume_label = self.font.render("Master Volume", True, (255, 255, 255))
+            volume_label_rect = volume_label.get_rect(center=(self.display.get_width() // 2, self.slider_y - 40))
             self.display.blit(volume_label, volume_label_rect)
 
             # Draw TTS toggle
@@ -338,21 +341,25 @@ class Options:
 
     def adjust_volume(self, mouse_pos):
         self.knob_position = max(self.slider_x, min(mouse_pos[0], self.slider_x + self.slider_length))
-        MASTER_VOLUME = (self.knob_position - self.slider_x) / self.slider_length
-        pygame.mixer.music.set_volume(MASTER_VOLUME)
+        settings.MASTER_VOLUME = (self.knob_position - self.slider_x) / self.slider_length
+        pygame.mixer.music.set_volume(settings.MASTER_VOLUME)
 
     def toggle_tts(self):
         self.tts_enabled = not self.tts_enabled
-        TTS_ENABLED = self.tts_enabled
+        settings.TTS_ENABLED = self.tts_enabled
 
     def cycle_font(self):
         self.current_font_index = (self.current_font_index + 1) % len(self.fonts)
-        FONT_NAME = self.fonts[self.current_font_index]
-        self.font = pygame.font.SysFont(FONT_NAME, FONT_SIZE)
+        settings.FONT_NAME = self.fonts[self.current_font_index]
+        self.font = pygame.font.SysFont(settings.FONT_NAME, settings.FONT_SIZE)
 
     def save_settings(self):
-        # Save the settings back to settings.py or some other persistent storage
-        pass
+        # Save the settings back to settings.py
+        with open('settings.py', 'w') as f:
+            f.write(f"MASTER_VOLUME = {settings.MASTER_VOLUME}\n")
+            f.write(f"TTS_ENABLED = {settings.TTS_ENABLED}\n")
+            f.write(f"FONT_NAME = '{settings.FONT_NAME}'\n")
+            f.write(f"FONT_SIZE = {settings.FONT_SIZE}\n")
 
 class FirstLevel:
         def __init__(self, display, gameStateManager):
@@ -1050,6 +1057,306 @@ class SecondLevel:
 
             pygame.display.update()
             self.clock.tick(60)  # Cap frame rate at 60 FPS
+
+
+
+
+
+class ThirdLevel:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.lives = 3
+        self.timer = 15.0  # 15 seconds timer for each word
+        self.words = [
+            {"word": "TIGER",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-ger", "-ny", "-dy", "-red"],
+             "correct": "-ger"},
+            {"word": "RABBIT",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-ber", "-tion", "-er", "-bit"],
+             "correct": "-bit"},
+            {"word": "RAINBOW",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-drop", "-ing", "-bow", "-fall"],
+             "correct": "-bow"},
+            {"word": "PIZZA",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-ture", "-za", "-zer", "-tion"],
+             "correct": "-za"},
+            {"word": "ROCKET",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-et", "-er", "-fall", "-hard"],
+             "correct": "-et"},
+            {"word": "FLOWER",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-er", "-ing", "-state", "-s"],
+             "correct": "-er"},
+            {"word": "CHICKEN",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-ing", "-er", "-tion", "-en"],
+             "correct": "-en"},
+            {"word": "WINDOW",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-ning", "-dow", "-ner", "-some"],
+             "correct": "-dow"},
+            {"word": "TABLE",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-e", "-nned", "-ble", "-er"],
+             "correct": "-ble"},
+            {"word": "CACTUS",
+             "question": "If you know this word, what is its last syllable?",
+             "syllables": ["-ti", "-kled", "-tus", "-ing"],
+             "correct": "-tus"},
+        ]
+
+        self.current_word_index = 0
+        self.correct_syllable = None
+        self.start_time = None
+        self.selected_syllable = None
+        self.geyser_positions = self.get_geyser_positions()
+
+        background_image_path = os.path.join('graphics', 'third-level-bg.png')
+        self.background_image = pygame.image.load(background_image_path).convert_alpha()
+        self.background_image = pygame.transform.scale(self.background_image,(self.display.get_width(), self.display.get_height()))
+
+        # Load the heart image for lives representation
+        self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
+        self.heart_image = pygame.transform.scale(self.heart_image, (40, 40))  # Scale the heart image if needed
+        self.heart_width, self.heart_height = self.heart_image.get_size()
+
+        # Idle and running animation variables
+        self.idle_sprite_sheet = self.load_sprite_sheet('graphics/idle.png', 48, 48)
+        self.run_sprite_sheet = self.load_sprite_sheet('graphics/Run.png', 48, 48)
+        print(f"Loaded {len(self.run_sprite_sheet)} frames for running animation")
+        self.current_frame = 0
+        self.animation_speed = 0.1
+        self.moving = False
+        self.target_position = None
+
+        # Character position
+        self.character_x = self.display.get_width() // 2 - 48 // 2  # Center position
+        self.character_y = self.display.get_height() - 48 - 100  # Position below the geysers
+
+        self.last_update_time = time.time()
+
+    def run_title_animation(self):
+        title_heading = "Fifth Level:"
+        title_text = "SYLLE LAGOON"
+        font_path = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
+        title_font = pygame.font.Font(font_path, 50)  # Large font for the title
+
+        alpha = 0  # Start fully transparent
+        max_alpha = 255
+        fade_speed = 5  # How fast the title fades in and out
+
+        running = True
+        while running:
+            self.display.fill((0,0,0))
+
+            # Render the title with fading effect
+            title_surface = title_font.render(title_text, True, (255,255,255))
+            title_surface.set_alpha(alpha)  # Set transparency level
+            title_rect = title_surface.get_rect(center=(self.display.get_width() // 2, self.display.get_height() // 2))
+            self.display.blit(title_surface, title_rect)
+
+            # Update the alpha to create fade-in effect
+            alpha += fade_speed
+            if alpha >= max_alpha:
+                alpha = max_alpha
+                pygame.time.delay(500)  # Pause for a short moment at full opacity
+
+                # Fade out effect
+                while alpha > 0:
+                    self.display.fill((0,0,0))
+                    title_surface.set_alpha(alpha)  # Set transparency level
+                    self.display.blit(title_surface, title_rect)
+                    alpha -= fade_speed
+                    if alpha < 0:
+                        alpha = 0
+                    pygame.display.flip()
+                    pygame.time.delay(30)  # Control the fade-out speed
+                pygame.time.delay(80)
+                running = False  # Exit the animation loop after fade-out
+
+            pygame.display.flip()
+            pygame.time.delay(30)  # Control the fade-in speed
+
+    def load_sprite_sheet(self, path, sprite_width, sprite_height):
+        """Loads a sprite sheet and returns a list of individual frames."""
+        sheet = pygame.image.load(path).convert_alpha()
+        sheet_width, sheet_height = sheet.get_size()
+        frames = []
+        for y in range(0, sheet_height, sprite_height):
+            for x in range(0, sheet_width, sprite_width):
+                frame = sheet.subsurface((x, y, sprite_width, sprite_height))
+                frames.append(frame)
+        print(f"Loaded {len(frames)} frames from {path}")  # Debug print
+        return frames
+
+    def animate_character(self, frames):
+        """Handles animation by cycling through frames."""
+        current_time = time.time()
+        if current_time - self.last_update_time > self.animation_speed:
+            self.current_frame = (self.current_frame + 1) % len(frames)  # Cycle within bounds of frames list
+            self.last_update_time = current_time
+        return frames[self.current_frame]
+
+    def draw_lives(self):
+        """Draw the player's lives using heart images."""
+        for i in range(self.lives):
+            self.display.blit(self.heart_image, (10 + i * (self.heart_width + 5), 10))  # Adjust position as needed
+
+    def move_character_toward_syllable(self):
+        """Moves the character towards the selected syllable."""
+        if self.moving and self.target_position:
+            target_x, target_y = self.target_position
+            dx = target_x - self.character_x
+            if abs(dx) < 5:  # Close enough to stop
+                self.character_x = target_x
+                self.moving = False
+            else:
+                self.character_x += dx * 0.1  # Move smoothly
+            # Align the character's Y position with the geyser
+            self.character_y = target_y - 48  # Adjust so the character is inside the circle
+
+    def draw_character(self):
+        """Draw the current frame of the character animation, scaled larger."""
+        if self.moving:
+            character_frame = self.animate_character(self.run_sprite_sheet)
+        else:
+            character_frame = self.animate_character(self.idle_sprite_sheet)
+
+        # Increase the scale factor to make the character larger
+        scale_factor = 1.75  # Adjusted factor to increase the size
+        scaled_width = int(character_frame.get_width() * scale_factor)
+        scaled_height = int(character_frame.get_height() * scale_factor)
+        scaled_character_frame = pygame.transform.scale(character_frame, (scaled_width, scaled_height))
+
+        # Calculate the new position for the scaled character
+        new_character_x = self.character_x + (scaled_width - character_frame.get_width()) // 2
+        new_character_y = self.character_y + (scaled_height - character_frame.get_height()) // 2
+
+        self.display.blit(scaled_character_frame, (new_character_x, new_character_y))
+
+    def get_geyser_positions(self):
+        """Returns the positions for the four geysers with decreased spacing."""
+        screen_width, screen_height = self.display.get_size()
+        y_position = screen_height // 2 + 75  # Fixed y-position for all geysers
+        spacing = 150  # Adjust this value for desired spacing
+        positions = [
+            (screen_width // 4, y_position),
+            (screen_width // 4 + 70 + spacing, y_position),  # Adjusting position based on radius and spacing
+            (screen_width // 4 + 2 * (70 + spacing), y_position),
+            (screen_width // 4 + 3 * (70 + spacing), y_position),
+        ]
+        return positions
+
+    def load_next_word(self):
+        """Loads the next word and syllables."""
+        if self.current_word_index >= len(self.words):
+            print("All words completed!")
+            self.gameStateManager.set_state('next-level')  # Move to next level
+            return
+
+        word_data = self.words[self.current_word_index]
+        self.correct_syllable = word_data['correct']
+        self.syllables = word_data['syllables']
+        self.selected_syllable = None
+        self.start_time = time.time()  # Reset the timer
+
+    def draw_geysers(self):
+        """Draws the syllable geysers with their positions as slightly oval shapes."""
+        radius_x = 150  # Horizontal radius for oval
+        radius_y = 125  # Vertical radius for oval
+        for i, syllable in enumerate(self.syllables):
+            x, y = self.geyser_positions[i]
+
+            # Draw the oval geyser
+            pygame.draw.ellipse(self.display, (41, 108, 114), (x - radius_x // 2, y - radius_y // 2, radius_x, radius_y))
+
+            # Draw syllable text in the center of the oval
+            syllable_text = pygame.font.SysFont('Arial', 30).render(syllable, True, (255, 255, 255))
+            syllable_rect = syllable_text.get_rect(center=(x, y))
+            self.display.blit(syllable_text, syllable_rect)
+
+    def check_geyser_selection(self, mouse_pos):
+        """Check if the player clicked on a geyser."""
+        for i, pos in enumerate(self.geyser_positions):
+            x, y = pos
+            if pygame.Rect(x - 50, y - 50, 100, 100).collidepoint(mouse_pos):
+                self.selected_syllable = self.syllables[i]
+                self.target_position = (x-70, y-25)  # Set both x and y target positions for character movement
+                self.moving = True  # Start moving the character
+
+    def run(self):
+        self.run_title_animation()
+        running = True
+        self.load_next_word()
+
+        while running:
+            elapsed_time = (time.time() - self.start_time)
+            remaining_time = max(0.0, self.timer - elapsed_time)
+
+            # Handle events
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    self.check_geyser_selection(mouse_pos)
+
+            # Fill the screen with the background color
+            self.display.blit(self.background_image, (0, 0)) # Light blue lagoon color
+
+            # Display word with missing syllable
+            current_word_data = self.words[self.current_word_index]
+            word_text = pygame.font.SysFont('Arial', 40).render(f"{current_word_data['question']}", True,
+                                                                (255, 255, 255))
+            self.display.blit(word_text, (self.display.get_width() // 2 - word_text.get_width() // 2, 50))
+
+            # Draw the geysers with syllables
+            self.draw_geysers()
+
+            # Move the character toward the selected syllable (if any)
+            self.move_character_toward_syllable()
+
+            # Draw the character animation
+            self.draw_character()
+
+            self.draw_lives()
+
+            # Format the timer to display as 0:01 secs
+            minutes = int(remaining_time // 60)
+            seconds = int(remaining_time % 60)
+            timer_text = f"Timer: {minutes}:{seconds:02}"  # Ensure seconds are always two digits
+            timer_surface = pygame.font.SysFont('Arial', 40).render(timer_text, True, (255, 255, 255))
+            # Display timer below lives
+            self.display.blit(timer_surface, (10, 50 + self.heart_height + 5))  # Adjust position as needed
+
+            # Check if the timer has run out
+            if remaining_time <= 0:
+                print("Time's up! Checking answer...")
+                if self.selected_syllable == self.correct_syllable:
+                    print("Correct! Moving to next word.")
+                    self.current_word_index += 1
+                    self.load_next_word()
+                else:
+                    print("Incorrect! You lose a life.")
+                    self.lives -= 1
+                    if self.lives <= 0:
+                        print("Game Over")
+                        self.gameStateManager.set_state('main-menu')
+                        running = False
+                    else:
+                        print("Resetting timer for the same word.")
+                        self.start_time = time.time()  # Reset timer for the same word
+                        self.selected_syllable = None  # Reset selected syllable
+
+            pygame.display.update()
+            pygame.time.Clock().tick(60)
 
 
 class GameStateManager:
