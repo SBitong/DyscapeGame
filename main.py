@@ -924,7 +924,8 @@ class FifthLevel:
 
         # Skip the animations if this is a restart
         if not self.is_restart:
-            pass
+            self.run_title_animation()
+            self.run_dialogue_strip()
         else:
             self.is_restart = False  # Reset the flag
 
