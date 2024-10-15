@@ -497,6 +497,7 @@ class FirstLevel:
 
         def exit_to_main_menu(self):
             # Change the game state to 'main-menu'
+            self.reset_level()
             self.gameStateManager.set_state('main-menu')
 
         def run_dialogue_strip_1(self):
@@ -628,6 +629,28 @@ class FirstLevel:
                             play_narration()  # Play the next narration
 
                 pygame.display.update()
+
+        def reset_level(self):
+            """Reset the level to its original state."""
+            self.lives = 3
+            self.selected_word = None
+            self.offset_x = 0
+            self.offset_y = 0
+            self.game_over = False
+            self.win = False
+            self.dialogue_played = False
+
+            # Reset ladder slots
+            for slot in self.ladder_slots:
+                slot["word"] = ""
+                slot["occupied"] = False
+                slot["color"] = (251, 242, 54)
+
+            # Reset draggable images
+            for word_data in self.draggable_images:
+                word_data["dragging"] = False
+                word_data["placed"] = False
+                word_data["rect"].x, word_data["rect"].y = word_data["original_pos"]
 
         def run(self):
             """Main game loop for the first level."""
@@ -777,7 +800,7 @@ class SecondLevel:
 
         # Initialize player attributes
         self.lives = 3
-        self.time_limit = 15
+        self.time_limit = 15.0
         self.current_time = 0
         self.timer_started = False
         self.game_over = False
@@ -821,6 +844,7 @@ class SecondLevel:
         self.input_text = ''
         self.clock = pygame.time.Clock()
         self.last_time = pygame.time.get_ticks()
+        self.time_passed = 0.0
 
         # Load hearts for lives display and resize them
         self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
@@ -946,6 +970,48 @@ class SecondLevel:
             self.show_end_screen()
             self.game_over = True
 
+    def run_title_animation(self):
+        title_heading = "Fifth Level:"
+        title_text = "THE RHYMEAN GARDEN"
+        font_path = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
+        title_font = pygame.font.Font(font_path, 50)  # Large font for the title
+
+        alpha = 0  # Start fully transparent
+        max_alpha = 255
+        fade_speed = 5  # How fast the title fades in and out
+
+        running = True
+        while running:
+            self.display.fill((0,0,0))
+
+            # Render the title with fading effect
+            title_surface = title_font.render(title_text, True, (255,255,255))
+            title_surface.set_alpha(alpha)  # Set transparency level
+            title_rect = title_surface.get_rect(center=(self.display.get_width() // 2, self.display.get_height() // 2))
+            self.display.blit(title_surface, title_rect)
+
+            # Update the alpha to create fade-in effect
+            alpha += fade_speed
+            if alpha >= max_alpha:
+                alpha = max_alpha
+                pygame.time.delay(500)  # Pause for a short moment at full opacity
+
+                # Fade out effect
+                while alpha > 0:
+                    self.display.fill((0,0,0))
+                    title_surface.set_alpha(alpha)  # Set transparency level
+                    self.display.blit(title_surface, title_rect)
+                    alpha -= fade_speed
+                    if alpha < 0:
+                        alpha = 0
+                    pygame.display.flip()
+                    pygame.time.delay(30)  # Control the fade-out speed
+                pygame.time.delay(80)
+                running = False  # Exit the animation loop after fade-out
+
+            pygame.display.flip()
+            pygame.time.delay(30)  # Control the fade-in speed
+
     def show_end_screen(self):
         self.display.fill((0, 0, 0))
 
@@ -958,6 +1024,16 @@ class SecondLevel:
         self.restart_button = pygame.Rect(self.screen_width // 2 - 100, self.screen_height // 2, 200, 50)
         self.exit_button = pygame.Rect(self.screen_width // 2 - 100, self.screen_height // 2 + 70, 200, 50)
 
+        if self.rounds_completed >= self.max_rounds:
+            # If player wins, add a Next Level button
+            self.next_level_button = pygame.Rect(self.screen_width // 2 - 100,
+                                                 self.screen_height // 2 - 70, 200, 50)
+
+            # Draw the Next Level button (Blue)
+            pygame.draw.rect(self.display, (0, 0, 255), self.next_level_button)
+            next_level_text = self.font.render("Next Level", True, (255, 255, 255))
+            self.display.blit(next_level_text, (self.next_level_button.x + 50, self.next_level_button.y + 10))
+
         # Draw the Restart button (Green)
         pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)
         restart_text = self.font.render("Restart", True, (255, 255, 255))
@@ -969,7 +1045,9 @@ class SecondLevel:
         self.display.blit(exit_text, (self.exit_button.x + 70, self.exit_button.y + 10))
 
     def run(self):
+        self.run_title_animation()
         self.current_time = self.time_limit
+        self.last_time = pygame.time.get_ticks()  # Initialize last_time here
         running = True
         self.game_over = False
         while running:
@@ -987,7 +1065,6 @@ class SecondLevel:
                                 self.current_animation = 'attack'
                                 self.reset_round()
                             else:
-                                # self.lives -= 1
                                 if self.lives <= 0:
                                     self.game_over = True
                                 else:
@@ -1009,9 +1086,14 @@ class SecondLevel:
                             self.current_flower_word = self.flower_words[self.rounds_completed]
                             self.input_text = ''
                             self.current_time = self.time_limit
+                            self.last_time = pygame.time.get_ticks()  # Reset last_time to the current time
+                            self.timer_started = False  # Reset timer_started to False
                             self.game_over = False  # Exit end screen mode
                         elif self.exit_button.collidepoint(event.pos):
                             self.gameStateManager.set_state('main-menu')
+                            running = False
+                        elif self.next_level_button.collidepoint(event.pos):
+                            self.gameStateManager.set_state('third-level')
                             running = False
 
             # Update the warrior animation frame
@@ -1021,28 +1103,32 @@ class SecondLevel:
                     self.warrior_frames)  # Move to the next frame
                 self.warrior_frame_time = 0  # Reset frame time
 
-            # Update the timer
-            time_passed = pygame.time.get_ticks() - self.last_time
-            self.current_time -= time_passed / 1000.0
-            self.last_time = pygame.time.get_ticks()
+            # # Update the timer
+            # time_passed = pygame.time.get_ticks() - self.last_time
+            # self.current_time -= time_passed / 1000.0
+            # self.last_time = pygame.time.get_ticks()
 
             if not self.game_over:
-                # Update the timer
-                time_passed = pygame.time.get_ticks() - self.last_time
-                self.current_time -= time_passed / 1000.0
-                self.last_time = pygame.time.get_ticks()
-
-                if self.current_time <= 0:
-                    self.lives -= 1
-                    if self.lives <= 0:
-                        self.game_over = True
-                    else:
-                        self.reset_round()
+                if self.timer_started:  # Check if the timer has started
+                    self.time_passed = pygame.time.get_ticks() - self.last_time
+                    self.current_time -= self.time_passed / 1000.0
+                    self.last_time = pygame.time.get_ticks()
+                    print(self.current_time)
+                    if self.current_time <= 0:
+                        self.lives -= 1
+                        print("deducts a life.")
+                        if self.lives <= 0:
+                            self.game_over = True
+                        else:
+                            self.reset_round()
+                else:
+                    self.timer_started = True  # Start the timer
+                    self.last_time = pygame.time.get_ticks()  # Reset last_time
 
                 # Update the warrior animation frame
                 self.update_animation()
 
-                # Redraw everything
+                    # Redraw everything
                 self.display.blit(self.background, (0, 0))
                 self.draw_hearts()
                 self.draw_timer(self.current_time)
@@ -1052,11 +1138,11 @@ class SecondLevel:
                 self.draw_speaker()
 
             else:
-                # Show the end screen
+                    # Show the end screen
                 self.show_end_screen()
 
             pygame.display.update()
-            self.clock.tick(60)  # Cap frame rate at 60 FPS
+            self.clock.tick(FPS)  # Cap frame rate at 60 FPS
 
 
 
@@ -1067,48 +1153,59 @@ class ThirdLevel:
         self.display = display
         self.gameStateManager = gameStateManager
         self.lives = 3
-        self.timer = 15.0  # 15 seconds timer for each word
+        self.timer = 10.0  # 15 seconds timer for each word
+        self.win = False
         self.words = [
             {"word": "TIGER",
              "question": "If you know this word, what is its last syllable?",
              "syllables": ["-ger", "-ny", "-dy", "-red"],
-             "correct": "-ger"},
+             "correct": "-ger",
+             "image": "graphics/tiger.png"},
             {"word": "RABBIT",
              "question": "If you know this word, what is its last syllable?",
              "syllables": ["-ber", "-tion", "-er", "-bit"],
-             "correct": "-bit"},
+             "correct": "-bit",
+             "image": "graphics/rabbit.png"},
             {"word": "RAINBOW",
              "question": "If you know this word, what is its last syllable?",
              "syllables": ["-drop", "-ing", "-bow", "-fall"],
-             "correct": "-bow"},
+             "correct": "-bow",
+             "image": "graphics/rainbow.png"},
             {"word": "PIZZA",
              "question": "If you know this word, what is its last syllable?",
              "syllables": ["-ture", "-za", "-zer", "-tion"],
-             "correct": "-za"},
+             "correct": "-za",
+             "image": "graphics/pizza.png"},
             {"word": "ROCKET",
              "question": "If you know this word, what is its last syllable?",
              "syllables": ["-et", "-er", "-fall", "-hard"],
-             "correct": "-et"},
+             "correct": "-et",
+             "image": "graphics/rocket.png"},
             {"word": "FLOWER",
              "question": "If you know this word, what is its last syllable?",
-             "syllables": ["-er", "-ing", "-state", "-s"],
-             "correct": "-er"},
+             "syllables": ["-wer", "-ing", "-state", "-s"],
+             "correct": "-wer",
+             "image": "graphics/flower.png"},
             {"word": "CHICKEN",
              "question": "If you know this word, what is its last syllable?",
              "syllables": ["-ing", "-er", "-tion", "-en"],
-             "correct": "-en"},
+             "correct": "-en",
+             "image": "graphics/chicken.png"},
             {"word": "WINDOW",
              "question": "If you know this word, what is its last syllable?",
              "syllables": ["-ning", "-dow", "-ner", "-some"],
-             "correct": "-dow"},
+             "correct": "-dow",
+             "image": "graphics/window.png"},
             {"word": "TABLE",
              "question": "If you know this word, what is its last syllable?",
              "syllables": ["-e", "-nned", "-ble", "-er"],
-             "correct": "-ble"},
+             "correct": "-ble",
+             "image": "graphics/table.png"},
             {"word": "CACTUS",
              "question": "If you know this word, what is its last syllable?",
              "syllables": ["-ti", "-kled", "-tus", "-ing"],
-             "correct": "-tus"},
+             "correct": "-tus",
+             "image": "graphics/cactus.png"},
         ]
 
         self.current_word_index = 0
@@ -1123,7 +1220,7 @@ class ThirdLevel:
 
         # Load the heart image for lives representation
         self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
-        self.heart_image = pygame.transform.scale(self.heart_image, (40, 40))  # Scale the heart image if needed
+        self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))  # Scale the heart image if needed
         self.heart_width, self.heart_height = self.heart_image.get_size()
 
         # Idle and running animation variables
@@ -1206,7 +1303,7 @@ class ThirdLevel:
     def draw_lives(self):
         """Draw the player's lives using heart images."""
         for i in range(self.lives):
-            self.display.blit(self.heart_image, (10 + i * (self.heart_width + 5), 10))  # Adjust position as needed
+            self.display.blit(self.heart_image, (10 + i * 60, 10))  # Adjust position as needed
 
     def move_character_toward_syllable(self):
         """Moves the character towards the selected syllable."""
@@ -1290,6 +1387,77 @@ class ThirdLevel:
                 self.target_position = (x-70, y-25)  # Set both x and y target positions for character movement
                 self.moving = True  # Start moving the character
 
+    def reset_level(self):
+        # Reset relevant attributes to restart the level
+        self.lives = 3
+        self.current_word_index = 0
+        self.start_time = time.time()
+        self.current_time = 10.0
+
+    def show_end_screen(self):
+        # Set up screen
+        self.display.fill((0, 0, 0))  # Black background
+        font = pygame.font.Font(None, 30)
+
+        # Display message based on win or lose
+        message_text = "You Win!" if self.win else "You Lose"
+        message_surface = font.render(message_text, True, (255, 255, 255))
+        message_rect = message_surface.get_rect(center=(self.display.get_width() // 2, self.display.get_height() // 3))
+        self.display.blit(message_surface, message_rect)
+
+        # Button setup
+        button_font = pygame.font.Font(None, 30)
+
+        # Restart Level button
+        restart_text = button_font.render("Restart Level", True, (255, 255, 255))
+        restart_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2), self.display.get_height() // 2, 250, 50)
+        restart_button.center = (self.display.get_width() // 2, 300)
+        pygame.draw.rect(self.display, (0, 128, 0), restart_button)
+        self.display.blit(restart_text, restart_text.get_rect(center=restart_button.center))
+
+        # Main Menu button
+        menu_text = button_font.render("Main Menu", True, (255, 255, 255))
+        menu_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2), self.display.get_height() // 2 + 70, 250, 50)
+        menu_button.center = (self.display.get_width() // 2, 380)
+        pygame.draw.rect(self.display, (128, 0, 0), menu_button)
+        self.display.blit(menu_text, menu_text.get_rect(center=menu_button.center))
+
+        # Next Level button (only show if player wins)
+        if self.win:
+            next_level_text = button_font.render("Next Level", True, (255, 255, 255))
+            next_level_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2), self.display.get_height() // 2 - 70, 250, 50)
+            next_level_button.center = (self.display.get_width() // 2, 220)
+            pygame.draw.rect(self.display, (0, 0, 255), next_level_button)
+            self.display.blit(next_level_text, next_level_text.get_rect(center=next_level_button.center))
+
+        pygame.display.flip()  # Update display
+
+        # Button event loop within `show_end_screen`
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+
+                    # Check if Restart Level button is clicked
+                    if restart_button.collidepoint(mouse_pos):
+                        self.reset_level()  # Reset level logic
+                        waiting = False
+                        self.run()  # Restart level
+
+                    # Check if Main Menu button is clicked
+                    elif menu_button.collidepoint(mouse_pos):
+                        self.gameStateManager.set_state('main-menu')
+                        waiting = False
+
+                    # Check if Next Level button is clicked (if player won)
+                    elif self.win and next_level_button.collidepoint(mouse_pos):
+                        self.gameStateManager.set_state('next-level')
+                        waiting = False
+
     def run(self):
         self.run_title_animation()
         running = True
@@ -1311,11 +1479,19 @@ class ThirdLevel:
             # Fill the screen with the background color
             self.display.blit(self.background_image, (0, 0)) # Light blue lagoon color
 
-            # Display word with missing syllable
+            # Display the question
             current_word_data = self.words[self.current_word_index]
             word_text = pygame.font.SysFont('Arial', 40).render(f"{current_word_data['question']}", True,
                                                                 (255, 255, 255))
             self.display.blit(word_text, (self.display.get_width() // 2 - word_text.get_width() // 2, 50))
+
+            # Load and display the image below the question
+            image = pygame.image.load(current_word_data['image'])
+            scaled_image = pygame.transform.scale(image, (150, 150))
+            image_rect = scaled_image.get_rect()
+            image_x = self.display.get_width() // 2 - image_rect.width // 2
+            image_y = 50 + word_text.get_height() + 10  # 10 pixels below the question
+            self.display.blit(scaled_image, (image_x, image_y))
 
             # Draw the geysers with syllables
             self.draw_geysers()
@@ -1342,13 +1518,21 @@ class ThirdLevel:
                 if self.selected_syllable == self.correct_syllable:
                     print("Correct! Moving to next word.")
                     self.current_word_index += 1
-                    self.load_next_word()
+                    if self.current_word_index >= len(self.words):
+                        print("All words completed!")
+                        self.win = True
+                        self.show_end_screen()
+                        running = False
+                    else:
+                        self.load_next_word()
+
                 else:
                     print("Incorrect! You lose a life.")
                     self.lives -= 1
                     if self.lives <= 0:
                         print("Game Over")
-                        self.gameStateManager.set_state('main-menu')
+                        self.win = False
+                        self.show_end_screen()
                         running = False
                     else:
                         print("Resetting timer for the same word.")
