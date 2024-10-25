@@ -944,16 +944,25 @@ class EighthLevel:
 
 class NinthLevel:
     class Syllable:
-        def __init__(self, text, x, y, font_size):
+        def __init__(self, text, x, y, font_size, boulder_image):
             self.text = text
-            self.rect = pygame.Rect(x, y, font_size * len(text), font_size)  # Adjusted for font size
+            self.rect = pygame.Rect(x, y, font_size * len(text), font_size)
+            self.boulder_image = boulder_image  # Assign the boulder image
+            self.boulder_rect = self.boulder_image.get_rect(
+                topleft=(x, y))  # Position the boulder image at the same position
 
         def fall(self, speed):
             self.rect.y += speed
+            self.boulder_rect.y += speed  # Move the boulder along with the syllable
 
         def draw(self, surface, font):
-            text_surface = font.render(self.text, True, (0, 0, 0))
-            surface.blit(text_surface, (self.rect.x, self.rect.y))
+            # Draw the boulder image
+            surface.blit(self.boulder_image, (self.boulder_rect.x, self.boulder_rect.y))
+
+            # Draw the syllable text on top of the boulder
+            text_surface = font.render(self.text, True, (255, 255, 255))
+            text_rect = text_surface.get_rect(center=self.boulder_rect.center)  # Center the text on the boulder
+            surface.blit(text_surface, text_rect)
 
     def __init__(self, display, gameStateManager):
         self.display = display
@@ -963,13 +972,13 @@ class NinthLevel:
         pygame.init()
 
         # Game constants
-        self.WIDTH, self.HEIGHT = 1000, 500
+        self.WIDTH, self.HEIGHT = 1200, 550
         self.SYLLABLES = [
             {"word": "hospital", "syllables": ["hos", "pi", "tal"]},
             {"word": "banana", "syllables": ["ba", "na", "na"]},
             {"word": "computer", "syllables": ["com", "pu", "ter"]},
             {"word": "watermelon", "syllables": ["wa", "ter", "me", "lon"]},
-            {"word": "powerful", "syllables": ["po", "wer", "ful"]},
+            {"word": "chocolate", "syllables": ["cho", "co", "late"]},
             {"word": "potato", "syllables": ["po", "ta", "to"]},
             {"word": "hamburger", "syllables": ["ham", "bur", "ger"]},
             {"word": "dinosaur", "syllables": ["di", "no", "saur"]},
@@ -985,22 +994,61 @@ class NinthLevel:
         # Set up font
         self.font = pygame.font.Font(None, self.FONT_SIZE)
 
+        # Load boulder image
+        self.boulder_image_path = os.path.join('graphics', 'Boulder.png')
+        self.boulder_image = pygame.image.load(self.boulder_image_path).convert_alpha()
+        self.boulder_image = pygame.transform.scale(self.boulder_image, (75, 75))
+
+        # Enemy Logo image
+        self.enemylogo_image_path = os.path.join('graphics', 'Confusion-Logo.png')
+        self.enemylogo_image = pygame.image.load(self.enemylogo_image_path).convert_alpha()
+        self.enemylogo_image = pygame.transform.scale(self.enemylogo_image, (60, 60))
+
+        # Shield Logo image
+        self.shieldlogo_image_path = os.path.join('graphics', 'shield-Logo.png')
+        self.shieldlogo_image = pygame.image.load(self.shieldlogo_image_path).convert_alpha()
+        self.shieldlogo_image = pygame.transform.scale(self.shieldlogo_image, (60, 60))
+
         # Load background image
         background_image_path = os.path.join('graphics', 'tower-final-bg.png')
         self.background_image = pygame.image.load(background_image_path).convert_alpha()
         self.background_image = pygame.transform.scale(self.background_image,
                                                        (self.display.get_width(), self.display.get_height()))
 
-        # Load Enemy image
-        confusion_image_path = os.path.join('graphics', 'Confusion-Final-Form.png')
-        self.enemy_image = pygame.image.load(confusion_image_path).convert_alpha()
-        self.enemy_image = pygame.transform.scale(self.enemy_image, (300, 300))
+        # Load background image
+        shield_image_path = os.path.join('graphics', 'shield.png')
+        self.shield_image = pygame.image.load(shield_image_path).convert_alpha()
+        self.shield_image = pygame.transform.scale(self.shield_image,
+                                                       (self.display.get_width(), self.display.get_height()))
+
+        # Load shield broke image
+        shield_broke_image_path = os.path.join('graphics', 'shield-broke.png')
+        self.shield_broke_image = pygame.image.load(shield_broke_image_path).convert_alpha()
+        self.shield_broke_image = pygame.transform.scale(self.shield_broke_image,
+                                                         (self.display.get_width(), self.display.get_height()))
+        self.show_shield_broke = False  # Flag to control the display of the shield-broke image
+        self.shield_broke_timer = 0  # Timer to keep track of how long to display the image
+
+        # Game constants
+        self.WIDTH, self.HEIGHT = 1000, 525
+
+        # Load the Confusion Final Form sprite sheet
+        self.confusion_sprite_sheet_path = os.path.join('graphics', 'Confusion-Final-Form-Sheet.png')
+        self.confusion_sprite_sheet = pygame.image.load(self.confusion_sprite_sheet_path).convert_alpha()
+
+        self.confusion_frames = []
+        self.load_confusion_frames()
+
+        # Variables for animation
+        self.current_frame_index = 0
+        self.animation_timer = 0
+        self.animation_speed = 100  # milliseconds between frames
 
         # Input box properties
-        self.input_box_width = 600
-        self.input_box_height = 50
-        self.input_box_x = (self.display.get_width() - self.input_box_width) // 2  # Center horizontally
-        self.input_box_y = self.display.get_height() - 100
+        self.input_box_width = 300
+        self.input_box_height = 40
+        self.input_box_x = 110 # Center horizontally
+        self.input_box_y = 660
         self.input_box = pygame.Rect(self.input_box_x, self.input_box_y, self.input_box_width, self.input_box_height)
         self.input_color = (255, 255, 255)  # White
         self.text_color = (0, 0, 0)  # Black
@@ -1011,11 +1059,50 @@ class NinthLevel:
         self.spawn_timer = 0
         self.spawn_interval = 1000  # milliseconds
 
+    def load_confusion_frames(self):
+        """Extracts 9 frames from the sprite sheet, each of size 500x500."""
+        frame_width = 500
+        frame_height = 500
+        num_frames = 9
+
+        for i in range(num_frames):
+            # Cut out each frame from the sprite sheet
+            frame = self.confusion_sprite_sheet.subsurface((i * frame_width, 0, frame_width, frame_height))
+            self.confusion_frames.append(frame)
+
+    def update_animation(self):
+        """Updates the current frame index based on time for the animation."""
+        current_time = pygame.time.get_ticks()  # Get the time in milliseconds
+        if current_time - self.animation_timer > self.animation_speed:
+            self.animation_timer = current_time
+            # Update to the next frame, looping back to the first frame when reaching the end
+            self.current_frame_index = (self.current_frame_index + 1) % len(self.confusion_frames)
+
+    def draw_confusion(self):
+        """Draws the current frame of the Confusion animation with scaling and adjustable placement."""
+        current_frame = self.confusion_frames[self.current_frame_index]
+
+        # Define new width and height for scaling (you can adjust the scaling factors as needed)
+        scale_width, scale_height = 300, 300  # Example scaling to 300x300
+
+        # Scale the current frame to the desired size
+        scaled_frame = pygame.transform.scale(current_frame, (scale_width, scale_height))
+
+        # Define new x and y positions for placement
+        new_x = WIDTH // 2 - scale_width // 2  # Center horizontally
+        new_y = -50  # Adjust vertical placement (50 pixels from the top)
+
+        # Draw the scaled frame at the new position
+        self.display.blit(scaled_frame, (new_x, new_y))
+
     def draw_text_box(self):
         # Draw the input box
         pygame.draw.rect(self.display, self.input_color, self.input_box, 0)
         text_surface = self.font.render(self.current_text, True, self.text_color)
         self.display.blit(text_surface, (self.input_box.x + 5, self.input_box.y + 5))
+        label = f"Enter word here: "
+        label_surface = self.font.render(label, True, (0, 0, 0))
+        self.display.blit(label_surface, (115, 630))  # Adjust text position accordingly
 
     def draw_lifebar(self, current_value, max_value, x, y, width, height, fill_color, border_color=(255, 255, 255),
                      background_color=(50, 50, 50)):
@@ -1057,9 +1144,14 @@ class NinthLevel:
         for syllable in self.syllables:
             syllable.fall(1)  # Move syllables down
             if syllable.rect.y > self.HEIGHT:  # If a syllable hits the bottom
-                self.LIVES -= 5
+                self.LIVES -= 3
                 print(f"Lives left: {self.LIVES}")
                 self.syllables.remove(syllable)  # Remove the syllable if it falls off the screen
+
+                # Show the shield broke image for 0.2 seconds
+                self.show_shield_broke = True
+                self.shield_broke_timer = pygame.time.get_ticks()  # Start the timer
+
                 if self.LIVES <= 0:
                     self.game_over()
 
@@ -1068,11 +1160,14 @@ class NinthLevel:
             print("You win!")
             self.gameStateManager.game_won()
 
+        # Check if the shield-broke image should be hidden
+        if self.show_shield_broke and (pygame.time.get_ticks() - self.shield_broke_timer > 200):  # 200 ms
+            self.show_shield_broke = False
+
     def spawn_next_word(self):
         # Choose a random word and its syllables
         word_data = random.choice(self.SYLLABLES)
         self.current_word = word_data["word"]  # Set current word
-        print("Next word:", self.current_word)
         syllables = word_data["syllables"]
 
         # Define a minimum distance between syllables
@@ -1087,8 +1182,7 @@ class NinthLevel:
                 # Check if the new syllable overlaps with existing syllables
                 overlap = False
                 for existing_syllable in self.syllables:
-                    if abs(existing_syllable.rect.x - x) < min_distance and abs(
-                            existing_syllable.rect.y - y) < min_distance:
+                    if abs(existing_syllable.rect.x - x) < min_distance and abs(existing_syllable.rect.y - y) < min_distance:
                         overlap = True
                         break
 
@@ -1096,8 +1190,8 @@ class NinthLevel:
                 if not overlap:
                     break
 
-            # Add the new syllable to the list
-            self.syllables.append(self.Syllable(syllable_text, x, y, self.FONT_SIZE))
+            # Add the new syllable to the list, using the scaled boulder image
+            self.syllables.append(self.Syllable(syllable_text, x, y, self.FONT_SIZE, self.boulder_image))
             self.energy_level -= 1  # Deduct energy level
 
     def draw_syllables(self):
@@ -1105,18 +1199,18 @@ class NinthLevel:
             syllable.draw(self.display, self.font)
 
     def draw_lives(self):
-        self.draw_lifebar(self.LIVES, 100, 10, 10, 300, 30, (154, 213, 33),
+        self.draw_lifebar(self.LIVES, 100, 110, 40, 300, 15, (154, 213, 33),
                           (255, 255, 255))  # Green lifebar with white border
-        lives_text = f"{self.LIVES} %"
-        lives_surface = self.font.render(lives_text, True, (255, 255, 255))
-        self.display.blit(lives_surface, (320, 10))  # Adjust text position accordingly
+        lives_text = f"Shield Health:       {self.LIVES} %"
+        lives_surface = self.font.render(lives_text, True, (0, 0, 0))
+        self.display.blit(lives_surface, (110, 10))  # Adjust text position accordingly
 
     def draw_energy(self):
-        self.draw_lifebar(self.energy_level, 100, (WIDTH // 2) - (1000 // 2), 550, 1000, 30, (242, 96, 97),
+        self.draw_lifebar(self.energy_level, 100, 110, 110, 300, 15, (38, 46, 124),
                           (255, 255, 255))  # Blue energy bar with white border
-        # energy_text = f"Energy: {self.energy_level}"
-        # energy_surface = self.font.render(energy_text, True, (255, 255, 255))
-        # self.display.blit(energy_surface, (320, 50))  # Adjust text position accordingly
+        energy_text = f"Confusion's Energy: {self.energy_level} %"
+        energy_surface = self.font.render(energy_text, True, (0, 0, 0))
+        self.display.blit(energy_surface, (110, 80))  # Adjust text position accordingly
 
     def game_over(self):
         print("Game Over")
@@ -1140,12 +1234,19 @@ class NinthLevel:
 
             # Update game state
             self.update()
+            self.update_animation()
             self.display.blit(self.background_image, (0, 0))  # Background color
-            self.display.blit(self.enemy_image, (WIDTH // 2 - (300 // 2), -50))
+            self.display.blit(self.shield_image, (0, 0))
+            self.draw_confusion()
             self.draw_text_box()  # Draw the text box
             self.draw_syllables()  # Draw the syllables
+            self.display.blit(self.shieldlogo_image, (30, 10))
+            self.display.blit(self.enemylogo_image, (30, 75))
             self.draw_lives()  # Draw lives
             self.draw_energy()  # Draw energy level
+            # Inside the run method, after drawing the background
+            if self.show_shield_broke:
+                self.display.blit(self.shield_broke_image, (0, 0))  # Draw shield broke image
             pygame.display.flip()  # Update the display
             clock.tick(FPS)  # Limit to 60 frames per second
 
