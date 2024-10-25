@@ -17,7 +17,7 @@ class Game:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("DyscapeTheGame")
 
-        self.gameStateManager = GameStateManager('main-menu')
+        self.gameStateManager = GameStateManager('fourth-level')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
@@ -1457,7 +1457,7 @@ class ThirdLevel:
 
                     # Check if Next Level button is clicked (if player won)
                     elif self.win and next_level_button.collidepoint(mouse_pos):
-                        self.gameStateManager.set_state('next-level')
+                        self.gameStateManager.set_state('fourth-level')
                         waiting = False
 
     def run(self):
@@ -1556,6 +1556,9 @@ class FourthLevel:
         self.word_index = 0  # Start with the first word
         self.correct_word = self.words_to_find[self.word_index]  # Word to find on screen
         self.engine = pyttsx3.init()  # Text-to-speech engine
+        self.win = False
+        self.gameOver = False
+        self.is_game_initialized = False
 
         self.continue_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() - 100, 200,
                                            50)
@@ -1573,7 +1576,7 @@ class FourthLevel:
 
         heart_image_path = os.path.join('graphics', 'heart.png')
         self.heart_image = pygame.image.load(heart_image_path).convert_alpha()
-        self.heart_image = pygame.transform.scale(self.heart_image, (50, 50))  # Resize heart
+        self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))  # Resize heart
 
         # Create buttons (audio, left, right)
         # Load the audio button image
@@ -1626,7 +1629,7 @@ class FourthLevel:
         self.word_index += 1
         if self.word_index >= len(self.words_to_find):
             print("Level completed!")
-            self.gameStateManager.go_to_next_level()
+            self.win = True
         else:
             self.correct_word = self.words_to_find[self.word_index]
             self.word_position = (random.randint(100, self.display.get_width() - 200), random.randint(100, self.display.get_height() - 200))
@@ -1635,7 +1638,7 @@ class FourthLevel:
         self.lives -= 1
         if self.lives <= 0:
             print("Game Over!")
-            self.gameStateManager.set_state('main-menu')
+            self.gameOver = True
         else:
             print(f"Lives remaining: {self.lives}")
 
@@ -1965,15 +1968,127 @@ class FourthLevel:
 
         pass
 
-    def run(self):
+    def restart_game(self):
+        """Resets all values to start the game over."""
+        # Reset player lives
+        self.lives = 3
+        self.font = pygame.font.Font(None, 40)
 
+        # Reset the word index and choose the first word
+        self.word_index = 0
+        self.correct_word = self.words_to_find[self.word_index]
+
+        # Reset game state variables
+        self.win = False
+        self.gameOver = False
+
+        # Stop the background music
+        if self.bgm_isplaying:
+            self.bgm.stop()
+            self.bgm_isplaying = False
+
+        # Optionally, you can reset the position of the word if needed
+        self.word_position = (random.randint(100, self.display.get_width() - 200),
+                              random.randint(100, self.display.get_height() - 200))
+
+        # Restart any other necessary game state variables
+        # For example, you may want to reset the countdown timer if you have one
+        # self.countdown_timer = initial_value
+
+        # Optionally, restart the background music if desired
+        self.bgm.play(-1)
+        self.bgm_isplaying = True
+
+        print("Game has been restarted.")
+
+    def show_end_screen(self):
+        """Displays the end screen with win/lose messages and buttons."""
+        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        self.font = pygame.font.Font(font_path, 20)
+        running = True
+        while running:
+            self.display.blit(self.background_image, (0, 0))  # Fill with background
+
+            # Determine the message and button configurations
+            if self.win:
+                message = "You win!"
+                next_level_button = pygame.Rect(self.display.get_width() // 2 - 100,
+                                                self.display.get_height() // 2 - 50, 200, 50)
+                restart_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2 + 10,
+                                             200, 50)
+                main_menu_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2 + 70,
+                                               200, 50)
+            else:  # Game over
+                message = "You lose."
+                restart_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2, 200,
+                                             50)
+                main_menu_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2 + 60,
+                                               200, 50)
+
+            # Render the message
+            text_surface = self.font.render(message, True, (255, 255, 255))
+            text_rect = text_surface.get_rect(
+                center=(self.display.get_width() // 2, self.display.get_height() // 2 - 100))
+            self.display.blit(text_surface, text_rect)
+
+            # Draw buttons
+            pygame.draw.rect(self.display, (0, 0, 255),
+                             next_level_button if self.win else restart_button)  # Green button for next level or restart
+            pygame.draw.rect(self.display, (0, 128, 0), restart_button)  # Orange button for restart
+            pygame.draw.rect(self.display, (128, 0, 0), main_menu_button)  # Blue button for main menu
+
+            # Render button texts
+            if self.win:
+                next_level_text = self.font.render("Next Level", True, (255, 255, 255))
+                self.display.blit(next_level_text, (next_level_button.x + 50, next_level_button.y + 10))
+
+            restart_text = self.font.render("Restart", True, (255, 255, 255))
+            self.display.blit(restart_text, (restart_button.x + 65, restart_button.y + 10))
+
+            main_menu_text = self.font.render("Main Menu", True, (255, 255, 255))
+            self.display.blit(main_menu_text, (main_menu_button.x + 45, main_menu_button.y + 10))
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    pygame.quit()
+                    sys.exit()
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.win and next_level_button.collidepoint(event.pos):
+                        # Load the next level (this would depend on how your levels are structured)
+                        self.bgm.stop()
+                        print("Loading next level...")
+                        # Here you would call the method to load the next level
+                        self.gameStateManager.set_state('fifth-level')
+                        running = False  # Exit the end screen
+
+                    if restart_button.collidepoint(event.pos):
+                        print("Restarting level...")
+                        # Restart the current level
+                        # Here you would reset the game state to restart the level
+                        self.restart_game()
+                        running = False  # Exit the end screen
+
+                    if main_menu_button.collidepoint(event.pos):
+                        print("Returning to main menu...")
+                        # Load the main menu
+                        self.gameStateManager.set_state('main-menu')
+                        running = False  # Exit the end screen
+
+            pygame.display.update()
+
+    def run(self):
         correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
         wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
 
-        self.run_title_animation()
-        self.run_dialogue_strip_1()
-        self.run_dialogue_strip_2()
-        self.show_how_to_play()
+        if not self.is_game_initialized:
+            self.run_title_animation()
+            self.run_dialogue_strip_1()
+            self.run_dialogue_strip_2()
+            self.show_how_to_play()
+            self.is_game_initialized = True
 
         running = True
         while running:
@@ -2016,6 +2131,7 @@ class FourthLevel:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                    pygame.quit()
                     sys.exit()
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -2027,6 +2143,7 @@ class FourthLevel:
                             print("Correct! Word is on the left.")
                             correct_answer_sound.play()
                             self.next_word()  # Move to the next word
+
                         else:
                             print("Incorrect! Word is not on the left.")
                             wrong_answer_sound.play()
@@ -2037,12 +2154,19 @@ class FourthLevel:
                             print("Correct! Word is on the right.")
                             correct_answer_sound.play()
                             self.next_word()  # Move to the next word
+
                         else:
                             print("Incorrect! Word is not on the right.")
                             wrong_answer_sound.play()
                             self.lose_life()  # Lose a life
 
+            # Check if the game is over
+            if self.win or self.gameOver:
+                self.show_end_screen()  # Display the end screen
+                running = False  # Exit the game loop
+
             pygame.display.update()
+
 
 
 class FifthLevel:
