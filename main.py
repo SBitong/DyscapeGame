@@ -14,13 +14,14 @@ class Game:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("DyscapeTheGame")
 
-        self.gameStateManager = GameStateManager('ninth-level')
+        self.gameStateManager = GameStateManager('final-level')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
         self.eighthlevel = EighthLevel(self.screen, self.gameStateManager)
         self.ninthlevel = NinthLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'eighth-level': self.eighthlevel, 'ninth-level': self.ninthlevel}
+        self.finallevel = FinalLevel(self.screen, self.gameStateManager)
+        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'eighth-level': self.eighthlevel, 'ninth-level': self.ninthlevel, 'final-level': self.finallevel}
 
         self.clock = pygame.time.Clock()
 
@@ -1249,6 +1250,148 @@ class NinthLevel:
                 self.display.blit(self.shield_broke_image, (0, 0))  # Draw shield broke image
             pygame.display.flip()  # Update the display
             clock.tick(FPS)  # Limit to 60 frames per second
+
+
+class FinalLevel:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.total_frames = 40
+        self.frame_duration = 75
+        self.next_total_frames = 20  # Number of frames in the next spritesheet
+        self.next_frame_duration = 75  # Duration for each frame in the next spritesheet
+
+        # Load the first spritesheet
+        self.spritesheet = pygame.image.load('graphics/Final-Scene-Dyscape-Sheet.png')
+
+        still_image_1 = os.path.join('graphics', 'still_image-1.png')
+        self.still_image_1 = pygame.image.load(still_image_1)
+        self.still_image_1 = pygame.transform.scale(self.still_image_1, (self.display.get_width(), self.display.get_height()))
+
+        # Create a list to hold the frames for the first spritesheet
+        self.frames = []
+        for i in range(self.total_frames):
+            frame = self.spritesheet.subsurface((i * WIDTH, 0, WIDTH, HEIGHT))
+            self.frames.append(frame)
+
+        # Initialize variables for the second spritesheet
+        self.next_frames = []
+        self.current_next_frame = 0
+        self.playing_next_spritesheet = False
+        self.next_start_time = 0
+
+        self.current_frame = 0
+        self.clock = pygame.time.Clock()
+        self.animation_complete = False
+        self.start_time = pygame.time.get_ticks()  # Record the start time
+
+        # Question and options
+        self.question = "What is your favorite color?"
+        self.options = ["Red", "Blue", "Green", "Yellow"]
+        self.correct_answer = "Blue"  # Set the correct answer
+        self.card_position = (WIDTH -450, HEIGHT - 350)  # Position for the question card
+        self.card_rect = pygame.Rect(self.card_position, (400, 300))  # Rectangle for the card
+
+    def handle_events(self):
+        """Handle events such as quitting the game and mouse clicks."""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
+                mouse_pos = event.pos
+                if self.card_rect.collidepoint(mouse_pos) and self.animation_complete:
+                    self.check_answer(mouse_pos)
+
+    def check_answer(self, mouse_pos):
+        """Check if the clicked option is correct."""
+        option_height = 40  # Height of each option
+        for i, option in enumerate(self.options):
+            option_rect = pygame.Rect(self.card_position[0] + 20, self.card_position[1] + 80 + i * option_height, 560, option_height)
+            if option_rect.collidepoint(mouse_pos):
+                if option == self.correct_answer:
+                    print("Correct answer!")
+                    self.play_next_spritesheet()
+                else:
+                    print("Wrong answer!")
+
+    def play_next_spritesheet(self):
+        """Load and play the next spritesheet."""
+        next_spritesheet = pygame.image.load('graphics/Final-Scene-Dyscape-Sheet-2.png')
+        for i in range(self.next_total_frames):
+            frame = next_spritesheet.subsurface((i * WIDTH, 0, WIDTH, HEIGHT))
+            self.next_frames.append(frame)
+
+        self.playing_next_spritesheet = True
+        self.current_next_frame = 0
+        self.next_start_time = pygame.time.get_ticks()  # Record the start time for the next spritesheet
+
+    def update_animation(self):
+        """Update the animation frame based on time."""
+        if self.playing_next_spritesheet:
+            # Check if it's time to move to the next frame in the next spritesheet
+            if pygame.time.get_ticks() - self.next_start_time >= self.next_frame_duration:
+                self.current_next_frame += 1
+                self.next_start_time = pygame.time.get_ticks()  # Reset the start time
+
+            # If we've displayed all frames, stop playing the next spritesheet
+            if self.current_next_frame >= self.next_total_frames:
+                self.playing_next_spritesheet = False
+        else:
+            if not self.animation_complete:
+                # Check if it's time to move to the next frame
+                if pygame.time.get_ticks() - self.start_time >= self.frame_duration:
+                    self.current_frame += 1
+                    self.start_time = pygame.time.get_ticks()  # Reset the start time
+
+                # If we've displayed all frames, mark animation as complete
+                if self.current_frame >= self.total_frames:
+                    self.animation_complete = True
+
+    def draw(self):
+        """Draw the current frame or the question card."""
+        # Clear the screen
+        self.display.blit(self.still_image_1, (0, 0))
+
+        # Check if the animation is complete
+        if not self.animation_complete:
+            # Display the current frame
+            self.display.blit(self.frames[self.current_frame], (0, 0))
+        elif self.playing_next_spritesheet:
+            # Display the current frame of the next spritesheet
+            self.display.blit(self.next_frames[self.current_next_frame], (0, 0))
+        else:
+            # If the animation is complete, display the question in the bottom right
+            self.display_question(self.question, self.options, self.card_position)
+
+        # Update the display
+        pygame.display.flip()
+
+    def display_question(self, question, options, position):
+        """Display the question and options in a card surface."""
+        card_surface = pygame.Surface((400, 300))
+        card_surface.fill((255, 255, 255))  # White background
+        pygame.draw.rect(card_surface, (0, 0, 0), card_surface.get_rect(), 5)  # Black border
+
+        font = pygame.font.Font(None, 36)
+        question_text = font.render(question, True, (0, 0, 0))
+        card_surface.blit(question_text, (20, 20))
+
+        for i, option in enumerate(options):
+            option_text = font.render(f"{i + 1}. {option}", True, (0, 0, 0))
+            card_surface.blit(option_text, (20, 80 + i * 40))
+
+        self.display.blit(card_surface, position)
+
+    def run(self):
+        """Main loop to run the final level."""
+        running = True
+        while running:
+            self.handle_events()  # Handle events
+            self.update_animation()  # Update the animation frame
+            self.draw()  # Draw the current frame or question card
+            self.clock.tick(FPS)  # Control the frame rate
+
 
 
 class GameStateManager:
