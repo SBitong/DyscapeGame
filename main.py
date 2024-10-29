@@ -1257,9 +1257,9 @@ class FinalLevel:
         self.display = display
         self.gameStateManager = gameStateManager
         self.total_frames = 40
-        self.frame_duration = 75
+        self.frame_duration = 100
         self.next_total_frames = 20  # Number of frames in the next spritesheet
-        self.next_frame_duration = 75  # Duration for each frame in the next spritesheet
+        self.next_frame_duration = 100  # Duration for each frame in the next spritesheet
 
         # Load the first spritesheet
         self.spritesheet = pygame.image.load('graphics/Final-Scene-Dyscape-Sheet.png')
