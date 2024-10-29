@@ -11,13 +11,15 @@ from settings import *
 # Initialize Pygame
 pygame.init()
 engine = pyttsx3.init()
+rate = 150
+engine.setProperty('rate', rate)
 
 class Game:
     def __init__(self):
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("DyscapeTheGame")
 
-        self.gameStateManager = GameStateManager('fourth-level')
+        self.gameStateManager = GameStateManager('main-menu')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
@@ -25,8 +27,8 @@ class Game:
         self.thirdLevel = ThirdLevel(self.screen, self.gameStateManager)
         self.fourthLevel = FourthLevel(self.screen, self.gameStateManager)
         self.fifthLevel = FifthLevel(self.screen, self.gameStateManager)
-        self.seventhLevel = SeventhLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'second-level': self.secondLevel, 'third-level': self.thirdLevel, 'fourth-level': self.fourthLevel, 'fifth-level': self.fifthLevel, 'seventh-level': self.seventhLevel}
+        self.sixthLevel = SixthLevel(self.screen, self.gameStateManager)
+        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'second-level': self.secondLevel, 'third-level': self.thirdLevel, 'fourth-level': self.fourthLevel, 'fifth-level': self.fifthLevel, 'sixth-level': self.sixthLevel}
 
         self.clock = pygame.time.Clock()
 
@@ -654,6 +656,49 @@ class FirstLevel:
                 word_data["dragging"] = False
                 word_data["placed"] = False
                 word_data["rect"].x, word_data["rect"].y = word_data["original_pos"]
+
+        def run_title_animation(self):
+            title_heading = "Fifth Level:"
+            title_text = "THE BROKEN BRIDGE"
+            font_path = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
+            title_font = pygame.font.Font(font_path, 50)  # Large font for the title
+
+            alpha = 0  # Start fully transparent
+            max_alpha = 255
+            fade_speed = 5  # How fast the title fades in and out
+
+            running = True
+            while running:
+                self.display.fill((0, 0, 0))
+
+                # Render the title with fading effect
+                title_surface = title_font.render(title_text, True, (255, 255, 255))
+                title_surface.set_alpha(alpha)  # Set transparency level
+                title_rect = title_surface.get_rect(
+                    center=(self.display.get_width() // 2, self.display.get_height() // 2))
+                self.display.blit(title_surface, title_rect)
+
+                # Update the alpha to create fade-in effect
+                alpha += fade_speed
+                if alpha >= max_alpha:
+                    alpha = max_alpha
+                    pygame.time.delay(500)  # Pause for a short moment at full opacity
+
+                    # Fade out effect
+                    while alpha > 0:
+                        self.display.fill((0, 0, 0))
+                        title_surface.set_alpha(alpha)  # Set transparency level
+                        self.display.blit(title_surface, title_rect)
+                        alpha -= fade_speed
+                        if alpha < 0:
+                            alpha = 0
+                        pygame.display.flip()
+                        pygame.time.delay(30)  # Control the fade-out speed
+                    pygame.time.delay(80)
+                    running = False  # Exit the animation loop after fade-out
+
+                pygame.display.flip()
+                pygame.time.delay(30)  # Control the fade-in speed
 
         def run(self):
             """Main game loop for the first level."""
@@ -2177,6 +2222,8 @@ class FifthLevel:
         self.font = pygame.font.Font(None, 36)
         self.white = WHITE
         self.black = BLACK
+        self.win = False
+        self.gameOver = False
         pygame.mixer.init()
 
         self.continue_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() - 100, 200,
@@ -2463,61 +2510,6 @@ class FifthLevel:
             pygame.display.flip()
             clock.tick(60)  # Control the frame rate
 
-    def show_game_over_prompt(self):
-        # Fill the background with a semi-transparent overlay
-        overlay = pygame.Surface(self.display.get_size())
-        overlay.set_alpha(200)  # Set transparency level
-        overlay.fill((0, 0, 0))  # Black background
-        self.display.blit(overlay, (0, 0))
-
-        # Render the "You lost" message
-        game_over_text = "YOU LOST"
-        game_over_surface = self.font.render(game_over_text, True, (255, 255, 255))
-        game_over_rect = game_over_surface.get_rect(center=(self.display.get_width() // 2, 200))
-        self.display.blit(game_over_surface, game_over_rect)
-
-        # Define button positions and sizes
-        button_width, button_height = 200, 50
-        restart_button_rect = pygame.Rect(
-            (self.display.get_width() // 2 - button_width // 2, 300), (button_width, button_height))
-        main_menu_button_rect = pygame.Rect(
-            (self.display.get_width() // 2 - button_width // 2, 400), (button_width, button_height))
-
-        # Render buttons
-        pygame.draw.rect(self.display, (50, 255, 50), restart_button_rect)
-        restart_text_surface = self.font.render("Restart", True, (0, 0, 0))
-        restart_text_rect = restart_text_surface.get_rect(center=restart_button_rect.center)
-        self.display.blit(restart_text_surface, restart_text_rect)
-
-        pygame.draw.rect(self.display, (236, 112, 22), main_menu_button_rect)
-        main_menu_text_surface = self.font.render("Main Menu", True, (0, 0, 0))
-        main_menu_text_rect = main_menu_text_surface.get_rect(center=main_menu_button_rect.center)
-        self.display.blit(main_menu_text_surface, main_menu_text_rect)
-
-
-
-        running = True
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    exit()
-
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_pos = event.pos
-                    if restart_button_rect.collidepoint(mouse_pos):
-                        engine.say("Restart")
-                        self.reset_level()
-                        engine.runAndWait()
-                        running = False
-                    elif main_menu_button_rect.collidepoint(mouse_pos):
-                        engine.say("Return")
-                        self.reset_level()
-                        self.gameStateManager.set_state('main-menu')
-                        engine.runAndWait()
-                        running = False
-            pygame.display.update()
-
     def show_how_to_play(self):
         """Displays the 'how to play' instructions with a continue button."""
         running = True
@@ -2574,9 +2566,71 @@ class FifthLevel:
     def draw_rounded_rect(self, surface, color, rect, corner_radius):
         pygame.draw.rect(surface, color, rect, border_radius=corner_radius)
 
+    def show_end_screen(self):
+        """Display the end screen based on win/lose state."""
+        running = True
+        while running:
+            self.display.fill(self.black)  # Clear the screen
+            if self.win:
+                message = "You Win!"
+                next_level_button = pygame.Rect(self.display.get_width() // 2 - 100, 300, 200, 50)
+                restart_button = pygame.Rect(self.display.get_width() // 2 - 100, 370, 200, 50)
+                main_menu_button = pygame.Rect(self.display.get_width() // 2 - 100, 440, 200, 50)
+            else:
+                message = "You lose."
+                restart_button = pygame.Rect(self.display.get_width() // 2 - 100, 300, 200, 50)
+                main_menu_button = pygame.Rect(self.display.get_width() // 2 - 100, 370, 200, 50)
+
+            # Display the message
+            font_path = os.path.join('fonts', 'ARIAL.TTF')
+            font = pygame.font.Font(font_path, 20)
+            message_surface = font.render(message, True, self.white)
+            self.display.blit(message_surface, (self.display.get_width() // 2 - message_surface.get_width() // 2, 200))
+
+            # Draw buttons
+            if self.win:
+                pygame.draw.rect(self.display, (0, 0, 255), next_level_button)  # Blue button
+                next_level_text = self.font.render("Next Level", True, self.white)
+                # Center the text in the button
+                next_level_text_rect = next_level_text.get_rect(center=next_level_button.center)
+                self.display.blit(next_level_text, next_level_text_rect.topleft)
+
+            pygame.draw.rect(self.display, (0, 128, 0), restart_button)  # Green button
+            restart_text = self.font.render("Restart", True, self.white)
+            # Center the text in the button
+            restart_text_rect = restart_text.get_rect(center=restart_button.center)
+            self.display.blit(restart_text, restart_text_rect.topleft)
+
+            pygame.draw.rect(self.display, (128, 0, 0), main_menu_button)  # Red button
+            main_menu_text = self.font.render("Main Menu", True, self.white)
+            # Center the text in the button
+            main_menu_text_rect = main_menu_text.get_rect(center=main_menu_button.center)
+            self.display.blit(main_menu_text, main_menu_text_rect.topleft)
+
+            # Event handling for button clicks
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.win:
+                        if next_level_button.collidepoint(event.pos):
+                            # Go to the next level
+                            self.gameStateManager.set_state('sixth-level')
+                            running = False
+                    if restart_button.collidepoint(event.pos):
+                        # Restart the current level
+                        self.reset_level()
+                        running = False
+                    if main_menu_button.collidepoint(event.pos):
+                        # Go to the main menu
+                        self.gameStateManager.set_state('main-menu')
+                        running = False
+
+            pygame.display.update()
+
     def run(self):
         heart_image = pygame.image.load(os.path.join('graphics', 'heart.png'))
-        heart_image = pygame.transform.scale(heart_image, (40, 40))  # Scale heart image as needed
+        heart_image = pygame.transform.scale(heart_image, (80, 50))  # Scale heart image as needed
 
         # Load the paper scroll image
         scroll_image = pygame.image.load(os.path.join('graphics', 'paper-scroll.png'))
@@ -2584,7 +2638,7 @@ class FifthLevel:
         scroll_image = pygame.transform.scale(scroll_image, (scroll_width, scroll_height))
 
         # Load the audio button image
-        audio_button_image = pygame.image.load(os.path.join('graphics', 'audio-logo.png'))
+        audio_button_image = pygame.image.load(os.path.join('graphics', 'audio-logo-black.png'))
         audio_button_image = pygame.transform.scale(audio_button_image, (50, 50))  # Adjust size as needed
 
         correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
@@ -2632,7 +2686,7 @@ class FifthLevel:
 
             # Display the number of hearts for lives
             for i in range(self.lives):
-                self.display.blit(heart_image, (50 + i * 45, 20))  # Position hearts with spacing
+                self.display.blit(heart_image, (10 + i * 60, 10))  # Position hearts with spacing
 
             # Blit the scroll image in the center
             self.display.blit(scroll_image, (scroll_x, scroll_y))
@@ -2710,13 +2764,16 @@ class FifthLevel:
                                 overlay_start_time = pygame.time.get_ticks()
                                 self.lives -= 1
                                 if self.lives <= 0:
-                                    self.show_game_over_prompt()
+                                    print("You lost!")
+                                    self.win = False
+                                    self.show_end_screen()
                                     running = False
                                     break
 
                             if self.current_question_index >= len(self.questions):
                                 print("Level completed!")
-                                self.gameStateManager.set_state('main-menu')
+                                self.win = True
+                                self.show_end_screen()
                                 running = False
                             break
 
@@ -2737,7 +2794,7 @@ class FifthLevel:
                     show_red_overlay = False
             pygame.display.update()
 
-class SeventhLevel:
+class SixthLevel:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
@@ -2798,6 +2855,48 @@ class SeventhLevel:
         self.next_level_button = pygame.Rect(0, 0, 200, 60)  # Next level button
         self.exit_button = pygame.Rect(0, 0, 200, 60)
 
+    def run_title_animation(self):
+        title_heading = "Fifth Level:"
+        title_text = "ECHOING CHAMBERS"
+        font_path = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
+        title_font = pygame.font.Font(font_path, 50)  # Large font for the title
+
+        alpha = 0  # Start fully transparent
+        max_alpha = 255
+        fade_speed = 5  # How fast the title fades in and out
+
+        running = True
+        while running:
+            self.display.fill((0,0,0))
+
+            # Render the title with fading effect
+            title_surface = title_font.render(title_text, True, (255,255,255))
+            title_surface.set_alpha(alpha)  # Set transparency level
+            title_rect = title_surface.get_rect(center=(self.display.get_width() // 2, self.display.get_height() // 2))
+            self.display.blit(title_surface, title_rect)
+
+            # Update the alpha to create fade-in effect
+            alpha += fade_speed
+            if alpha >= max_alpha:
+                alpha = max_alpha
+                pygame.time.delay(500)  # Pause for a short moment at full opacity
+
+                # Fade out effect
+                while alpha > 0:
+                    self.display.fill((0,0,0))
+                    title_surface.set_alpha(alpha)  # Set transparency level
+                    self.display.blit(title_surface, title_rect)
+                    alpha -= fade_speed
+                    if alpha < 0:
+                        alpha = 0
+                    pygame.display.flip()
+                    pygame.time.delay(30)  # Control the fade-out speed
+                pygame.time.delay(80)
+                running = False  # Exit the animation loop after fade-out
+
+            pygame.display.flip()
+            pygame.time.delay(30)  # Control the fade-in speed
+
     def speak_word(self, word):
         """Use pyttsx3 to pronounce the word."""
         self.tts_engine.say(word)
@@ -2826,6 +2925,8 @@ class SeventhLevel:
         self.overlay_duration = 30  # Set the duration (frames)
 
     def run(self):
+        self.run_title_animation()
+
         """Main game loop for the seventh level."""
         correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
         wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
