@@ -25,7 +25,8 @@ class Game:
         self.thirdLevel = ThirdLevel(self.screen, self.gameStateManager)
         self.fourthLevel = FourthLevel(self.screen, self.gameStateManager)
         self.fifthLevel = FifthLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'second-level': self.secondLevel, 'third-level': self.thirdLevel, 'fourth-level': self.fourthLevel, 'fifth-level': self.fifthLevel}
+        self.seventhLevel = SeventhLevel(self.screen, self.gameStateManager)
+        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'second-level': self.secondLevel, 'third-level': self.thirdLevel, 'fourth-level': self.fourthLevel, 'fifth-level': self.fifthLevel, 'seventh-level': self.seventhLevel}
 
         self.clock = pygame.time.Clock()
 
@@ -2736,6 +2737,313 @@ class FifthLevel:
                     show_red_overlay = False
             pygame.display.update()
 
+class SeventhLevel:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.display = pygame.display.set_mode((1280, 720))
+        self.screen_width = 1280
+        self.screen_height = 720
+
+        # Load background, heart, speaker, and wood sign images with resizing
+        self.background = pygame.image.load(os.path.join('graphics', 'cave.png')).convert_alpha()
+        self.heart_image = pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha(), (80, 50))
+        self.speaker_icon = pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha(), (100, 100))
+
+        # Separate left and right wood signs
+        self.left_wood_sign = pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', 'left-wood-sign.png')).convert_alpha(), (250, 250))
+        self.right_wood_sign = pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', 'right-wood-sign.png')).convert_alpha(), (250, 250))
+
+        self.lives = 3
+        self.current_round = 0
+        self.game_over = False
+        self.win = False
+        self.overlay_color = None
+        self.overlay_alpha = 0  # Alpha value for the overlay
+        self.overlay_duration = 0  # Duration for the overlay
+
+        # Define the list of words, choices, and correct answers
+        self.words = [
+            {"word": "RING", "choices": ["SING", "RING"], "correct": "RING"},
+            {"word": "CAR", "choices": ["CAR", "JAR"], "correct": "CAR"},
+            {"word": "MAP", "choices": ["CAP", "MAP"], "correct": "MAP"},
+            {"word": "NAIL", "choices": ["NAIL", "MAIL"], "correct": "NAIL"},
+            {"word": "WOOD", "choices": ["FOOD", "WOOD"], "correct": "WOOD"},
+            {"word": "OWL", "choices": ["OWL", "BOWL"], "correct": "OWL"},
+            {"word": "BIKE", "choices": ["LIKE", "BIKE"], "correct": "BIKE"},
+            {"word": "BOOK", "choices": ["HOOK", "BOOK"], "correct": "BOOK"},
+            {"word": "OIL", "choices": ["OIL", "FOIL"], "correct": "OIL"},
+            {"word": "VAN", "choices": ["CAN", "VAN"], "correct": "VAN"}
+        ]
+        self.current_word_data = self.words[self.current_round]
+
+        # Initialize pyttsx3 for text-to-speech
+        self.tts_engine = pyttsx3.init()
+
+        # Load choice images, resize them to fit on the wood signs
+        self.choice_images = {choice: pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', f'{choice.lower()}.png')).convert_alpha(), (110, 110)
+        ) for word_data in self.words for choice in word_data["choices"]}
+
+        # Set the positions for the left and right wood signs
+        self.left_wood_sign_position = (self.screen_width * 0.1, 450)
+        self.right_wood_sign_position = (self.screen_width * 0.7, 450)
+
+        # Button positions for restart, next level, and exit
+        self.restart_button = pygame.Rect(0, 0, 200, 60)
+        self.next_level_button = pygame.Rect(0, 0, 200, 60)  # Next level button
+        self.exit_button = pygame.Rect(0, 0, 200, 60)
+
+    def speak_word(self, word):
+        """Use pyttsx3 to pronounce the word."""
+        self.tts_engine.say(word)
+        self.tts_engine.runAndWait()
+
+    def next_round(self):
+        """Proceed to the next round or end the game if all rounds are done."""
+        self.current_round += 1
+        if self.current_round >= len(self.words):
+            self.win = True
+        else:
+            self.current_word_data = self.words[self.current_round]
+
+    def restart_level(self):
+        """Reset all level values to restart the level."""
+        self.lives = 3
+        self.current_round = 0
+        self.game_over = False
+        self.win = False
+        self.current_word_data = self.words[self.current_round]
+
+    def show_overlay(self, color):
+        """Display a transparent overlay for a short duration."""
+        self.overlay_color = color
+        self.overlay_alpha = 75  # Set the initial alpha value
+        self.overlay_duration = 30  # Set the duration (frames)
+
+    def run(self):
+        """Main game loop for the seventh level."""
+        correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
+        wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
+
+        running = True
+        clock = pygame.time.Clock()
+        while running:
+            self.display.blit(self.background, (0, 0))
+
+            # Display lives (hearts) resized to 50x50
+            for i in range(self.lives):
+                self.display.blit(self.heart_image, (10 + i * 60, 10))
+
+            # Display speaker icon resized to 60x60
+            speaker_icon_rect = self.speaker_icon.get_rect(center=(self.screen_width // 2, 80))
+            self.display.blit(self.speaker_icon, speaker_icon_rect)
+
+            # Display left wood sign
+            self.display.blit(self.left_wood_sign, self.left_wood_sign_position)
+
+            # Display right wood sign
+            self.display.blit(self.right_wood_sign, self.right_wood_sign_position)
+
+            # Resize and center the choice image on the left wood sign
+            left_choice = self.current_word_data["choices"][0]
+            left_image_rect = self.choice_images[left_choice].get_rect(
+                center=(self.left_wood_sign_position[0] + 125, self.left_wood_sign_position[1] + 85))
+            self.display.blit(self.choice_images[left_choice], left_image_rect)
+
+            # Resize and center the choice image on the right wood sign
+            right_choice = self.current_word_data["choices"][1]
+            right_image_rect = self.choice_images[right_choice].get_rect(
+                center=(self.right_wood_sign_position[0] + 125, self.right_wood_sign_position[1] + 85))
+            self.display.blit(self.choice_images[right_choice], right_image_rect)
+
+            mouse_pos = pygame.mouse.get_pos()
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if speaker_icon_rect.collidepoint(mouse_pos):
+                        self.speak_word(self.current_word_data["word"])  # Speak the word when speaker icon is clicked
+
+                    # Check if the player clicked the left or right wood sign
+                    if left_image_rect.collidepoint(mouse_pos):
+                        if left_choice == self.current_word_data["correct"]:
+                            correct_answer_sound.play()
+                            self.show_overlay((0, 255, 0))  # Show green overlay for correct answer
+                            self.next_round()  # Proceed to the next round if correct
+                        else:
+                            wrong_answer_sound.play()
+                            self.show_overlay((255, 0, 0))  # Show red overlay for incorrect answer
+                            self.lives -= 1  # Deduct a life if incorrect
+                    elif right_image_rect.collidepoint(mouse_pos):
+                        if right_choice == self.current_word_data["correct"]:
+                            correct_answer_sound.play()
+                            self.show_overlay((0, 255, 0))  # Show green overlay for correct answer
+                            self.next_round()  # Proceed to the next round if correct
+                        else:
+                            wrong_answer_sound.play()
+                            self.show_overlay((255, 0, 0))  # Show red overlay for incorrect answer
+                            self.lives -= 1  # Deduct a life if incorrect
+
+            # Update overlay
+            if self.overlay_alpha > 0:
+                s = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
+                s.fill((self.overlay_color[0], self.overlay_color[1], self.overlay_color[2], self.overlay_alpha))
+                self.display.blit(s, (0, 0))
+                self.overlay_alpha -= 4  # Decrease alpha value
+                self.overlay_duration -= 1  # Decrease duration
+                if self.overlay_duration <= 0:
+                    self.overlay_alpha = 0  # Reset alpha value
+
+            # Check game over condition
+            if self.lives <= 0:
+                self.game_over = True
+                self.show_end_screen()
+                running = False
+
+            # Check win condition
+            if self.win:
+                self.show_end_screen()
+                running = False
+
+            pygame.display.update()
+            clock.tick(FPS)
+
+    def show_end_screen(self):
+        """Display the end screen based on win/lose state."""
+        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        font = pygame.font.Font(font_path, 20)
+        if self.win:
+            text = font.render("You Win!", True, (255, 255, 255))
+            self.display.fill((0, 0, 0))
+            self.display.blit(text,
+                              (self.display.get_width() // 2 - text.get_width() // 2, self.display.get_height() // 3))
+
+            # Calculate button positions with adjusted start_y to lower the buttons
+            button_width = 200
+            button_height = 60
+            button_gap = 20
+            total_button_height = button_height * 3 + button_gap * 2
+            start_y = self.screen_height // 2 - total_button_height // 2 + 50  # Lower buttons by 50 pixels
+
+            self.next_level_button.x = self.screen_width // 2 - button_width // 2
+            self.next_level_button.y = start_y
+            self.restart_button.x = self.screen_width // 2 - button_width // 2
+            self.restart_button.y = start_y + button_height + button_gap
+            self.exit_button.x = self.screen_width // 2 - button_width // 2
+            self.exit_button.y = start_y + 2 * (button_height + button_gap)
+
+            # Draw buttons with fill colors
+            pygame.draw.rect(self.display, (0, 0, 255), self.next_level_button)  # Blue fill for Next Level button
+            pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)  # Green fill for Restart button
+            pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)  # Red fill for Exit button
+
+            # Button text
+            font = pygame.font.Font(None, 36)
+            next_level_text = font.render("Next Level", True, (255, 255, 255))
+            restart_text = font.render("Restart", True, (255, 255, 255))
+            exit_text = font.render("Exit", True, (255, 255, 255))
+
+            # Center text in each button
+            self.display.blit(next_level_text, (
+                self.next_level_button.x + (button_width - next_level_text.get_width()) // 2,
+                self.next_level_button.y + (button_height - next_level_text.get_height()) // 2
+            ))
+            self.display.blit(restart_text, (
+                self.restart_button.x + (button_width - restart_text.get_width()) // 2,
+                self.restart_button.y + (button_height - restart_text.get_height()) // 2
+            ))
+            self.display.blit(exit_text, (
+                self.exit_button.x + (button_width - exit_text.get_width()) // 2,
+                self.exit_button.y + (button_height - exit_text.get_height()) // 2
+            ))
+
+            pygame.display.update()
+
+            # Button event handling
+            running = True
+            while running:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        mouse_pos = pygame.mouse.get_pos()
+                        if self.next_level_button.collidepoint(mouse_pos):
+                            # Go to the next level
+                            self.gameStateManager.next_level()
+                        elif self.restart_button.collidepoint(mouse_pos):
+                            # Restart the current level
+                            self.restart_level()
+                            running = False
+                        elif self.exit_button.collidepoint(mouse_pos):
+                            # Exit the game
+                            self.gameStateManager.set_state('main-menu')
+                            running = False
+        else:
+            text = font.render("Game Over!", True, (255, 255, 255))
+            self.display.fill((0, 0, 0))
+            self.display.blit(text,
+                              (self.display.get_width() // 2 - text.get_width() // 2, self.display.get_height() // 3))
+
+            # Calculate button positions
+            button_width = 200
+            button_height = 60
+            button_gap = 20
+            total_button_height = button_height * 2 + button_gap
+            start_y = self.screen_height // 2 - total_button_height // 2
+
+            self.restart_button.x = self.screen_width // 2 - button_width // 2
+            self.restart_button.y = start_y
+            self.exit_button.x = self.screen_width // 2 - button_width // 2
+            self.exit_button.y = start_y + button_height + button_gap
+
+            # Draw buttons with fill colors
+            pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)  # Green fill for Restart button
+            pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)  # Red fill for Exit button
+
+            # Button text
+            font = pygame.font.Font(None, 36)
+            restart_text = font.render("Restart", True, (255, 255, 255))
+            exit_text = font.render("Exit", True, (255, 255, 255))
+
+            # Center text within each button
+            self.display.blit(restart_text, (
+                self.restart_button.x + (button_width - restart_text.get_width()) // 2,
+                self.restart_button.y + (button_height - restart_text.get_height()) // 2
+            ))
+            self.display.blit(exit_text, (
+                self.exit_button.x + (button_width - exit_text.get_width()) // 2,
+                self.exit_button.y + (button_height - exit_text.get_height()) // 2
+            ))
+
+            pygame.display.update()
+
+            # Button event handling
+            running = True
+            while running:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        mouse_pos = pygame.mouse.get_pos()
+                        if self.restart_button.collidepoint(mouse_pos):
+                            # Restart the current level
+                            self.restart_level()
+                            running = False
+                        elif self.exit_button.collidepoint(mouse_pos):
+                            # Exit the game
+                            self.gameStateManager.set_state('main-menu')
+                            running = False
 
 class GameStateManager:
     def __init__(self, currentState):
