@@ -22,14 +22,24 @@ class Game:
         self.gameStateManager = GameStateManager('main-menu')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
-        self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
-        self.secondLevel = SecondLevel(self.screen, self.gameStateManager)
-        self.thirdLevel = ThirdLevel(self.screen, self.gameStateManager)
-        self.fourthLevel = FourthLevel(self.screen, self.gameStateManager)
-        self.fifthLevel = FifthLevel(self.screen, self.gameStateManager)
-        self.sixthLevel = SixthLevel(self.screen, self.gameStateManager)
-        self.seventhLevel = SeventhLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'second-level': self.secondLevel, 'third-level': self.thirdLevel, 'fourth-level': self.fourthLevel, 'fifth-level': self.fifthLevel, 'sixth-level': self.sixthLevel, 'seventh-level': self.seventhLevel}
+        self.firstLevel = TheUnknownToad(self.screen, self.gameStateManager)
+        self.secondLevel = LavaRush(self.screen, self.gameStateManager)
+        self.thirdLevel = SylleLagoon(self.screen, self.gameStateManager)
+        self.fourthLevel = TheBrokenBridge(self.screen, self.gameStateManager)
+        self.fifthLevel = TheRhymeanGarden(self.screen, self.gameStateManager)
+        self.sixthLevel = ForestOfNolite(self.screen, self.gameStateManager)
+        self.seventhLevel = EchoingChambers(self.screen, self.gameStateManager)
+        self.states = {
+            'main-menu': self.mainMenu,
+            'options': self.options,
+            'first-level': self.firstLevel,
+            'second-level': self.secondLevel,
+            'third-level': self.thirdLevel,
+            'fourth-level': self.fourthLevel,
+            'fifth-level': self.fifthLevel,
+            'sixth-level': self.sixthLevel,
+            'seventh-level': self.seventhLevel
+        }
 
         self.clock = pygame.time.Clock()
 
@@ -255,7 +265,6 @@ class MainMenu:
 
             pygame.display.update()
 
-
 class Options:
     def __init__(self, display, gameStateManager):
         self.display = display
@@ -367,7 +376,7 @@ class Options:
             f.write(f"FONT_NAME = '{settings.FONT_NAME}'\n")
             f.write(f"FONT_SIZE = {settings.FONT_SIZE}\n")
 
-class FirstLevel:
+class TheBrokenBridge:
         def __init__(self, display, gameStateManager):
             self.display = display
             self.gameStateManager = gameStateManager
@@ -506,136 +515,6 @@ class FirstLevel:
             self.reset_level()
             self.gameStateManager.set_state('main-menu')
 
-        def run_dialogue_strip_1(self):
-            self.dialogue_font = pygame.font.Font(None, 36)
-
-            # Dialogue list (narrating the FourthLevel)
-            self.dialogue_lines = [
-                "Dyscape was once a bright and wonderful place, a world full of words, learning, and light.", # 1
-                "Its kingdom was amazingly ruled by a king. Its skies were vibrant, and the land was abundant \n and filled with knowledge.", # 2
-                "Every citizen were living in prosper, and the community is thriving, showing the power of learning.", # 3
-                "But something bad was coming. An unknown being called Confusion infiltrated Dyscape.", # 4
-                "He destroyed the city, polluted the forest, and scrambled the landscapes.", # 5
-                "He hypnotized every citizen in the kingdom and stole their capability to sustain knowledge", # 6
-                "Under his will, Confusion took the king as his hostage and now resides in the tower", # 7
-                "Now, the world of Dyscape is engulfed in chaos, and it's only a  matter of time before the world \n will drown into darkness.", # 8
-                " ", # Pause
-                "In an alternate world, there was a man who was camping in the woods near a lake.", # 9
-                "He was setting up his campfire when he heard a strange sound from the lake.", # 10
-                "He looked behind his back and saw a mysterious glow near the side of the lake.", # 11
-                "He went near the lake, and as soon as he was close, he heard a voice.", # 12
-                "'Help us, our world is in danger', the unknown voice said.", # 13
-                "He touched the water out of curiosity and suddenly, the water pulled him into the depths." # 14
-            ]
-
-            # Corresponding images for each dialogue line
-            self.dialogue_images = [
-                pygame.image.load(os.path.join('graphics', 'dyscape-1.png')).convert_alpha(), # 1
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 2
-                pygame.image.load(os.path.join('graphics', 'inside-dyscape.png')).convert_alpha(), # 3
-                pygame.image.load(os.path.join('graphics', 'confusion-arrives.png')).convert_alpha(), # 4
-                pygame.image.load(os.path.join('graphics', 'dyscape-under-attack.png')).convert_alpha(), # 5
-                pygame.image.load(os.path.join('graphics', 'confusion-hypnotize.png')).convert_alpha(), # 6
-                pygame.image.load(os.path.join('graphics', 'king-strangle.png')).convert_alpha(), # 7
-                pygame.image.load(os.path.join('graphics', 'dyscape-in-chaos.png')).convert_alpha(), # 8
-                pygame.image.load(os.path.join('graphics', 'black-screen.png')).convert_alpha(), # Pause
-                pygame.image.load(os.path.join('graphics', 'character-camping.png')).convert_alpha(), # 9
-                pygame.image.load(os.path.join('graphics', 'strange-sound.png')).convert_alpha(), # 10
-                pygame.image.load(os.path.join('graphics', 'mysterious-glow.png')).convert_alpha(), # 11
-                pygame.image.load(os.path.join('graphics', 'glow-closeup.png')).convert_alpha(), # 12
-                pygame.image.load(os.path.join('graphics', 'the-glow-speaks.png')).convert_alpha(), # 13
-                pygame.image.load(os.path.join('graphics', 'glow-pulled-the-character.png')).convert_alpha(), # 14
-            ]
-
-            # Corresponding narration files for each dialogue line
-            self.dialogue_sounds = [
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-1.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-2.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-3.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-4.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-5.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-6.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-7.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-8.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', '500-milliseconds-of-silence.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-9.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-10.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-11.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-12.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-13.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-14.mp3'))
-            ]
-
-            # Scale the images to fit the screen
-            self.dialogue_images = [
-                pygame.transform.scale(img, (self.display.get_width(), self.display.get_height() - 100)) for img in
-                self.dialogue_images
-            ]
-
-            self.dialogue_index = 0
-            running = True
-
-            # Initialize the mixer for playing audio
-            pygame.mixer.init()
-
-            # Flag to check if narration is playing
-            self.narration_playing = False
-
-            def play_narration():
-                """Play the narration for the current dialogue line."""
-                self.narration_playing = True
-                self.dialogue_sounds[self.dialogue_index].play()
-                pygame.time.set_timer(pygame.USEREVENT,
-                                      int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
-
-            # Play the first narration automatically
-            play_narration()
-
-            while running:
-                self.display.fill((0, 0, 0))  # Black background for the dialogue screen
-
-                # Display the corresponding image
-                self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
-
-                # Create and display the dialogue box
-                dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
-                pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
-
-                # Render the current dialogue line
-                dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
-                                                          (255, 255, 255))  # White font
-                dialogue_rect = dialogue_text.get_rect(
-                    center=(self.display.get_width() // 2, self.display.get_height() - 75))
-                self.display.blit(dialogue_text, dialogue_rect)
-
-                # Event handling
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        running = False
-                        sys.exit()
-
-                    # Allow the player to skip the narration and move to the next slide with the spacebar
-                    if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_SPACE:
-                            self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
-                            self.narration_playing = False
-                            self.dialogue_index += 1
-                            if self.dialogue_index >= len(self.dialogue_lines):
-                                running = False  # End the dialogue and start the game
-                            else:
-                                play_narration()  # Play the next narration
-
-                    # Check if narration finished
-                    if event.type == pygame.USEREVENT and self.narration_playing:
-                        self.narration_playing = False
-                        self.dialogue_index += 1
-                        if self.dialogue_index >= len(self.dialogue_lines):
-                            running = False  # End the dialogue and start the game
-                        else:
-                            play_narration()  # Play the next narration
-
-                pygame.display.update()
-
         def reset_level(self):
             """Reset the level to its original state."""
             self.lives = 3
@@ -712,7 +591,7 @@ class FirstLevel:
 
             # Only run the dialogue strip the first time the level is played
             if not self.dialogue_played:
-                self.run_dialogue_strip_1()
+                # self.run_dialogue_strip_1()
                 self.dialogue_played = True  # Set flag so it doesn't run again
             running = True
             while running:
@@ -841,7 +720,7 @@ class FirstLevel:
 
                 pygame.display.update()  # Update the display
 
-class SecondLevel:
+class TheRhymeanGarden:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
@@ -1193,11 +1072,7 @@ class SecondLevel:
             pygame.display.update()
             self.clock.tick(FPS)  # Cap frame rate at 60 FPS
 
-
-
-
-
-class ThirdLevel:
+class SylleLagoon:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
@@ -1591,9 +1466,7 @@ class ThirdLevel:
             pygame.display.update()
             pygame.time.Clock().tick(60)
 
-
-
-class FourthLevel:
+class ForestOfNolite:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
@@ -2214,9 +2087,7 @@ class FourthLevel:
 
             pygame.display.update()
 
-
-
-class FifthLevel:
+class TheUnknownToad:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
@@ -2377,6 +2248,137 @@ class FifthLevel:
 
             pygame.display.flip()
             pygame.time.delay(30)  # Control the fade-in speed
+
+    def run_dialogue_strip_1(self):
+        self.dialogue_font = pygame.font.Font(None, 36)
+
+        # Dialogue list (narrating the FourthLevel)
+        self.dialogue_lines = [
+            "Dyscape was once a bright and wonderful place, a world full of words, learning, and light.",  # 1
+            "Its kingdom was amazingly ruled by a king. Its skies were vibrant, and the land was abundant \n and filled with knowledge.",
+            # 2
+            "Every citizen were living in prosper, and the community is thriving, showing the power of learning.",  # 3
+            "But something bad was coming. An unknown being called Confusion infiltrated Dyscape.",  # 4
+            "He destroyed the city, polluted the forest, and scrambled the landscapes.",  # 5
+            "He hypnotized every citizen in the kingdom and stole their capability to sustain knowledge",  # 6
+            "Under his will, Confusion took the king as his hostage and now resides in the tower",  # 7
+            "Now, the world of Dyscape is engulfed in chaos, and it's only a  matter of time before the world \n will drown into darkness.", # 8
+            " ",  # Pause
+            "In an alternate world, there was a man who was camping in the woods near a lake.",  # 9
+            "He was setting up his campfire when he heard a strange sound from the lake.",  # 10
+            "He looked behind his back and saw a mysterious glow near the side of the lake.",  # 11
+            "He went near the lake, and as soon as he was close, he heard a voice.",  # 12
+            "'Help us, our world is in danger', the unknown voice said.",  # 13
+            "He touched the water out of curiosity and suddenly, the water pulled him into the depths."  # 14
+        ]
+
+        # Corresponding images for each dialogue line
+        self.dialogue_images = [
+            pygame.image.load(os.path.join('graphics', 'dyscape-1.png')).convert_alpha(),  # 1
+            pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),  # 2
+            pygame.image.load(os.path.join('graphics', 'inside-dyscape.png')).convert_alpha(),  # 3
+            pygame.image.load(os.path.join('graphics', 'confusion-arrives.png')).convert_alpha(),  # 4
+            pygame.image.load(os.path.join('graphics', 'dyscape-under-attack.png')).convert_alpha(),  # 5
+            pygame.image.load(os.path.join('graphics', 'confusion-hypnotize.png')).convert_alpha(),  # 6
+            pygame.image.load(os.path.join('graphics', 'king-strangle.png')).convert_alpha(),  # 7
+            pygame.image.load(os.path.join('graphics', 'dyscape-in-chaos.png')).convert_alpha(),  # 8
+            pygame.image.load(os.path.join('graphics', 'black-screen.png')).convert_alpha(),  # Pause
+            pygame.image.load(os.path.join('graphics', 'character-camping.png')).convert_alpha(),  # 9
+            pygame.image.load(os.path.join('graphics', 'strange-sound.png')).convert_alpha(),  # 10
+            pygame.image.load(os.path.join('graphics', 'mysterious-glow.png')).convert_alpha(),  # 11
+            pygame.image.load(os.path.join('graphics', 'glow-closeup.png')).convert_alpha(),  # 12
+            pygame.image.load(os.path.join('graphics', 'the-glow-speaks.png')).convert_alpha(),  # 13
+            pygame.image.load(os.path.join('graphics', 'glow-pulled-the-character.png')).convert_alpha(),  # 14
+        ]
+
+        # Corresponding narration files for each dialogue line
+        self.dialogue_sounds = [
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-1.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-2.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-3.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-4.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-5.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-6.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-7.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-8.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', '500-milliseconds-of-silence.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-9.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-10.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-11.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-12.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-13.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-14.mp3'))
+        ]
+
+        # Scale the images to fit the screen
+        self.dialogue_images = [
+            pygame.transform.scale(img, (self.display.get_width(), self.display.get_height() - 100)) for img in
+            self.dialogue_images
+        ]
+
+        self.dialogue_index = 0
+        running = True
+
+        # Initialize the mixer for playing audio
+        pygame.mixer.init()
+
+        # Flag to check if narration is playing
+        self.narration_playing = False
+
+        def play_narration():
+            """Play the narration for the current dialogue line."""
+            self.narration_playing = True
+            self.dialogue_sounds[self.dialogue_index].play()
+            pygame.time.set_timer(pygame.USEREVENT,
+                                  int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
+
+        # Play the first narration automatically
+        play_narration()
+
+        while running:
+            self.display.fill((0, 0, 0))  # Black background for the dialogue screen
+
+            # Display the corresponding image
+            self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
+
+            # Create and display the dialogue box
+            dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
+            pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
+
+            # Render the current dialogue line
+            dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
+                                                      (255, 255, 255))  # White font
+            dialogue_rect = dialogue_text.get_rect(
+                center=(self.display.get_width() // 2, self.display.get_height() - 75))
+            self.display.blit(dialogue_text, dialogue_rect)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sys.exit()
+
+                # Allow the player to skip the narration and move to the next slide with the spacebar
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
+                        self.narration_playing = False
+                        self.dialogue_index += 1
+                        if self.dialogue_index >= len(self.dialogue_lines):
+                            running = False  # End the dialogue and start the game
+                        else:
+                            play_narration()  # Play the next narration
+
+                # Check if narration finished
+                if event.type == pygame.USEREVENT and self.narration_playing:
+                    self.narration_playing = False
+                    self.dialogue_index += 1
+                    if self.dialogue_index >= len(self.dialogue_lines):
+                        running = False  # End the dialogue and start the game
+                    else:
+                        play_narration()  # Play the next narration
+
+            pygame.display.update()
 
     def run_dialogue_strip(self):
         # Initialize pygame's mixer for audio
@@ -2671,6 +2673,7 @@ class FifthLevel:
 
         # Skip the animations if this is a restart
         if not self.is_restart:
+            self.run_dialogue_strip_1()
             self.run_title_animation()
             self.run_dialogue_strip()
         else:
@@ -2795,7 +2798,7 @@ class FifthLevel:
                     show_red_overlay = False
             pygame.display.update()
 
-class SixthLevel:
+class EchoingChambers:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
@@ -3147,7 +3150,7 @@ class SixthLevel:
                             self.gameStateManager.set_state('main-menu')
                             running = False
 
-class SeventhLevel:
+class LavaRush:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
