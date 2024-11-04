@@ -2456,36 +2456,36 @@ class TheUnknownToad:
             {"name": "Magical Owl",
              "text": "By the way, my name is Lexi and I'm an owl. You are inside our world, Dyscape.",
              "audio": "owl-talking-3.mp3"},
-            {"name": "Magical Owl", "text": "I called you because this world needs your help.",
+            {"name": "Lexi the Owl", "text": "I called you because this world needs your help.",
              "audio": "owl-talking-4.mp3"},
-            {"name": "Magical Owl", "text": "Someone invaded us. And he is trying to take over our world.",
+            {"name": "Lexi the Owl", "text": "Someone invaded us. And he is trying to take over our world.",
              "audio": "owl-talking-5.mp3"},
             {"name": "You", "text": "Who's he? Sorry I am still confused about all this.", "image": char1_image},
-            {"name": "Magical Owl",
+            {"name": "Lexi the Owl",
              "text": "His name is Confusion. He suddenly attacked the central where the castle is.",
              "audio": "owl-talking-6.mp3"},
-            {"name": "Magical Owl", "text": "He took the king as his hostage and he is now at the tower of...",
+            {"name": "Lexi the Owl", "text": "He took the king as his hostage and he is now at the tower of...",
              "audio": "owl-talking-7.mp3"},
-            {"name": "Magical Owl", "text": "tower of.. uh... what is the name of the tower? I forgot.",
+            {"name": "Lexi the Owl", "text": "tower of.. uh... what is the name of the tower? I forgot.",
              "audio": "owl-talking-8.mp3"},
             {"name": "You", "text": "Okay, okay. But look, why me, Lexi? I don't even have any superpowers.",
              "image": char1_image},
-            {"name": "Magical Owl",
+            {"name": "Lexi the Owl",
              "text": "Well, everyone here were infected by his hypnotism. So everyone here lost their ability to think.",
              "audio": "owl-talking-9.mp3"},
-            {"name": "Magical Owl", "text": "Let's go, adventurer. We don't have much time left.",
+            {"name": "Lexi the Owl", "text": "Let's go, adventurer. We don't have much time left.",
              "audio": "owl-talking-10.mp3"},
             {"name": "You", "text": "Wait up! Okay Lexi, I'm coming with you", "image": char1_image},
             {"name": "You", "text": "But where are we going?", "image": char1_image},
-            {"name": "Magical Owl", "text": "Listen here. We are entering Dyscape and there is only one passageway.",
+            {"name": "Lexi the Owl", "text": "Listen here, we are entering Dyscape and there is only one PASSAGEWAY.",
              "audio": "owl-talking-11.mp3"},
-            {"name": "Magical Owl",
-             "text": "That passageway is guarded by a toad. Do as he wish and he will let you pass.",
+            {"name": "Lexi the Owl",
+             "text": "That passageway is guarded by a TOAD. Do as he wish and he will let you pass.",
              "audio": "owl-talking-12.mp3"},
-            {"name": "Magical Owl",
+            {"name": "Lexi the Owl",
              "text": "Me and that toad doesnt really get along. So you go on your own. Just follow this path",
              "audio": "owl-talking-13.mp3"},
-            {"name": "Magical Owl", "text": "I'll meet you on the other side of the passageway. See you there!",
+            {"name": "Lexi the Owl", "text": "I'll meet you on the other side of the passageway. See you there!",
              "audio": "owl-talking-14.mp3"},
             {"name": "You", "text": "Hey! Hey!! Don't leave me alone.", "image": char1_image},
             {"name": "You", "text": "Ugh. Guess I have to do it on my own first.", "image": char1_image},
@@ -2508,6 +2508,7 @@ class TheUnknownToad:
         text_index = 0
         text_speed = 2  # Speed of text animation
         audio_played = False  # Flag to track if audio has been played for the current line
+        current_sound = None  # Track the currently playing sound
 
         running = True
         clock = pygame.time.Clock()
@@ -2532,14 +2533,17 @@ class TheUnknownToad:
             character_text = current_dialogue["text"]
             antagonist = "Magical Owl"
 
-            # **Play the audio file if it exists and hasn't been played yet**
+            # Play the audio file if it exists and hasn't been played yet
             if "audio" in current_dialogue and not audio_played:
                 audio_file = current_dialogue["audio"]
-                audio_files[audio_file].play()  # Play the preloaded audio
+                if current_sound is not None:
+                    current_sound.stop()  # Stop the currently playing sound if it exists
+                current_sound = audio_files[audio_file]  # Get the new sound
+                current_sound.play()  # Play the new audio
                 audio_played = True  # Set the flag to True to prevent replaying the audio
 
             # Update owl animation (cycle through the frames)
-            if character_name == antagonist:
+            if character_name == antagonist or character_name == "Lexi the Owl":
                 owl_frame_index = (owl_frame_index + 1) % (len(owl_frames) * owl_animation_speed)
                 current_owl_frame = owl_frames[owl_frame_index // owl_animation_speed]
                 self.display.blit(current_owl_frame, (950, self.display.get_height() - dialogue_box_height - 300))
@@ -2826,6 +2830,8 @@ class TheUnknownToad:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                    pygame.quit()
+                    sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if self.win:
                         if next_level_button.collidepoint(event.pos):
@@ -2955,7 +2961,8 @@ class TheUnknownToad:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-
+                    pygame.quit()
+                    sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = event.pos
                     if pygame.Rect(audio_button_x, audio_button_y, 50, 50).collidepoint(mouse_pos):
@@ -3401,6 +3408,11 @@ class LavaRush:
         self.background_image = pygame.transform.scale(self.background_image,
                                                        (self.display.get_width(), self.display.get_height()))
 
+        background_image_path_2 = os.path.join('graphics', 'dyscape-entrance-bg-2.png')
+        self.background_image_2 = pygame.image.load(background_image_path_2).convert_alpha()
+        self.background_image_2 = pygame.transform.scale(self.background_image_2,
+                                                         (self.display.get_width(), self.display.get_height()))
+
         # Load heart image for lives
         self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
         self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))
@@ -3422,6 +3434,425 @@ class LavaRush:
 
         self.overlay_color = None
         self.overlay_start_time = None
+
+    def run_title_animation(self):
+        title_heading = "Fifth Level:"
+        title_text = "LAVA RUSH"
+        font_path = os.path.join('fonts','ARIALBLACKITALIC.TTF')
+        title_font = pygame.font.Font(font_path, 50)  # Large font for the title
+
+        alpha = 0  # Start fully transparent
+        max_alpha = 255
+        fade_speed = 5  # How fast the title fades in and out
+
+        running = True
+        while running:
+            self.display.fill(BLACK)
+
+            # Render the title with fading effect
+            title_surface = title_font.render(title_text, True, WHITE)
+            title_surface.set_alpha(alpha)  # Set transparency level
+            title_rect = title_surface.get_rect(center=(self.display.get_width() // 2, self.display.get_height() // 2))
+            self.display.blit(title_surface, title_rect)
+
+            # Update the alpha to create fade-in effect
+            alpha += fade_speed
+            if alpha >= max_alpha:
+                alpha = max_alpha
+                pygame.time.delay(500)  # Pause for a short moment at full opacity
+
+                # Fade out effect
+                while alpha > 0:
+                    self.display.fill(BLACK)
+                    title_surface.set_alpha(alpha)  # Set transparency level
+                    self.display.blit(title_surface, title_rect)
+                    alpha -= fade_speed
+                    if alpha < 0:
+                        alpha = 0
+                    pygame.display.flip()
+                    pygame.time.delay(30)  # Control the fade-out speed
+                pygame.time.delay(80)
+                running = False  # Exit the animation loop after fade-out
+
+            pygame.display.flip()
+            pygame.time.delay(30)  # Control the fade-in speed
+
+    def load_spritesheet(self,filename, frame_width, frame_height, scale_factor):
+        # Load the sprite sheet image
+        spritesheet = pygame.image.load(os.path.join('graphics', filename)).convert_alpha()
+        # Get the width and height of the entire sprite sheet
+        sheet_width, sheet_height = spritesheet.get_size()
+
+        # Create a list to hold individual frames
+        frames = []
+        for y in range(0, sheet_height, frame_height):
+            for x in range(0, sheet_width, frame_width):
+                # Extract each frame by using a sub-surface
+                frame = spritesheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
+                # Scale the frame to make it larger
+                scaled_frame = pygame.transform.scale(frame, (
+                int(frame_width * scale_factor), int(frame_height * scale_factor)))
+                frames.append(scaled_frame)
+
+        return frames
+
+    def run_dialogue_strip_1(self):
+        # Initialize pygame's mixer for audio (if needed)
+        pygame.mixer.init()
+
+        # Load the owl sprite sheet and extract frames for animation
+        owl_frames = self.load_spritesheet('owl-flying.png', 48, 48, scale_factor=6)
+        owl_frame_index = 0  # Start with the first frame of the animation
+        owl_animation_speed = 5  # Change the frame every 5 frames of the game loop
+
+        # Load character images (only one image for the player)
+        char1_image = pygame.image.load(os.path.join('graphics', 'character-avatar.png'))
+        char1_image = pygame.transform.scale(char1_image, (200, 200))
+
+        dialogue_data = [
+            {"name": "Lexi the Owl", "text": "Hello there, adventurer! How was your interaction with the toad?", "audio": "owl-talking-15.mp3"},
+            {"name": "You", "text": "That feels weird. An owl talking, a toad talking. All this still feels unreal to me.", "image": char1_image},
+            {"name": "Lexi the Owl", "text": "You will get used to it. By the way, let us proceed now.", "audio": "owl-talking-16.mp3"},
+            {"name": "Lexi the Owl", "text": "The journey is long so let us not waste any time.", "audio": "owl-talking-17.mp3"},
+            {"name": "You", "text": "Where are we going next, Lexi?", "image": char1_image},
+            {"name": "Lexi the Owl", "text": "We are going past an ERUPTING VOLCANO.", "audio": "owl-talking-18.mp3"},
+            {"name": "You", "text": "A VOLCANO!??", "image": char1_image},
+        ]
+
+        # Preload audio files
+        audio_files = {}
+        for dialogue in dialogue_data:
+            if "audio" in dialogue:
+                audio_file = dialogue["audio"]
+                audio_files[audio_file] = pygame.mixer.Sound(os.path.join("audio", audio_file))
+
+        dialogue_box_height = 150  # Height of the dialogue box surface
+        dialogue_font = pygame.font.Font(None, 32)  # Font for dialogue text
+        name_font = pygame.font.Font(None, 36)  # Font for character names
+        space_prompt_font = pygame.font.Font(None, 28)  # Font for "Press SPACE to continue"
+
+        current_line = 0
+        text_displayed = ""
+        text_index = 0
+        text_speed = 2  # Speed of text animation
+        audio_played = False  # Flag to track if audio has been played for the current line
+        current_sound = None  # Track the currently playing sound
+
+        running = True
+        clock = pygame.time.Clock()
+
+        while running:
+            self.display.blit(self.background_image_2, (0, 0))
+
+            # Create the dialogue box at the bottom
+            dialogue_box = pygame.Surface((self.display.get_width(), dialogue_box_height))
+            dialogue_box.fill((255, 219, 172))  # Light background for the dialogue box
+            dialogue_box_rect = dialogue_box.get_rect(topleft=(0, self.display.get_height() - dialogue_box_height))
+
+            # Draw the brown border around the dialogue box
+            border_color = (139, 69, 19)  # Brown color (RGB)
+            border_thickness = 20  # Thickness of the border
+            pygame.draw.rect(self.display, border_color, dialogue_box_rect.inflate(border_thickness, border_thickness),
+                             border_thickness)
+
+            # Get the current dialogue data
+            current_dialogue = dialogue_data[current_line]
+            character_name = current_dialogue["name"]
+            character_text = current_dialogue["text"]
+            antagonist = "Magical Owl"
+
+            # Play the audio file if it exists and hasn't been played yet
+            if "audio" in current_dialogue and not audio_played:
+                audio_file = current_dialogue["audio"]
+                if current_sound is not None:
+                    current_sound.stop()  # Stop the currently playing sound if it exists
+                current_sound = audio_files[audio_file]  # Get the new sound
+                current_sound.play()  # Play the new audio
+                audio_played = True  # Set the flag to True to prevent replaying the audio
+
+            # Update owl animation (cycle through the frames)
+            if character_name == antagonist or character_name == "Lexi the Owl":
+                owl_frame_index = (owl_frame_index + 1) % (len(owl_frames) * owl_animation_speed)
+                current_owl_frame = owl_frames[owl_frame_index // owl_animation_speed]
+                self.display.blit(current_owl_frame, (950, self.display.get_height() - dialogue_box_height - 300))
+
+            # Render the character image (player) if it's the player's turn
+            else:
+                self.display.blit(char1_image, (50, self.display.get_height() - dialogue_box_height - 200))
+
+            # Render the character name inside the dialogue box (above the text)
+            name_surface = name_font.render(character_name, True, BLACK)
+            dialogue_box.blit(name_surface, (20, 10))  # Draw name near the top inside the dialogue box
+
+            # Text animation (add one letter at a time)
+            if text_index < len(character_text):
+                text_index += text_speed  # Control how fast letters are added
+                text_displayed = character_text[:text_index]
+            else:
+                text_displayed = character_text
+
+            # Render the dialogue text below the name
+            text_surface = dialogue_font.render(text_displayed, True, BLACK)
+            dialogue_box.blit(text_surface, (20, 60))  # Draw the text inside the dialogue box below the name
+
+            # Add "Press SPACE to continue." prompt at the bottom right
+            if text_index >= len(character_text):  # Show prompt only if the text is fully displayed
+                space_prompt_surface = space_prompt_font.render("Press SPACE to continue.", True, (100, 100, 100))
+                dialogue_box.blit(space_prompt_surface,
+                                  (dialogue_box.get_width() - space_prompt_surface.get_width() - 20,
+                                   dialogue_box.get_height() - space_prompt_surface.get_height() - 10))
+
+            # Draw the dialogue box on the screen with the brown border
+            self.display.blit(dialogue_box, dialogue_box_rect.topleft)
+
+            # Event handling for advancing the dialogue
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:  # Only proceed on SPACE key
+                        if text_index >= len(character_text):
+                            # Move to the next line of dialogue if the text is fully displayed
+                            current_line += 1
+                            text_index = 0
+                            text_displayed = ""
+                            audio_played = False  # Reset the audio flag for the next line
+                            if current_line >= len(dialogue_data):
+                                running = False  # Exit dialogue when all lines are done
+
+            pygame.display.flip()
+            clock.tick(60)  # Control the frame rate
+
+    def run_dialogue_strip_2(self):
+        self.dialogue_font = pygame.font.Font(None, 36)
+
+        # Dialogue list (narrating the FourthLevel)
+        self.dialogue_lines = [
+            "The adventurer and Lexi starts walking as they make their way to their next place.",
+            "During the walk, they start talking about each other.",
+            "As they share more about themselves, their friendship starts to blossom.",
+            "After an hour, they could already see the erupting volcano from afar.",
+            "Finally, they made their way to the entrance of the volcano.",
+            "As they enter, they were welcomed by burning lava and the hot steam surrounding the volcano."
+        ]
+
+        # Corresponding images for each dialogue line
+        self.dialogue_images = [
+            pygame.image.load(os.path.join('graphics', 'travel-to-lava-rush-1.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'travel-to-lava-rush-3.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'travel-to-lava-rush-3.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'travel-to-lava-rush-2.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'travel-to-lava-rush-2.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'travel-to-lava-rush-4.png')).convert_alpha()
+        ]
+
+        # Corresponding narration files for each dialogue line
+        self.dialogue_sounds = [
+            pygame.mixer.Sound(os.path.join('audio', 'second-narrator-1.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'second-narrator-2.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'second-narrator-3.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'second-narrator-4.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'second-narrator-5.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'second-narrator-6.mp3'))
+        ]
+
+        # Scale the images to fit the screen
+        self.dialogue_images = [
+            pygame.transform.scale(img, (self.display.get_width(), self.display.get_height()-150)) for img in
+            self.dialogue_images
+        ]
+
+        self.dialogue_index = 0
+        running = True
+
+        # Initialize the mixer for playing audio
+        pygame.mixer.init()
+
+        # Flag to check if narration is playing
+        self.narration_playing = False
+
+        def play_narration():
+            """Play the narration for the current dialogue line."""
+            self.narration_playing = True
+            self.dialogue_sounds[self.dialogue_index].play()
+            pygame.time.set_timer(pygame.USEREVENT, int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
+
+        # Play the first narration automatically
+        play_narration()
+
+        while running:
+            self.display.fill((0, 0, 0))  # Black background for the dialogue screen
+
+            # Display the corresponding image
+            self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
+
+            # Create and display the dialogue box
+            dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
+            pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
+
+            # Render the current dialogue line
+            dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
+                                                      (255, 255, 255))  # White font
+            dialogue_rect = dialogue_text.get_rect(
+                center=(self.display.get_width() // 2, self.display.get_height() - 75))
+            self.display.blit(dialogue_text, dialogue_rect)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sys.exit()
+
+                # Allow the player to skip the narration and move to the next slide with the spacebar
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
+                        self.narration_playing = False
+                        self.dialogue_index += 1
+                        if self.dialogue_index >= len(self.dialogue_lines):
+                            running = False  # End the dialogue and start the game
+                        else:
+                            play_narration()  # Play the next narration
+
+                # Check if narration finished
+                if event.type == pygame.USEREVENT and self.narration_playing:
+                    self.narration_playing = False
+                    self.dialogue_index += 1
+                    if self.dialogue_index >= len(self.dialogue_lines):
+                        running = False  # End the dialogue and start the game
+                    else:
+                        play_narration()  # Play the next narration
+
+            pygame.display.update()
+
+    def run_dialogue_strip_3(self):
+        # Initialize pygame's mixer for audio (if needed)
+        pygame.mixer.init()
+
+        # Load the owl sprite sheet and extract frames for animation
+        owl_frames = self.load_spritesheet('owl-flying.png', 48, 48, scale_factor=6)
+        owl_frame_index = 0  # Start with the first frame of the animation
+        owl_animation_speed = 5  # Change the frame every 5 frames of the game loop
+
+        # Load character images (only one image for the player)
+        char1_image = pygame.image.load(os.path.join('graphics', 'character-avatar.png'))
+        char1_image = pygame.transform.scale(char1_image, (200, 200))
+
+        dialogue_data = [
+            {"name": "Lexi the Owl", "text": "Here we are inside the volcano. It sure is hot in here.", "audio": "owl-talking-19.mp3"},
+            {"name": "Lexi the Owl", "text": "We need to cross this scorching lava until we reach the EXIT.", "audio": "owl-talking-20.mp3"},
+            {"name": "Lexi the Owl", "text": "There are PUZZLES that we may encounter along our path.", "audio": "owl-talking-21.mp3"},
+            {"name": "You", "text": "Wews! This is my first time inside a volcano. I feel like i could pass out.", "image": char1_image},
+            {"name": "Lexi the Owl", "text": "Me, too! And the only way we can survive this is to complete all its PUZZLES.", "audio": "owl-talking-22.mp3"},
+            {"name": "Lexi the Owl", "text": "Are you ready to go, adventurer?", "audio": "owl-talking-23.mp3"},
+            {"name": "You", "text": "Bring it on! There's no turning back now.", "image": char1_image},
+        ]
+
+        # Preload audio files
+        audio_files = {}
+        for dialogue in dialogue_data:
+            if "audio" in dialogue:
+                audio_file = dialogue["audio"]
+                audio_files[audio_file] = pygame.mixer.Sound(os.path.join("audio", audio_file))
+
+        dialogue_box_height = 150  # Height of the dialogue box surface
+        dialogue_font = pygame.font.Font(None, 32)  # Font for dialogue text
+        name_font = pygame.font.Font(None, 36)  # Font for character names
+        space_prompt_font = pygame.font.Font(None, 28)  # Font for "Press SPACE to continue"
+
+        current_line = 0
+        text_displayed = ""
+        text_index = 0
+        text_speed = 2  # Speed of text animation
+        audio_played = False  # Flag to track if audio has been played for the current line
+        current_sound = None  # Track the currently playing sound
+
+        running = True
+        clock = pygame.time.Clock()
+
+        while running:
+            self.display.blit(self.background_image, (0, 0))
+
+            # Create the dialogue box at the bottom
+            dialogue_box = pygame.Surface((self.display.get_width(), dialogue_box_height))
+            dialogue_box.fill((255, 219, 172))  # Light background for the dialogue box
+            dialogue_box_rect = dialogue_box.get_rect(topleft=(0, self.display.get_height() - dialogue_box_height))
+
+            # Draw the brown border around the dialogue box
+            border_color = (139, 69, 19)  # Brown color (RGB)
+            border_thickness = 20  # Thickness of the border
+            pygame.draw.rect(self.display, border_color, dialogue_box_rect.inflate(border_thickness, border_thickness),
+                             border_thickness)
+
+            # Get the current dialogue data
+            current_dialogue = dialogue_data[current_line]
+            character_name = current_dialogue["name"]
+            character_text = current_dialogue["text"]
+            antagonist = "Magical Owl"
+
+            # Play the audio file if it exists and hasn't been played yet
+            if "audio" in current_dialogue and not audio_played:
+                audio_file = current_dialogue["audio"]
+                if current_sound is not None:
+                    current_sound.stop()  # Stop the currently playing sound if it exists
+                current_sound = audio_files[audio_file]  # Get the new sound
+                current_sound.play()  # Play the new audio
+                audio_played = True  # Set the flag to True to prevent replaying the audio
+
+            # Update owl animation (cycle through the frames)
+            if character_name == antagonist or character_name == "Lexi the Owl":
+                owl_frame_index = (owl_frame_index + 1) % (len(owl_frames) * owl_animation_speed)
+                current_owl_frame = owl_frames[owl_frame_index // owl_animation_speed]
+                self.display.blit(current_owl_frame, (950, self.display.get_height() - dialogue_box_height - 300))
+
+            # Render the character image (player) if it's the player's turn
+            else:
+                self.display.blit(char1_image, (50, self.display.get_height() - dialogue_box_height - 200))
+
+            # Render the character name inside the dialogue box (above the text)
+            name_surface = name_font.render(character_name, True, BLACK)
+            dialogue_box.blit(name_surface, (20, 10))  # Draw name near the top inside the dialogue box
+
+            # Text animation (add one letter at a time)
+            if text_index < len(character_text):
+                text_index += text_speed  # Control how fast letters are added
+                text_displayed = character_text[:text_index]
+            else:
+                text_displayed = character_text
+
+            # Render the dialogue text below the name
+            text_surface = dialogue_font.render(text_displayed, True, BLACK)
+            dialogue_box.blit(text_surface, (20, 60))  # Draw the text inside the dialogue box below the name
+
+            # Add "Press SPACE to continue." prompt at the bottom right
+            if text_index >= len(character_text):  # Show prompt only if the text is fully displayed
+                space_prompt_surface = space_prompt_font.render("Press SPACE to continue.", True, (100, 100, 100))
+                dialogue_box.blit(space_prompt_surface,
+                                  (dialogue_box.get_width() - space_prompt_surface.get_width() - 20,
+                                   dialogue_box.get_height() - space_prompt_surface.get_height() - 10))
+
+            # Draw the dialogue box on the screen with the brown border
+            self.display.blit(dialogue_box, dialogue_box_rect.topleft)
+
+            # Event handling for advancing the dialogue
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:  # Only proceed on SPACE key
+                        if text_index >= len(character_text):
+                            # Move to the next line of dialogue if the text is fully displayed
+                            current_line += 1
+                            text_index = 0
+                            text_displayed = ""
+                            audio_played = False  # Reset the audio flag for the next line
+                            if current_line >= len(dialogue_data):
+                                running = False  # Exit dialogue when all lines are done
+
+            pygame.display.flip()
+            clock.tick(60)  # Control the frame rate
 
     def load_new_word(self):
         print("Load new word...")
@@ -3556,10 +3987,15 @@ class LavaRush:
         self.load_new_word()  # Load a new word
 
     def run(self):
+        self.run_dialogue_strip_1()
+        self.run_title_animation()
+        self.run_dialogue_strip_2()
+        self.run_dialogue_strip_3()
+        self.start_time = time.time()  # Start the timer immediately after the title animation
         running = True
         while running:
             elapsed_time = time.time() - self.start_time
-            remaining_time = max(0, self.lava_flow_time_limit - elapsed_time)
+            remaining_time = max(0.0, self.lava_flow_time_limit - elapsed_time)
 
             # Calculate minutes and seconds
             minutes = int(remaining_time // 60)
