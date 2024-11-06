@@ -9,6 +9,7 @@ import database
 import settings
 import sqlite3
 import datetime
+import re
 from settings import *
 
 # Initialize Pygame
@@ -182,6 +183,35 @@ class Database:
                         self.delete_game(game_id)  # Delete the game from the database
                         print(f"Game with ID {game_id} deleted.")
                         return  # Refresh the display after deletion
+            else:
+                # Check if a saved game entry is clicked
+                clicked_game = self.get_clicked_game(event.pos)
+                if clicked_game:
+                    game_id, name, creation_date, last_played_date, current_level = clicked_game
+                    max_unlocked_level = int(current_level.split('-')[1])
+
+                    # Launch Level Selection Page with max unlocked level
+                    level_selection_page = LevelSelectionPage(
+                        self.display,
+                        self.gameStateManager,
+                        'graphics/main-menu-background-1.jpg',
+                        'graphics/back_button.png',
+                        {i: pygame.image.load(f'graphics/level_{i}.png') for i in range(1, 8)},
+                        'graphics/lock.png'
+                    )
+                    level_selection_page.run(max_unlocked_level)
+
+    def get_clicked_game(self, mouse_pos):
+        # Determine if a game entry was clicked based on the y-offset positioning in display_page
+        y_offset = 150  # Matches the y-offset in display_page
+        saved_games = self.get_saved_games()
+
+        for game in saved_games:
+            game_rect = pygame.Rect(100, y_offset, 600, 30)  # Adjust width and height as necessary
+            if game_rect.collidepoint(mouse_pos):
+                return game  # Returns the game data
+            y_offset += 50  # Space between entries
+        return None
 
     def show_new_game_popup(self):
         # Pop-up for naming the new game
@@ -228,6 +258,73 @@ class Database:
         self.conn.close()
 
 
+class LevelSelectionPage:
+    def __init__(self, display, gameStateManager, background_image_path, back_button_image, level_images, lock_image):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.background_image = pygame.image.load(background_image_path).convert()
+        self.background_image = pygame.transform.scale(self.background_image,
+                                                       (self.display.get_width(), self.display.get_height()))
+
+        self.back_button = pygame.image.load(back_button_image).convert_alpha()
+        self.back_button_rect = self.back_button.get_rect(topleft=(50, 50))
+
+        # Level buttons
+        self.level_images = level_images  # Dictionary {level: image}
+        self.lock_image = pygame.image.load(lock_image).convert_alpha()
+        self.locked_level_image = pygame.transform.scale(self.lock_image, (80, 80))
+
+        # Define level button positions on the screen
+        self.level_positions = [
+            (200 + (i % 5) * 100, 200 + (i // 5) * 100) for i in range(10)
+        ]
+
+    def display_page(self, max_unlocked_level):
+        # Draw background
+        self.display.blit(self.background_image, (0, 0))
+
+        # Draw the "Back" button
+        self.display.blit(self.back_button, self.back_button_rect)
+
+        # Draw level buttons
+        for i in range(10):
+            pos = self.level_positions[i]
+            if i + 1 <= max_unlocked_level:
+                # Draw unlocked level
+                level_image = self.level_images.get(i + 1)
+                if level_image:
+                    self.display.blit(level_image, pos)
+            else:
+                # Draw locked level
+                self.display.blit(self.locked_level_image, pos)
+
+        pygame.display.flip()
+
+    def handle_events(self, max_unlocked_level):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.back_button_rect.collidepoint(event.pos):
+                    # Go back to the database page
+                    self.gameStateManager.set_state('Database')
+                else:
+                    # Check if a level button was clicked
+                    for i in range(max_unlocked_level):
+                        pos = self.level_positions[i]
+                        level_rect = pygame.Rect(pos, (80, 80))
+                        if level_rect.collidepoint(event.pos):
+                            # Load the corresponding level based on i
+                            level_class = self.gameStateManager.get_level_class(i + 1)
+                            self.gameStateManager.set_state(level_class)
+                            return
+
+    def run(self, max_unlocked_level):
+        running = True
+        while running:
+            self.display_page(max_unlocked_level)
+            self.handle_events(max_unlocked_level)
 
 
 class MainMenu:
