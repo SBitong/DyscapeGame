@@ -23,31 +23,31 @@ class Game:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("DyscapeTheGame")
 
-        self.gameStateManager = GameStateManager('main-menu')
-        self.database = Database(self.screen, self.gameStateManager)
+        # Initialize Database first, with gameStateManager temporarily set to None
+        self.database = Database(self.screen, None)
+
+        # Now initialize GameStateManager with the database
+        self.gameStateManager = GameStateManager('main-menu', self.database)
+
+        # Update the database's reference to gameStateManager
+        self.database.gameStateManager = self.gameStateManager
+
+        # Initialize other components with the gameStateManager
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
-        #self.firstLevel = TheUnknownToad(self.screen, self.gameStateManager)
-        #self.secondLevel = LavaRush(self.screen, self.gameStateManager)
-        #self.thirdLevel = SylleLagoon(self.screen, self.gameStateManager)
-        self.fourthLevel = TheBrokenBridge(self.screen, self.gameStateManager)
-        self.fifthLevel = TheRhymeanGarden(self.screen, self.gameStateManager)
-        #self.sixthLevel = ForestOfNolite(self.screen, self.gameStateManager)
-        #self.seventhLevel = EchoingChambers(self.screen, self.gameStateManager)
+        self.firstLevel = TheBrokenBridge(self.screen, self.gameStateManager, game_id=1)
+
+        # Define the states with the initialized objects
         self.states = {
             'main-menu': self.mainMenu,
             'database': self.database,
             'options': self.options,
-            #'first-level': self.firstLevel,
-            #'second-level': self.secondLevel,
-            #'third-level': self.thirdLevel,
-            'fourth-level': self.fourthLevel,
-            'fifth-level': self.fifthLevel,
-            #'sixth-level': self.sixthLevel,
-            #'seventh-level': self.seventhLevel
+            # 'first-level': self.firstLevel,
+            # Add other levels if needed
         }
 
         self.clock = pygame.time.Clock()
+
 
     def run(self):
         while True:
@@ -66,6 +66,71 @@ class Game:
             # Cap the frame rate
             self.clock.tick(FPS)
 
+
+def show_new_game_popup(database, gameStateManager, display):
+    running = True
+    input_box = pygame.Rect(display.get_width() // 2 - 100, 300, 200, 50)
+    user_text = ""
+    font = pygame.font.Font(None, 36)
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    user_text = user_text.strip()  # Ensure no leading/trailing whitespace
+                    if user_text:  # If the user entered a name
+                        # Save to games table
+                        game_id = database.create_and_start_new_game(user_text)
+                        if game_id:
+                            print(f"New game created with ID {game_id}")
+                            # Go directly to TheBrokenBridge level
+                            gameStateManager.set_state(TheBrokenBridge(display, gameStateManager, game_id))
+                            running = False  # Exit the loop
+                            return
+                        else:
+                            print("Game name already exists. Choose a different name.")
+                elif event.key == pygame.K_BACKSPACE:
+                    user_text = user_text[:-1]
+                else:
+                    user_text += event.unicode
+
+        display.fill((0, 0, 0))  # Clear screen or use background image
+        pygame.draw.rect(display, (255, 200, 0), input_box, border_radius=10)
+        text_surface = font.render(user_text, True, (0, 0, 0))
+        display.blit(text_surface, (input_box.x + 5, input_box.y + 10))
+        prompt = font.render("Name your saved Game:", True, (255, 255, 255))
+        display.blit(prompt, (input_box.x, input_box.y - 40))
+
+        pygame.display.flip()  # Update the display
+
+
+
+class GameStart:
+    def __init__(self, database, gameStateManager, display, loadGamePage):
+        self.database = database
+        self.gameStateManager = gameStateManager
+        self.display = display
+        self.loadGamePage = loadGamePage  # Reference to the load game page for updating
+
+    def start_new_game(self, game_name):
+        # Create a new game in the games table
+        game_id = self.database.create_and_start_new_game(game_name)
+        if game_id is not None:
+            print(f"Starting new game with Game ID {game_id} at TheBrokenBridge.")
+            # Pass game_id as the identifier here
+            self.gameStateManager.set_state(TheBrokenBridge(self.display, self.gameStateManager, game_id))
+            # Save initial progress with the game_id
+            self.database.save_progress(game_id, 'first-level', lives=3, draggable_images=[], ladder_slots=[])
+            # Update load game page to reflect new game
+            self.loadGamePage.refresh_profiles()  # Use this method to refresh the list
+        else:
+            print("Game name already exists. Choose a different name.")
+
+
+
 class Database:
     def __init__(self, display, gameStateManager):
         self.display = display
@@ -75,6 +140,7 @@ class Database:
         self.conn = sqlite3.connect('game_data.db')
         self.cursor = self.conn.cursor()
         self.create_table()
+        self.create_tables()
 
         # Load the background image for the database page
         background_image_path = os.path.join('graphics', 'main-menu-background-1.jpg')
@@ -89,54 +155,105 @@ class Database:
         self.new_game_button = pygame.Rect((self.display.get_width() // 2 - 100, 50), (200, 50))
         self.button_color = (255, 200, 0)
 
-        # Dictionary to store delete buttons for each saved game
+        # Dictionary to store delete buttons and continue buttons for each saved game
         self.delete_buttons = {}
+        self.continue_buttons = {}
 
     def create_table(self):
-        # Create a table if it doesn't exist to store game data
+        # Create the games table if it doesn't exist
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS games (
                 id INTEGER PRIMARY KEY,
                 name TEXT,
                 creation_date TEXT,
-                last_played_date TEXT,
+                last_played_date TEXT, -- Ensure this column is created
                 current_level TEXT
             )
         ''')
         self.conn.commit()
+        # Ensure last_played_date column exists
+        self.add_column_if_not_exists("last_played_date", "TEXT")
+
+    def create_tables(self):
+        with self.conn:
+            cursor = self.conn.cursor()
+            cursor.execute('''CREATE TABLE IF NOT EXISTS games (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                name TEXT UNIQUE,
+                                creation_date TEXT,
+                                last_played_date TEXT,
+                                current_level TEXT
+                              )''')
+
+            self.conn.commit()
+
+    def create_and_start_new_game(self, name, level="The Broken Bridge"):
+        with self.conn:
+            cursor = self.conn.cursor()
+            # Check if the game name already exists in the games table
+            cursor.execute('SELECT id FROM games WHERE name = ?', (name,))
+            existing_game = cursor.fetchone()
+            if existing_game:
+                print("Game name already exists.")
+                return None
+
+            # Insert a new record into the games table with initial values
+            creation_date = datetime.datetime.now().strftime('%Y-%m-%d')
+            cursor.execute('INSERT INTO games (name, creation_date, last_played, current_level) VALUES (?, ?, ?, ?)',
+                           (name, creation_date, creation_date, level))
+            self.conn.commit()
+            print("New game created with ID:", cursor.lastrowid)  # Debug statement
+            return cursor.lastrowid  # Return the ID of the newly created game
+
+    def get_profiles(self):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT id, name FROM profiles")
+        profiles = cursor.fetchall()
+        return [{'id': profile[0], 'name': profile[1]} for profile in profiles]
 
     def save_game(self, name, level="first-level"):
-        # Insert new game data into the database
         creation_date = datetime.datetime.now().strftime('%Y-%m-%d')
         self.cursor.execute('''
             INSERT INTO games (name, creation_date, last_played_date, current_level)
             VALUES (?, ?, ?, ?)
         ''', (name, creation_date, creation_date, level))
         self.conn.commit()
+        print("Game saved with name:", name)
 
     def delete_game(self, game_id):
-        # Delete game data from the database
         self.cursor.execute('DELETE FROM games WHERE id = ?', (game_id,))
         self.conn.commit()
 
     def get_saved_games(self):
-        # Retrieve all saved games from the database
         self.cursor.execute('SELECT * FROM games')
-        return self.cursor.fetchall()
+        saved_games = self.cursor.fetchall()
+        return saved_games
 
-    def update_last_played(self, game_id, level):
-        # Update the last played date and current level of a game
-        last_played_date = datetime.datetime.now().strftime('%Y-%m-%d')
+    def update_last_played(self, game_id, next_level):
+        current_date = datetime.datetime.now().strftime('%Y-%m-%d')
         self.cursor.execute('''
             UPDATE games
             SET last_played_date = ?, current_level = ?
             WHERE id = ?
-        ''', (last_played_date, level, game_id))
+        ''', (current_date, next_level, game_id))
         self.conn.commit()
+        print(f"Updated game ID {game_id} to level {next_level}")
+
+    def update_progress_in_database(self, game_id, new_level):
+        with self.conn:
+            self.cursor.execute('''
+                UPDATE games
+                SET current_level = ?, last_played_date = ?
+                WHERE id = ?
+            ''', (new_level, datetime.datetime.now().strftime('%Y-%m-%d'), game_id))
+            self.conn.commit()
 
     def display_page(self):
-        # Display the database page background and saved games
-        self.display.blit(self.background_image, (0, 0))
+        # Draw the background image
+        if self.background_image:
+            self.display.blit(self.background_image, (0, 0))
+        else:
+            print("Background image not loaded")
 
         # Draw the "New Game" button
         pygame.draw.rect(self.display, self.button_color, self.new_game_button, border_radius=10)
@@ -144,187 +261,333 @@ class Database:
         new_game_text_rect = new_game_text.get_rect(center=self.new_game_button.center)
         self.display.blit(new_game_text, new_game_text_rect)
 
-        # Display all saved games with delete buttons
+        # Clear previous buttons and initialize new ones for each saved game
         self.delete_buttons = {}
-        saved_games = self.get_saved_games()
-        y_offset = 150  # Starting position for listing saved games
-        for game in saved_games:
-            game_text = f"{game[1]} - Last Played: {game[3]} - Current Level: {game[4]}"
-            game_text_surface = self.font.render(game_text, True, (255, 255, 255))
-            self.display.blit(game_text_surface, (100, y_offset))
+        self.continue_buttons = {}
 
-            # Create a delete button next to each game entry
-            delete_button = pygame.Rect((self.display.get_width() - 150, y_offset), (100, 40))
+        saved_games = self.get_saved_games()
+
+        if not saved_games:
+            print("No saved games found.")
+
+        y_offset = 150
+
+        # Draw rectangles and buttons for each saved game entry
+        for game in saved_games:
+            # Create a container rectangle for each saved game
+            game_rect = pygame.Rect(50, y_offset, self.display.get_width() - 100, 60)
+            pygame.draw.rect(self.display, (200, 200, 200), game_rect, border_radius=10)
+
+            # Display game details within the rectangle
+            game_text = f"{game[1]} - Last Played: {game[3]} - Current Level: {game[4]}"
+            game_text_surface = self.font.render(game_text, True, (0, 0, 0))
+            game_text_rect = game_text_surface.get_rect(midleft=(game_rect.x + 20, game_rect.centery))
+            self.display.blit(game_text_surface, game_text_rect)
+
+            # Create and display the "Continue" button
+            continue_button = pygame.Rect((game_rect.right - 270, y_offset + 10), (130, 40))
+            pygame.draw.rect(self.display, (0, 128, 0), continue_button, border_radius=5)
+            continue_text = self.font.render("Continue", True, (255, 255, 255))
+            continue_text_rect = continue_text.get_rect(center=continue_button.center)
+            self.display.blit(continue_text, continue_text_rect)
+            self.continue_buttons[game[0]] = continue_button
+
+            # Create and display the "Delete" button
+            delete_button = pygame.Rect((game_rect.right - 130, y_offset + 10), (100, 40))
             pygame.draw.rect(self.display, (255, 0, 0), delete_button, border_radius=5)
             delete_text = self.font.render("Delete", True, (255, 255, 255))
             delete_text_rect = delete_text.get_rect(center=delete_button.center)
             self.display.blit(delete_text, delete_text_rect)
-
-            # Map each game ID to its delete button for event handling
             self.delete_buttons[game[0]] = delete_button
 
-            y_offset += 50  # Space between each game entry
+            # Move to the next y position for the next saved game entry
+            y_offset += 80
 
+
+        # Update the display
         pygame.display.flip()
 
     def handle_events(self):
-        # Handle user events on the database page
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.new_game_button.collidepoint(event.pos):
-                    # Open the pop-up to create a new game
-                    self.show_new_game_popup()
-                # Check if any delete button was clicked
+                    show_new_game_popup(self, self.gameStateManager, self.display)
+
                 for game_id, delete_button in self.delete_buttons.items():
                     if delete_button.collidepoint(event.pos):
-                        self.delete_game(game_id)  # Delete the game from the database
+                        self.delete_game(game_id)
                         print(f"Game with ID {game_id} deleted.")
-                        return  # Refresh the display after deletion
-            else:
-                # Check if a saved game entry is clicked
+                        return
+
+                for game_id, continue_button in self.continue_buttons.items():
+                    if continue_button.collidepoint(event.pos):
+                        self.continue_game(game_id)
+                        return
+
                 clicked_game = self.get_clicked_game(event.pos)
                 if clicked_game:
                     game_id, name, creation_date, last_played_date, current_level = clicked_game
                     max_unlocked_level = int(current_level.split('-')[1])
 
-                    # Launch Level Selection Page with max unlocked level
                     level_selection_page = LevelSelectionPage(
                         self.display,
                         self.gameStateManager,
                         'graphics/main-menu-background-1.jpg',
                         'graphics/back_button.png',
-                        {i: pygame.image.load(f'graphics/level_{i}.png') for i in range(1, 8)},
+                        {i: pygame.image.load(f'graphics/N{i}.png') for i in range(1, 8)},
                         'graphics/lock.png'
                     )
                     level_selection_page.run(max_unlocked_level)
 
     def get_clicked_game(self, mouse_pos):
-        # Determine if a game entry was clicked based on the y-offset positioning in display_page
-        y_offset = 150  # Matches the y-offset in display_page
+        y_offset = 150
         saved_games = self.get_saved_games()
 
         for game in saved_games:
-            game_rect = pygame.Rect(100, y_offset, 600, 30)  # Adjust width and height as necessary
+            game_rect = pygame.Rect(50, y_offset, self.display.get_width() - 100, 60)
             if game_rect.collidepoint(mouse_pos):
-                return game  # Returns the game data
-            y_offset += 50  # Space between entries
+                return game
+            y_offset += 80
         return None
 
-    def show_new_game_popup(self):
-        # Pop-up for naming the new game
-        running = True
-        input_box = pygame.Rect(self.display.get_width() // 2 - 100, 300, 200, 50)
-        user_text = ""
+    def load_saved_game(self, game_id):
+        with self.conn:
+            cursor = self.conn.cursor()
+            cursor.execute('SELECT current_level FROM games WHERE id = ?', (game_id,))
+            result = cursor.fetchone()
+            if result:
+                return {'current_level': result[0]}
+        return None
 
+    def add_column_if_not_exists(self, column_name, column_type):
+        # Check if the column exists
+        self.cursor.execute(f"PRAGMA table_info(games)")
+        columns = [col[1] for col in self.cursor.fetchall()]
+        if column_name not in columns:
+            # Add the column if it doesn’t exist
+            self.cursor.execute(f"ALTER TABLE games ADD COLUMN {column_name} {column_type}")
+            self.conn.commit()
+            print(f"Added missing column: {column_name}")
+
+    def continue_game(self, game_id):
+        # Retrieve the saved games list
+        saved_games = self.get_saved_games()
+
+        # Find the game data with the matching game_id
+        game_data = next((game for game in saved_games if game[0] == game_id), None)
+
+        if game_data:
+            current_level_str = game_data[4]
+            level_mapping = {'first-level': 1, 'second-level': 2}
+            max_unlocked_level = level_mapping.get(current_level_str, 1)
+            level_selection_page = LevelSelectionPage(self.display, self.gameStateManager, game_id, max_unlocked_level)
+            level_selection_page.run()
+        else:
+            print(f"Error: No saved game found for game ID {game_id}")
+
+    def run(self):
+        running = True
         while running:
+            self.display_page()  # Display the database page
+            self.handle_events()  # Handle interactions like starting or deleting games
+            pygame.display.flip()  # Update the screen
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:
-                        if user_text:
-                            self.save_game(user_text)
-                            print("New game created with name:", user_text)
-                            self.gameStateManager.set_state('fourth-level')
-                            running = False
-                            return
-                    elif event.key == pygame.K_BACKSPACE:
-                        user_text = user_text[:-1]
-                    else:
-                        user_text += event.unicode
-
-            self.display.blit(self.background_image, (0, 0))
-            pygame.draw.rect(self.display, (255, 200, 0), input_box, border_radius=10)
-            text_surface = self.font.render(user_text, True, (0, 0, 0))
-            self.display.blit(text_surface, (input_box.x + 5, input_box.y + 10))
-            prompt = self.font.render("Name your saved Game:", True, (255, 255, 255))
-            self.display.blit(prompt, (input_box.x, input_box.y - 40))
-            pygame.display.flip()
-
-    def run(self):
-        # Main loop to handle events and display the database page
-        running = True
-        while running:
-            self.display_page()  # Render the database page with saved games
-            self.handle_events()  # Handle user interactions
-            pygame.display.flip()
-
+                    if event.key == pygame.K_ESCAPE:  # Optionally allow quitting with the escape key
+                        running = False
     def __del__(self):
-        # Close the database connection
         self.conn.close()
 
 
-class LevelSelectionPage:
-    def __init__(self, display, gameStateManager, background_image_path, back_button_image, level_images, lock_image):
+def level_class(display, gameStateManager, game_id):
+    pass
+
+
+class LoadGamePage:
+    def __init__(self, display, database, gameStateManager, game_id):
+        self.game_id = game_id
         self.display = display
+        self.database = database
         self.gameStateManager = gameStateManager
-        self.background_image = pygame.image.load(background_image_path).convert()
-        self.background_image = pygame.transform.scale(self.background_image,
-                                                       (self.display.get_width(), self.display.get_height()))
+        self.profiles = self.database.get_profiles()  # Fetch profiles from the database
 
-        self.back_button = pygame.image.load(back_button_image).convert_alpha()
-        self.back_button_rect = self.back_button.get_rect(topleft=(50, 50))
+        # Define layout and button properties
+        self.rect_color = (200, 200, 200)
+        self.text_color = (0, 0, 0)
+        self.button_color = (255, 204, 102)
+        self.rect_width, self.rect_height = 300, 80
+        self.padding = 10
+        self.start_x, self.start_y = 100, 150
 
-        # Level buttons
-        self.level_images = level_images  # Dictionary {level: image}
-        self.lock_image = pygame.image.load(lock_image).convert_alpha()
-        self.locked_level_image = pygame.transform.scale(self.lock_image, (80, 80))
+    def refresh_profiles(self):
+        """Refresh the list of profiles from the database."""
+        self.profiles = self.database.get_profiles()
 
-        # Define level button positions on the screen
-        self.level_positions = [
-            (200 + (i % 5) * 100, 200 + (i // 5) * 100) for i in range(10)
-        ]
+    def display_page(self):
+        self.display.fill((255, 255, 204))  # Background color for the load game page
 
-    def display_page(self, max_unlocked_level):
-        # Draw background
-        self.display.blit(self.background_image, (0, 0))
+        # Draw each profile in a rectangle
+        for index, profile in enumerate(self.profiles):
+            y_position = self.start_y + index * (self.rect_height + self.padding)
+            rect = pygame.Rect(self.start_x, y_position, self.rect_width, self.rect_height)
+            pygame.draw.rect(self.display, self.rect_color, rect)
 
-        # Draw the "Back" button
-        self.display.blit(self.back_button, self.back_button_rect)
+            # Display profile information
+            font = pygame.font.Font(None, 24)
+            name_text = font.render(profile['name'], True, self.text_color)
+            date_text = font.render(f"Date Created: {profile['date_created']}", True, self.text_color)
+            level_text = font.render(f"Recent Level: {profile['recent_level']}", True, self.text_color)
 
-        # Draw level buttons
-        for i in range(10):
-            pos = self.level_positions[i]
-            if i + 1 <= max_unlocked_level:
-                # Draw unlocked level
-                level_image = self.level_images.get(i + 1)
-                if level_image:
-                    self.display.blit(level_image, pos)
-            else:
-                # Draw locked level
-                self.display.blit(self.locked_level_image, pos)
+            # Position text within the rectangle
+            self.display.blit(name_text, (self.start_x + 10, y_position + 10))
+            self.display.blit(date_text, (self.start_x + 10, y_position + 30))
+            self.display.blit(level_text, (self.start_x + 10, y_position + 50))
+
+            # Continue button
+            continue_button = pygame.Rect(self.start_x + 220, y_position + 10, 70, 25)
+            pygame.draw.rect(self.display, self.button_color, continue_button)
+            continue_text = font.render("Continue", True, self.text_color)
+            self.display.blit(continue_text, (continue_button.x + 5, continue_button.y + 5))
+
+            # Delete button
+            delete_button = pygame.Rect(self.start_x + 220, y_position + 40, 70, 25)
+            pygame.draw.rect(self.display, (255, 100, 100), delete_button)
+            delete_text = font.render("Delete", True, self.text_color)
+            self.display.blit(delete_text, (delete_button.x + 5, delete_button.y + 5))
 
         pygame.display.flip()
 
-    def handle_events(self, max_unlocked_level):
+    def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.back_button_rect.collidepoint(event.pos):
-                    # Go back to the database page
-                    self.gameStateManager.set_state('Database')
-                else:
-                    # Check if a level button was clicked
-                    for i in range(max_unlocked_level):
-                        pos = self.level_positions[i]
-                        level_rect = pygame.Rect(pos, (80, 80))
-                        if level_rect.collidepoint(event.pos):
-                            # Load the corresponding level based on i
-                            level_class = self.gameStateManager.get_level_class(i + 1)
-                            self.gameStateManager.set_state(level_class)
-                            return
+                for index, profile in enumerate(self.profiles):
+                    y_position = self.start_y + index * (self.rect_height + self.padding)
 
-    def run(self, max_unlocked_level):
+                    # Define rects for continue and delete buttons
+                    continue_button = pygame.Rect(self.start_x + 220, y_position + 10, 70, 25)
+                    delete_button = pygame.Rect(self.start_x + 220, y_position + 40, 70, 25)
+
+                    if continue_button.collidepoint(event.pos):
+                        # Load the game at the last saved level
+                        last_level_class = self.gameStateManager.get_level_class(profile['recent_level'])
+                        self.gameStateManager.set_state(level_class(self.display, self.gameStateManager, self.game_id))
+                    elif delete_button.collidepoint(event.pos):
+                        # Delete profile and refresh list
+                        self.database.delete_profile(profile['id'])
+                        self.refresh_profiles()
+
+    def run(self):
         running = True
         while running:
-            self.display_page(max_unlocked_level)
-            self.handle_events(max_unlocked_level)
+            self.display_page()
+            self.handle_events()
+            pygame.display.update()
+
+
+class LevelSelectionPage:
+    def __init__(self, display, gameStateManager, game_id, max_unlocked_level):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.game_id = game_id
+        self.tile_size = 100  # Size of each level tile
+        self.max_unlocked_level = max_unlocked_level
+
+        # Load background and images
+        self.background_image = pygame.image.load('graphics/main-menu-background-1.jpg').convert()
+        self.background_image = pygame.transform.scale(self.background_image,
+                                                       (self.display.get_width(), self.display.get_height()))
+        self.default_image = pygame.Surface((self.tile_size, self.tile_size))
+        self.default_image.fill((100, 100, 100))
+        self.level_images = {i: self.load_image(f'graphics/N{i}.png') for i in range(1, 9)}
+
+        lock_image_raw = pygame.image.load('graphics/lock.png').convert_alpha()
+        self.lock_image = pygame.transform.scale(lock_image_raw, (self.tile_size, self.tile_size))
+
+        # Position levels in a 4x2 grid with centered alignment
+        self.level_positions = [
+            (self.display.get_width() // 2 - 280 + (i % 4) * 160, 200 + (i // 4) * 180)
+            for i in range(8)
+        ]
+
+        # Back button setup
+        self.back_button_image = pygame.image.load('graphics/back.png').convert_alpha()
+        self.back_button = pygame.transform.scale(self.back_button_image, (180, 180))
+        self.back_button_rect = self.back_button.get_rect(topleft=(50, 5))  # Top-left corner
+
+    def load_image(self, path):
+        try:
+            img = pygame.image.load(path).convert_alpha()
+            return pygame.transform.scale(img, (self.tile_size, self.tile_size))
+        except FileNotFoundError:
+            return self.default_image
+
+    def display_page(self):
+        # Display background and back button
+        self.display.blit(self.background_image, (0, 0))
+        self.display.blit(self.back_button, self.back_button_rect)
+
+        # Fetch and print the most recent max unlocked level for debugging
+        self.max_unlocked_level = self.get_max_unlocked_level()
+
+        # Draw level tiles (locked/unlocked) with debugging for each tile's status
+        for i in range(1, 9):
+            x, y = self.level_positions[i - 1]
+            image = self.level_images[i] if i <= self.max_unlocked_level else self.lock_image
+            self.display.blit(image, (x, y))
+
+        pygame.display.flip()
+
+    def get_max_unlocked_level(self):
+        """Fetch the highest unlocked level from the database."""
+        with sqlite3.connect('game_data.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT current_level FROM games WHERE id = ?', (self.game_id,))
+            result = cursor.fetchone()
+            if result:
+                level_mapping = {"first-level": 1, "TheRhymeanGarden": 2,
+                                 "third-level": 3}  # Ensure "third-level" exists
+                return level_mapping.get(result[0], 1)
+        return 1
+
+    def handle_events(self):
+        level_classes = {1: TheBrokenBridge, 2: TheRhymeanGarden, 3: ThirdLevel}
+  # Extend with other levels as needed
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                # Check if back button is clicked
+                if self.back_button_rect.collidepoint(event.pos):
+                    # Go back to the Database page
+                    self.gameStateManager.set_state(Database(self.display, self.gameStateManager))
+                    return
+
+                # Check if any level tile is clicked
+                for i in range(1, self.max_unlocked_level + 1):
+                    x, y = self.level_positions[i - 1]
+                    if pygame.Rect(x, y, self.tile_size, self.tile_size).collidepoint(event.pos):
+                        level_class = level_classes.get(i, TheBrokenBridge)
+                        # Ensure game_id is passed here
+                        self.gameStateManager.set_state(level_class(self.display, self.gameStateManager, self.game_id))
+                        return
+
+    def run(self):
+        while True:
+            self.display_page()
+            self.handle_events()
+            pygame.display.update()
+
 
 
 class MainMenu:
@@ -645,9 +908,12 @@ class Options:
             f.write(f"FONT_SIZE = {settings.FONT_SIZE}\n")
 
 class TheBrokenBridge:
-        def __init__(self, display, gameStateManager):
+        def __init__(self, display, gameStateManager, game_id):
             self.display = display
             self.gameStateManager = gameStateManager
+            self.game_id = game_id
+            self.database = Database(display, gameStateManager)
+            self.win = False
             self.screen_width, self.screen_height = self.display.get_size()  # Get screen size for responsiveness
 
             ladder_x_ratio = 0.435
@@ -736,6 +1002,7 @@ class TheBrokenBridge:
             self.display.blit(self.bottom_platform, (0, 0))  # Draw the bottom platform
             self.display.blit(self.green_platform, (0, 320))  # Draw the green platform
             self.display.blit(self.ladder_image, (self.screen_width * 0.25, 0))  # Draw the ladder image
+
             overlay = pygame.Surface(self.display.get_size())
             overlay.set_alpha(150)  # Set transparency level
             overlay.fill((0, 0, 0))  # Black background
@@ -748,12 +1015,13 @@ class TheBrokenBridge:
                 self.display.get_width() // 2 - text_surface.get_width() // 2, self.display.get_height() // 3))
 
             # Define button positions
-            self.restart_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2), self.display.get_height() // 2, 250,
-                                              50)
-            self.exit_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2), self.display.get_height() // 2 + 70,
-                                           250, 50)
+            self.restart_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2),
+                                              self.display.get_height() // 2, 250, 50)
+            self.exit_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2),
+                                           self.display.get_height() // 2 + 70, 250, 50)
 
             if self.win:
+                self.update_progress_in_database("The Rhymean Garden")
                 # If player wins, add a Next Level button
                 self.next_level_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2),
                                                      self.display.get_height() // 2 - 70, 250, 50)
@@ -772,6 +1040,29 @@ class TheBrokenBridge:
             pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)
             exit_text = self.font.render("Return to Main Menu", True, (255, 255, 255))
             self.display.blit(exit_text, (self.exit_button.x + 30, self.exit_button.y + 10))
+
+            pygame.display.flip()  # Update the screen to show buttons
+
+            # Handle events for the end screen
+            while True:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if self.win and self.next_level_button.collidepoint(event.pos):
+                            # Go to the next level
+                            self.gameStateManager.set_state(
+                                TheRhymeanGarden(self.display, self.gameStateManager, self.game_id))
+                            return  # Exit the end screen function to transition to the next level
+                        elif self.restart_button.collidepoint(event.pos):
+                            # Restart the level
+                            self.restart_level()
+                            return
+                        elif self.exit_button.collidepoint(event.pos):
+                            # Return to main menu
+                            self.exit_to_main_menu()
+                            return
 
         def restart_level(self):
             # Reinitialize the level to reset all variables and the game state
@@ -848,14 +1139,14 @@ class TheBrokenBridge:
                 pygame.display.flip()
                 pygame.time.delay(30)  # Control the fade-in speed
 
-        def update_progress_in_database(self, game_id, database):
-            """
-            Call this function whenever the player reaches a checkpoint or completes a level.
-            `game_id`: ID of the saved game in the database.
-            `database`: Instance of the Database class.
-            """
-            level_name = self.__class__.__name__  # Use the class name to indicate the level
-            database.update_last_played(game_id, level_name)
+        def update_progress_in_database(self, completed_level):
+            """Update the database to unlock the next level."""
+            level_mapping = {
+                "first-level": "TheRhymeanGarden",  # Example mapping to next level
+                "TheRhymeanGarden": "third-level"  # Adjust as necessary for next level
+            }
+            next_level = level_mapping.get(completed_level, completed_level)
+            self.database.update_last_played(self.game_id, next_level)
 
         def run(self):
             """Main game loop for the first level."""
@@ -998,9 +1289,12 @@ class TheBrokenBridge:
                 pygame.display.update()  # Update the display
 
 class TheRhymeanGarden:
-    def __init__(self, display, gameStateManager):
+    def __init__(self, display, gameStateManager, game_id):
         self.display = display
         self.gameStateManager = gameStateManager
+        self.database = Database(display, gameStateManager)
+        self.game_id = game_id
+        self.win = False
         self.screen_width, self.screen_height = self.display.get_size()
 
         # Initialize player attributes
@@ -1218,45 +1512,46 @@ class TheRhymeanGarden:
             pygame.time.delay(30)  # Control the fade-in speed
 
     def show_end_screen(self):
+        # Fill the screen with a black overlay
         self.display.fill((0, 0, 0))
 
+        # Display win or game over message
         message = "You Win!" if self.rounds_completed >= self.max_rounds else "Game Over!"
         text_surface = self.font.render(message, True, (255, 255, 255))
         self.display.blit(text_surface,
                           (self.screen_width // 2 - text_surface.get_width() // 2, self.screen_height // 3))
 
-        # Define Restart and Exit buttons
+        # Define buttons
         self.restart_button = pygame.Rect(self.screen_width // 2 - 100, self.screen_height // 2, 200, 50)
         self.exit_button = pygame.Rect(self.screen_width // 2 - 100, self.screen_height // 2 + 70, 200, 50)
 
+        # If the player wins, add the "Next Level" button
         if self.rounds_completed >= self.max_rounds:
-            # If player wins, add a Next Level button
-            self.next_level_button = pygame.Rect(self.screen_width // 2 - 100,
-                                                 self.screen_height // 2 - 70, 200, 50)
+            self.next_level_button = pygame.Rect(self.screen_width // 2 - 100, self.screen_height // 2 - 70, 200, 50)
 
-            # Draw the Next Level button (Blue)
+            # Draw the Next Level button
             pygame.draw.rect(self.display, (0, 0, 255), self.next_level_button)
             next_level_text = self.font.render("Next Level", True, (255, 255, 255))
             self.display.blit(next_level_text, (self.next_level_button.x + 50, self.next_level_button.y + 10))
 
-        # Draw the Restart button (Green)
+            # Update progress in the database to unlock the next level
+            self.update_progress_in_database("third-level")  # Replace "third-level" with the actual next level name
+
+        # Draw the Restart button
         pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)
         restart_text = self.font.render("Restart", True, (255, 255, 255))
         self.display.blit(restart_text, (self.restart_button.x + 50, self.restart_button.y + 10))
 
-        # Draw the Exit button (Red)
+        # Draw the Exit button
         pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)
         exit_text = self.font.render("Exit", True, (255, 255, 255))
         self.display.blit(exit_text, (self.exit_button.x + 70, self.exit_button.y + 10))
 
-    def update_progress_in_database(self, game_id, database):
-        """
-        Call this function whenever the player reaches a checkpoint or completes a level.
-        `game_id`: ID of the saved game in the database.
-        `database`: Instance of the Database class.
-        """
-        level_name = self.__class__.__name__  # Use the class name to indicate the level
-        database.update_last_played(game_id, level_name)
+        pygame.display.flip()  # Update the screen to show buttons
+
+    def update_progress_in_database(self, next_level):
+        """Updates the game's progress in the database to unlock the next level."""
+        self.database.update_last_played(self.game_id, next_level)
 
     def run(self):
         self.run_title_animation()
@@ -1264,6 +1559,8 @@ class TheRhymeanGarden:
         self.last_time = pygame.time.get_ticks()  # Initialize last_time here
         running = True
         self.game_over = False
+        self.win = False  # Track if the player has won
+
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -1278,6 +1575,9 @@ class TheRhymeanGarden:
                             if self.check_rhyme():
                                 self.current_animation = 'attack'
                                 self.reset_round()
+                                if self.rounds_completed >= self.max_rounds:  # Check if player completed all rounds
+                                    self.win = True
+                                    self.game_over = True
                             else:
                                 if self.lives <= 0:
                                     self.game_over = True
@@ -1291,7 +1591,7 @@ class TheRhymeanGarden:
                         if self.speaker_rect.collidepoint(event.pos):
                             self.pronounce_word()
                 else:
-                    # Handle clicks on the restart or exit buttons after the game is over
+                    # Handle clicks on the restart, exit, or next level buttons after the game is over
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         if self.restart_button.collidepoint(event.pos):
                             # Restart the game
@@ -1303,10 +1603,13 @@ class TheRhymeanGarden:
                             self.last_time = pygame.time.get_ticks()  # Reset last_time to the current time
                             self.timer_started = False  # Reset timer_started to False
                             self.game_over = False  # Exit end screen mode
+                            self.win = False  # Reset win status
                         elif self.exit_button.collidepoint(event.pos):
                             self.gameStateManager.set_state('main-menu')
                             running = False
-                        elif self.next_level_button.collidepoint(event.pos):
+                        elif self.win and self.next_level_button.collidepoint(event.pos):
+                            # Unlock the next level by updating the database
+                            self.update_progress_in_database('third-level')
                             self.gameStateManager.set_state('third-level')
                             running = False
 
@@ -1317,20 +1620,13 @@ class TheRhymeanGarden:
                     self.warrior_frames)  # Move to the next frame
                 self.warrior_frame_time = 0  # Reset frame time
 
-            # # Update the timer
-            # time_passed = pygame.time.get_ticks() - self.last_time
-            # self.current_time -= time_passed / 1000.0
-            # self.last_time = pygame.time.get_ticks()
-
             if not self.game_over:
                 if self.timer_started:  # Check if the timer has started
                     self.time_passed = pygame.time.get_ticks() - self.last_time
                     self.current_time -= self.time_passed / 1000.0
                     self.last_time = pygame.time.get_ticks()
-                    print(self.current_time)
                     if self.current_time <= 0:
                         self.lives -= 1
-                        print("deducts a life.")
                         if self.lives <= 0:
                             self.game_over = True
                         else:
@@ -1342,7 +1638,7 @@ class TheRhymeanGarden:
                 # Update the warrior animation frame
                 self.update_animation()
 
-                    # Redraw everything
+                # Redraw everything
                 self.display.blit(self.background, (0, 0))
                 self.draw_hearts()
                 self.draw_timer(self.current_time)
@@ -1352,23 +1648,76 @@ class TheRhymeanGarden:
                 self.draw_speaker()
 
             else:
-                    # Show the end screen
+                # Show the end screen
                 self.show_end_screen()
 
             pygame.display.update()
             self.clock.tick(FPS)  # Cap frame rate at 60 FPS
 
+class ThirdLevel:
+    def __init__(self, display, gameStateManager, game_id):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.game_id = game_id
+        self.screen_width, self.screen_height = self.display.get_size()
+
+        # Set up the font for displaying text
+        font_path = 'fonts/ARIAL.TTF'  # Adjust if you have a different path or font
+        self.font = pygame.font.Font(font_path, 30)
+
+        # Background color
+        self.background_color = (50, 150, 50)
+
+    def display_message(self, text):
+        """Display a message in the center of the screen."""
+        self.display.fill(self.background_color)
+        text_surface = self.font.render(text, True, (255, 255, 255))
+        self.display.blit(text_surface, (
+            self.screen_width // 2 - text_surface.get_width() // 2,
+            self.screen_height // 2 - text_surface.get_height() // 2
+        ))
+
+    def run(self):
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.gameStateManager.set_state('main-menu')
+                        running = False
+
+            # Display the placeholder level message
+            self.display_message("Welcome to Third Level! Press ESC to return to Main Menu.")
+
+            # Update the display
+            pygame.display.flip()
+            pygame.time.delay(100)  # Limit the frame rate for a simple loop
+
+
+
+
+
+
 
 class GameStateManager:
-    def __init__(self, currentState):
+    def __init__(self, currentState, database):
         self.currentState = currentState
+        self.database = database  # Store reference to the database
 
     def get_state(self):
         return self.currentState
 
     def set_state(self, state):
         print(f"Switching to state: {state}")  # Debugging line
-        self.currentState = state
+        if isinstance(state, str):
+            self.currentState = state
+        else:
+            # Handle direct class instances as game state (like TheBrokenBridge instance)
+            self.currentState = state
+            self.currentState.run()  # Run the level directly if a class instance is passed
 
 
 if __name__ == "__main__":

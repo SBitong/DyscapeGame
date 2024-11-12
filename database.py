@@ -11,6 +11,7 @@ os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
 # Create a new database connection
 def connect():
+    db_path = os.path.join('data', 'game_data.db')
     return sqlite3.connect(db_path)
 
 
@@ -65,6 +66,20 @@ def load_progress(profile_id):
             }
         return None
 
+def create_and_start_new_profile(name):
+    with connect() as conn:
+        cursor = conn.cursor()
+        # Check if the profile name already exists
+        cursor.execute('SELECT id FROM profiles WHERE name = ?', (name,))
+        existing_profile = cursor.fetchone()
+        if existing_profile:
+            print("Profile name already exists.")
+            return None
+
+        # Insert the new profile and retrieve its ID
+        cursor.execute('INSERT INTO profiles (name) VALUES (?)', (name,))
+        conn.commit()
+        return cursor.lastrowid  # Return the ID of the new profile
 
 # Create a new profile
 def create_profile(name):
@@ -88,3 +103,4 @@ def reset_progress(profile_id):
         cursor = conn.cursor()
         cursor.execute('DELETE FROM first_level_progress WHERE profile_id = ?', (profile_id,))
         conn.commit()
+
