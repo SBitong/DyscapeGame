@@ -4,6 +4,7 @@ import os
 import random
 import time
 import pyttsx3
+import threading
 import pronouncing
 import settings
 from settings import *
@@ -11,6 +12,8 @@ from settings import *
 # Initialize Pygame
 pygame.init()
 engine = pyttsx3.init()
+rate = 150
+engine.setProperty('rate', rate)
 
 class Game:
     def __init__(self):
@@ -20,12 +23,32 @@ class Game:
         self.gameStateManager = GameStateManager('main-menu')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
-        self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
-        self.secondLevel = SecondLevel(self.screen, self.gameStateManager)
-        self.thirdLevel = ThirdLevel(self.screen, self.gameStateManager)
-        self.fourthLevel = FourthLevel(self.screen, self.gameStateManager)
-        self.fifthLevel = FifthLevel(self.screen, self.gameStateManager)
-        self.states = {'main-menu': self.mainMenu, 'options': self.options, 'first-level': self.firstLevel, 'second-level': self.secondLevel, 'third-level': self.thirdLevel, 'fourth-level': self.fourthLevel, 'fifth-level': self.fifthLevel}
+        self.firstLevel = TheUnknownToad(self.screen, self.gameStateManager)
+        self.secondLevel = LavaRush(self.screen, self.gameStateManager)
+        self.thirdLevel = SylleLagoon(self.screen, self.gameStateManager)
+        self.fourthLevel = TheBrokenBridge(self.screen, self.gameStateManager)
+        self.fifthLevel = TheRhymeanGarden(self.screen, self.gameStateManager)
+        self.sixthLevel = ForestOfNolite(self.screen, self.gameStateManager)
+        self.seventhLevel = EchoingChambers(self.screen, self.gameStateManager)
+        self.eighthlevel = EighthLevel(self.screen, self.gameStateManager)
+        self.ninthlevel = NinthLevel(self.screen, self.gameStateManager)
+        self.finallevel = FinalLevel(self.screen, self.gameStateManager)
+        self.ending = Ending(self.screen, self.gameStateManager)
+        self.states = {
+            'main-menu': self.mainMenu,
+            'options': self.options,
+            'first-level': self.firstLevel,
+            'second-level': self.secondLevel,
+            'third-level': self.thirdLevel,
+            'fourth-level': self.fourthLevel,
+            'fifth-level': self.fifthLevel,
+            'sixth-level': self.sixthLevel,
+            'seventh-level': self.seventhLevel,
+            'eighth-level': self.eighthlevel,
+            'ninth-level': self.ninthlevel,
+            'final-level': self.finallevel,
+            'ending': self.ending
+        }
 
         self.clock = pygame.time.Clock()
 
@@ -251,7 +274,6 @@ class MainMenu:
 
             pygame.display.update()
 
-
 class Options:
     def __init__(self, display, gameStateManager):
         self.display = display
@@ -363,7 +385,7 @@ class Options:
             f.write(f"FONT_NAME = '{settings.FONT_NAME}'\n")
             f.write(f"FONT_SIZE = {settings.FONT_SIZE}\n")
 
-class FirstLevel:
+class TheBrokenBridge:
         def __init__(self, display, gameStateManager):
             self.display = display
             self.gameStateManager = gameStateManager
@@ -502,136 +524,6 @@ class FirstLevel:
             self.reset_level()
             self.gameStateManager.set_state('main-menu')
 
-        def run_dialogue_strip_1(self):
-            self.dialogue_font = pygame.font.Font(None, 36)
-
-            # Dialogue list (narrating the FourthLevel)
-            self.dialogue_lines = [
-                "Dyscape was once a bright and wonderful place, a world full of words, learning, and light.", # 1
-                "Its kingdom was amazingly ruled by a king. Its skies were vibrant, and the land was abundant \n and filled with knowledge.", # 2
-                "Every citizen were living in prosper, and the community is thriving, showing the power of learning.", # 3
-                "But something bad was coming. An unknown being called Confusion infiltrated Dyscape.", # 4
-                "He destroyed the city, polluted the forest, and scrambled the landscapes.", # 5
-                "He hypnotized every citizen in the kingdom and stole their capability to sustain knowledge", # 6
-                "Under his will, Confusion took the king as his hostage and now resides in the tower", # 7
-                "Now, the world of Dyscape is engulfed in chaos, and it's only a  matter of time before the world \n will drown into darkness.", # 8
-                " ", # Pause
-                "In an alternate world, there was a man who was camping in the woods near a lake.", # 9
-                "He was setting up his campfire when he heard a strange sound from the lake.", # 10
-                "He looked behind his back and saw a mysterious glow near the side of the lake.", # 11
-                "He went near the lake, and as soon as he was close, he heard a voice.", # 12
-                "'Help us, our world is in danger', the unknown voice said.", # 13
-                "He touched the water out of curiosity and suddenly, the water pulled him into the depths." # 14
-            ]
-
-            # Corresponding images for each dialogue line
-            self.dialogue_images = [
-                pygame.image.load(os.path.join('graphics', 'dyscape-1.png')).convert_alpha(), # 1
-                pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(), # 2
-                pygame.image.load(os.path.join('graphics', 'inside-dyscape.png')).convert_alpha(), # 3
-                pygame.image.load(os.path.join('graphics', 'confusion-arrives.png')).convert_alpha(), # 4
-                pygame.image.load(os.path.join('graphics', 'dyscape-under-attack.png')).convert_alpha(), # 5
-                pygame.image.load(os.path.join('graphics', 'confusion-hypnotize.png')).convert_alpha(), # 6
-                pygame.image.load(os.path.join('graphics', 'king-strangle.png')).convert_alpha(), # 7
-                pygame.image.load(os.path.join('graphics', 'dyscape-in-chaos.png')).convert_alpha(), # 8
-                pygame.image.load(os.path.join('graphics', 'black-screen.png')).convert_alpha(), # Pause
-                pygame.image.load(os.path.join('graphics', 'character-camping.png')).convert_alpha(), # 9
-                pygame.image.load(os.path.join('graphics', 'strange-sound.png')).convert_alpha(), # 10
-                pygame.image.load(os.path.join('graphics', 'mysterious-glow.png')).convert_alpha(), # 11
-                pygame.image.load(os.path.join('graphics', 'glow-closeup.png')).convert_alpha(), # 12
-                pygame.image.load(os.path.join('graphics', 'the-glow-speaks.png')).convert_alpha(), # 13
-                pygame.image.load(os.path.join('graphics', 'glow-pulled-the-character.png')).convert_alpha(), # 14
-            ]
-
-            # Corresponding narration files for each dialogue line
-            self.dialogue_sounds = [
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-1.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-2.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-3.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-4.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-5.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-6.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-7.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-8.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', '500-milliseconds-of-silence.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-9.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-10.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-11.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-12.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-13.mp3')),
-                pygame.mixer.Sound(os.path.join('audio', 'first-narrator-14.mp3'))
-            ]
-
-            # Scale the images to fit the screen
-            self.dialogue_images = [
-                pygame.transform.scale(img, (self.display.get_width(), self.display.get_height() - 100)) for img in
-                self.dialogue_images
-            ]
-
-            self.dialogue_index = 0
-            running = True
-
-            # Initialize the mixer for playing audio
-            pygame.mixer.init()
-
-            # Flag to check if narration is playing
-            self.narration_playing = False
-
-            def play_narration():
-                """Play the narration for the current dialogue line."""
-                self.narration_playing = True
-                self.dialogue_sounds[self.dialogue_index].play()
-                pygame.time.set_timer(pygame.USEREVENT,
-                                      int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
-
-            # Play the first narration automatically
-            play_narration()
-
-            while running:
-                self.display.fill((0, 0, 0))  # Black background for the dialogue screen
-
-                # Display the corresponding image
-                self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
-
-                # Create and display the dialogue box
-                dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
-                pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
-
-                # Render the current dialogue line
-                dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
-                                                          (255, 255, 255))  # White font
-                dialogue_rect = dialogue_text.get_rect(
-                    center=(self.display.get_width() // 2, self.display.get_height() - 75))
-                self.display.blit(dialogue_text, dialogue_rect)
-
-                # Event handling
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        running = False
-                        sys.exit()
-
-                    # Allow the player to skip the narration and move to the next slide with the spacebar
-                    if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_SPACE:
-                            self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
-                            self.narration_playing = False
-                            self.dialogue_index += 1
-                            if self.dialogue_index >= len(self.dialogue_lines):
-                                running = False  # End the dialogue and start the game
-                            else:
-                                play_narration()  # Play the next narration
-
-                    # Check if narration finished
-                    if event.type == pygame.USEREVENT and self.narration_playing:
-                        self.narration_playing = False
-                        self.dialogue_index += 1
-                        if self.dialogue_index >= len(self.dialogue_lines):
-                            running = False  # End the dialogue and start the game
-                        else:
-                            play_narration()  # Play the next narration
-
-                pygame.display.update()
-
         def reset_level(self):
             """Reset the level to its original state."""
             self.lives = 3
@@ -654,6 +546,49 @@ class FirstLevel:
                 word_data["placed"] = False
                 word_data["rect"].x, word_data["rect"].y = word_data["original_pos"]
 
+        def run_title_animation(self):
+            title_heading = "Fifth Level:"
+            title_text = "THE BROKEN BRIDGE"
+            font_path = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
+            title_font = pygame.font.Font(font_path, 50)  # Large font for the title
+
+            alpha = 0  # Start fully transparent
+            max_alpha = 255
+            fade_speed = 5  # How fast the title fades in and out
+
+            running = True
+            while running:
+                self.display.fill((0, 0, 0))
+
+                # Render the title with fading effect
+                title_surface = title_font.render(title_text, True, (255, 255, 255))
+                title_surface.set_alpha(alpha)  # Set transparency level
+                title_rect = title_surface.get_rect(
+                    center=(self.display.get_width() // 2, self.display.get_height() // 2))
+                self.display.blit(title_surface, title_rect)
+
+                # Update the alpha to create fade-in effect
+                alpha += fade_speed
+                if alpha >= max_alpha:
+                    alpha = max_alpha
+                    pygame.time.delay(500)  # Pause for a short moment at full opacity
+
+                    # Fade out effect
+                    while alpha > 0:
+                        self.display.fill((0, 0, 0))
+                        title_surface.set_alpha(alpha)  # Set transparency level
+                        self.display.blit(title_surface, title_rect)
+                        alpha -= fade_speed
+                        if alpha < 0:
+                            alpha = 0
+                        pygame.display.flip()
+                        pygame.time.delay(30)  # Control the fade-out speed
+                    pygame.time.delay(80)
+                    running = False  # Exit the animation loop after fade-out
+
+                pygame.display.flip()
+                pygame.time.delay(30)  # Control the fade-in speed
+
         def run(self):
             """Main game loop for the first level."""
 
@@ -665,7 +600,7 @@ class FirstLevel:
 
             # Only run the dialogue strip the first time the level is played
             if not self.dialogue_played:
-                self.run_dialogue_strip_1()
+                # self.run_dialogue_strip_1()
                 self.dialogue_played = True  # Set flag so it doesn't run again
             running = True
             while running:
@@ -691,7 +626,7 @@ class FirstLevel:
                                 self.exit_to_main_menu()  # Exit to the main menu if clicked
                                 running = False
                             elif self.win and self.next_level_button.collidepoint(event.pos):
-                                self.gameStateManager.set_state('second-level')
+                                self.gameStateManager.set_state('fifth-level')
                                 running = False
                     continue  # Skip the rest of the game loop while in the end screen
 
@@ -794,7 +729,7 @@ class FirstLevel:
 
                 pygame.display.update()  # Update the display
 
-class SecondLevel:
+class TheRhymeanGarden:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
@@ -1095,7 +1030,7 @@ class SecondLevel:
                             self.gameStateManager.set_state('main-menu')
                             running = False
                         elif self.next_level_button.collidepoint(event.pos):
-                            self.gameStateManager.set_state('third-level')
+                            self.gameStateManager.set_state('sixth-level')
                             running = False
 
             # Update the warrior animation frame
@@ -1146,11 +1081,7 @@ class SecondLevel:
             pygame.display.update()
             self.clock.tick(FPS)  # Cap frame rate at 60 FPS
 
-
-
-
-
-class ThirdLevel:
+class SylleLagoon:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
@@ -1457,7 +1388,7 @@ class ThirdLevel:
 
                     # Check if Next Level button is clicked (if player won)
                     elif self.win and next_level_button.collidepoint(mouse_pos):
-                        self.gameStateManager.set_state('next-level')
+                        self.gameStateManager.set_state('fourth-level')
                         waiting = False
 
     def run(self):
@@ -1544,9 +1475,7 @@ class ThirdLevel:
             pygame.display.update()
             pygame.time.Clock().tick(60)
 
-
-
-class FourthLevel:
+class ForestOfNolite:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
@@ -1556,6 +1485,9 @@ class FourthLevel:
         self.word_index = 0  # Start with the first word
         self.correct_word = self.words_to_find[self.word_index]  # Word to find on screen
         self.engine = pyttsx3.init()  # Text-to-speech engine
+        self.win = False
+        self.gameOver = False
+        self.is_game_initialized = False
 
         self.continue_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() - 100, 200,
                                            50)
@@ -1573,7 +1505,7 @@ class FourthLevel:
 
         heart_image_path = os.path.join('graphics', 'heart.png')
         self.heart_image = pygame.image.load(heart_image_path).convert_alpha()
-        self.heart_image = pygame.transform.scale(self.heart_image, (50, 50))  # Resize heart
+        self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))  # Resize heart
 
         # Create buttons (audio, left, right)
         # Load the audio button image
@@ -1626,7 +1558,7 @@ class FourthLevel:
         self.word_index += 1
         if self.word_index >= len(self.words_to_find):
             print("Level completed!")
-            self.gameStateManager.go_to_next_level()
+            self.win = True
         else:
             self.correct_word = self.words_to_find[self.word_index]
             self.word_position = (random.randint(100, self.display.get_width() - 200), random.randint(100, self.display.get_height() - 200))
@@ -1635,7 +1567,7 @@ class FourthLevel:
         self.lives -= 1
         if self.lives <= 0:
             print("Game Over!")
-            self.gameStateManager.set_state('main-menu')
+            self.gameOver = True
         else:
             print(f"Lives remaining: {self.lives}")
 
@@ -1965,15 +1897,127 @@ class FourthLevel:
 
         pass
 
-    def run(self):
+    def restart_game(self):
+        """Resets all values to start the game over."""
+        # Reset player lives
+        self.lives = 3
+        self.font = pygame.font.Font(None, 40)
 
+        # Reset the word index and choose the first word
+        self.word_index = 0
+        self.correct_word = self.words_to_find[self.word_index]
+
+        # Reset game state variables
+        self.win = False
+        self.gameOver = False
+
+        # Stop the background music
+        if self.bgm_isplaying:
+            self.bgm.stop()
+            self.bgm_isplaying = False
+
+        # Optionally, you can reset the position of the word if needed
+        self.word_position = (random.randint(100, self.display.get_width() - 200),
+                              random.randint(100, self.display.get_height() - 200))
+
+        # Restart any other necessary game state variables
+        # For example, you may want to reset the countdown timer if you have one
+        # self.countdown_timer = initial_value
+
+        # Optionally, restart the background music if desired
+        self.bgm.play(-1)
+        self.bgm_isplaying = True
+
+        print("Game has been restarted.")
+
+    def show_end_screen(self):
+        """Displays the end screen with win/lose messages and buttons."""
+        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        self.font = pygame.font.Font(font_path, 20)
+        running = True
+        while running:
+            self.display.blit(self.background_image, (0, 0))  # Fill with background
+
+            # Determine the message and button configurations
+            if self.win:
+                message = "You win!"
+                next_level_button = pygame.Rect(self.display.get_width() // 2 - 100,
+                                                self.display.get_height() // 2 - 50, 200, 50)
+                restart_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2 + 10,
+                                             200, 50)
+                main_menu_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2 + 70,
+                                               200, 50)
+            else:  # Game over
+                message = "You lose."
+                restart_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2, 200,
+                                             50)
+                main_menu_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() // 2 + 60,
+                                               200, 50)
+
+            # Render the message
+            text_surface = self.font.render(message, True, (255, 255, 255))
+            text_rect = text_surface.get_rect(
+                center=(self.display.get_width() // 2, self.display.get_height() // 2 - 100))
+            self.display.blit(text_surface, text_rect)
+
+            # Draw buttons
+            pygame.draw.rect(self.display, (0, 0, 255),
+                             next_level_button if self.win else restart_button)  # Green button for next level or restart
+            pygame.draw.rect(self.display, (0, 128, 0), restart_button)  # Orange button for restart
+            pygame.draw.rect(self.display, (128, 0, 0), main_menu_button)  # Blue button for main menu
+
+            # Render button texts
+            if self.win:
+                next_level_text = self.font.render("Next Level", True, (255, 255, 255))
+                self.display.blit(next_level_text, (next_level_button.x + 50, next_level_button.y + 10))
+
+            restart_text = self.font.render("Restart", True, (255, 255, 255))
+            self.display.blit(restart_text, (restart_button.x + 65, restart_button.y + 10))
+
+            main_menu_text = self.font.render("Main Menu", True, (255, 255, 255))
+            self.display.blit(main_menu_text, (main_menu_button.x + 45, main_menu_button.y + 10))
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    pygame.quit()
+                    sys.exit()
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.win and next_level_button.collidepoint(event.pos):
+                        # Load the next level (this would depend on how your levels are structured)
+                        self.bgm.stop()
+                        print("Loading next level...")
+                        # Here you would call the method to load the next level
+                        self.gameStateManager.set_state('seventh-level')
+                        running = False  # Exit the end screen
+
+                    if restart_button.collidepoint(event.pos):
+                        print("Restarting level...")
+                        # Restart the current level
+                        # Here you would reset the game state to restart the level
+                        self.restart_game()
+                        running = False  # Exit the end screen
+
+                    if main_menu_button.collidepoint(event.pos):
+                        print("Returning to main menu...")
+                        # Load the main menu
+                        self.gameStateManager.set_state('main-menu')
+                        running = False  # Exit the end screen
+
+            pygame.display.update()
+
+    def run(self):
         correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
         wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
 
-        self.run_title_animation()
-        self.run_dialogue_strip_1()
-        self.run_dialogue_strip_2()
-        self.show_how_to_play()
+        if not self.is_game_initialized:
+            self.run_title_animation()
+            self.run_dialogue_strip_1()
+            self.run_dialogue_strip_2()
+            self.show_how_to_play()
+            self.is_game_initialized = True
 
         running = True
         while running:
@@ -2016,6 +2060,7 @@ class FourthLevel:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                    pygame.quit()
                     sys.exit()
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -2027,6 +2072,7 @@ class FourthLevel:
                             print("Correct! Word is on the left.")
                             correct_answer_sound.play()
                             self.next_word()  # Move to the next word
+
                         else:
                             print("Incorrect! Word is not on the left.")
                             wrong_answer_sound.play()
@@ -2037,21 +2083,28 @@ class FourthLevel:
                             print("Correct! Word is on the right.")
                             correct_answer_sound.play()
                             self.next_word()  # Move to the next word
+
                         else:
                             print("Incorrect! Word is not on the right.")
                             wrong_answer_sound.play()
                             self.lose_life()  # Lose a life
 
+            # Check if the game is over
+            if self.win or self.gameOver:
+                self.show_end_screen()  # Display the end screen
+                running = False  # Exit the game loop
+
             pygame.display.update()
 
-
-class FifthLevel:
+class TheUnknownToad:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
         self.font = pygame.font.Font(None, 36)
         self.white = WHITE
         self.black = BLACK
+        self.win = False
+        self.gameOver = False
         pygame.mixer.init()
 
         self.continue_button = pygame.Rect(self.display.get_width() // 2 - 100, self.display.get_height() - 100, 200,
@@ -2065,6 +2118,10 @@ class FifthLevel:
         background_image_path = os.path.join('graphics','cave-background.png')
         self.background_image = pygame.image.load(background_image_path).convert_alpha()
         self.background_image = pygame.transform.scale(self.background_image, (self.display.get_width(), self.display.get_height()))
+
+        background_image_path_2 = os.path.join('graphics', 'dyscape-entrance-bg.png')
+        self.background_image_2 = pygame.image.load(background_image_path_2).convert_alpha()
+        self.background_image_2 = pygame.transform.scale(self.background_image_2,(self.display.get_width(), self.display.get_height()))
 
         # Questions with multiple choices and the correct answer
         self.qa_dict = {
@@ -2205,6 +2262,349 @@ class FifthLevel:
             pygame.display.flip()
             pygame.time.delay(30)  # Control the fade-in speed
 
+    def run_dialogue_strip_1(self):
+        self.dialogue_font = pygame.font.Font(None, 36)
+
+        # Dialogue list (narrating the FourthLevel)
+        self.dialogue_lines = [
+            "Dyscape was once a bright and wonderful place, a world full of words, learning, and light.",  # 1
+            "Its kingdom was amazingly ruled by a king. Its skies were vibrant, and the land was abundant \n and filled with knowledge.",
+            # 2
+            "Every citizen were living in prosper, and the community is thriving, showing the power of learning.",  # 3
+            "But something bad was coming. An unknown being called Confusion infiltrated Dyscape.",  # 4
+            "He destroyed the city, polluted the forest, and scrambled the landscapes.",  # 5
+            "He hypnotized every citizen in the kingdom and stole their capability to sustain knowledge",  # 6
+            "Under his will, Confusion took the king as his hostage and now resides in the tower",  # 7
+            "Now, the world of Dyscape is engulfed in chaos, and it's only a  matter of time before the world \n will drown into darkness.", # 8
+            " ",  # Pause
+            "In an alternate world, there was a man who was camping in the woods near a lake.",  # 9
+            "He was setting up his campfire when he heard a strange sound from the lake.",  # 10
+            "He looked behind his back and saw a mysterious glow near the side of the lake.",  # 11
+            "He went near the lake, and as soon as he was close, he heard a voice.",  # 12
+            "'Help us, our world is in danger', the unknown voice said.",  # 13
+            "He touched the water out of curiosity and suddenly, the water pulled him into the depths.",  # 14
+            " ", # Pause
+            "All at once, the water shot him up high and sent him into the strange and unfamiliar world", # 15
+            "He starts shouting as he fell right on to the trees' branches, landed on the ground and fainted", # 16
+            "( man shouting as he is falling )", # man shouting
+            "( a loud bang... )", # load bang
+            "( birds chirping in the forest ) ", # P17
+            "After some time, he wakes up to a unknown creature staring at him.", # 18
+            "He stood up, wipes his face as he tries to bring back his composure.", # 19
+            "He looked again, and saw a magical owl with round glasses, a red hat, and a scarf in its neck.", # 20
+            "The man looked confused as he remain clueless. This is how the story unfolds." # 21
+        ]
+
+        # Corresponding images for each dialogue line
+        self.dialogue_images = [
+            pygame.image.load(os.path.join('graphics', 'dyscape-1.png')).convert_alpha(),  # 1
+            pygame.image.load(os.path.join('graphics', 'Dyscape-from-top.png')).convert_alpha(),  # 2
+            pygame.image.load(os.path.join('graphics', 'inside-dyscape.png')).convert_alpha(),  # 3
+            pygame.image.load(os.path.join('graphics', 'confusion-arrives.png')).convert_alpha(),  # 4
+            pygame.image.load(os.path.join('graphics', 'dyscape-under-attack.png')).convert_alpha(),  # 5
+            pygame.image.load(os.path.join('graphics', 'confusion-hypnotize.png')).convert_alpha(),  # 6
+            pygame.image.load(os.path.join('graphics', 'king-strangle.png')).convert_alpha(),  # 7
+            pygame.image.load(os.path.join('graphics', 'dyscape-in-chaos.png')).convert_alpha(),  # 8
+            pygame.image.load(os.path.join('graphics', 'black-screen.png')).convert_alpha(),  # Pause
+            pygame.image.load(os.path.join('graphics', 'character-camping.png')).convert_alpha(),  # 9
+            pygame.image.load(os.path.join('graphics', 'strange-sound.png')).convert_alpha(),  # 10
+            pygame.image.load(os.path.join('graphics', 'mysterious-glow.png')).convert_alpha(),  # 11
+            pygame.image.load(os.path.join('graphics', 'glow-closeup.png')).convert_alpha(),  # 12
+            pygame.image.load(os.path.join('graphics', 'the-glow-speaks.png')).convert_alpha(),  # 13
+            pygame.image.load(os.path.join('graphics', 'glow-pulled-the-character.png')).convert_alpha(),  # 14
+            pygame.image.load(os.path.join('graphics', 'black-screen.png')).convert_alpha(),  # Pause
+            pygame.image.load(os.path.join('graphics', 'dyscape-entrance.png')).convert_alpha(),  # 15
+            pygame.image.load(os.path.join('graphics', 'dyscape-entrance-2.png')).convert_alpha(), # 16
+            pygame.image.load(os.path.join('graphics', 'black-screen.png')).convert_alpha(),  # man falling
+            pygame.image.load(os.path.join('graphics', 'black-screen.png')).convert_alpha(),  # loud bang
+            pygame.image.load(os.path.join('graphics', 'dyscape-entrance-3.png')).convert_alpha(), # 17
+            pygame.image.load(os.path.join('graphics', 'dyscape-entrance-4.png')).convert_alpha(), # 18
+            pygame.image.load(os.path.join('graphics', 'dyscape-entrance-5.png')).convert_alpha(), # 19
+            pygame.image.load(os.path.join('graphics', 'dyscape-entrance-6.png')).convert_alpha(), # 20
+            pygame.image.load(os.path.join('graphics', 'dyscape-entrance-7.png')).convert_alpha(), # 21
+        ]
+
+        # Corresponding narration files for each dialogue line
+        self.dialogue_sounds = [
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-1.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-2.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-3.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-4.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-5.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-6.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-7.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-8.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', '500-milliseconds-of-silence.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-9.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-10.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-11.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-12.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-13.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-14.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', '500-milliseconds-of-silence.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-15.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-16.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-man-falling.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-loud-bang.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-17.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-18.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-19.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-20.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'first-narrator-21.mp3')),
+        ]
+
+        # Scale the images to fit the screen
+        self.dialogue_images = [
+            pygame.transform.scale(img, (self.display.get_width(), self.display.get_height() - 100)) for img in
+            self.dialogue_images
+        ]
+
+        self.dialogue_index = 0
+        running = True
+
+        # Initialize the mixer for playing audio
+        pygame.mixer.init()
+
+        # Flag to check if narration is playing
+        self.narration_playing = False
+
+        def play_narration():
+            """Play the narration for the current dialogue line."""
+            self.narration_playing = True
+            self.dialogue_sounds[self.dialogue_index].play()
+            pygame.time.set_timer(pygame.USEREVENT,
+                                  int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
+
+        # Play the first narration automatically
+        play_narration()
+
+        while running:
+            self.display.fill((0, 0, 0))  # Black background for the dialogue screen
+
+            # Display the corresponding image
+            self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
+
+            # Create and display the dialogue box
+            dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
+            pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
+
+            # Render the current dialogue line
+            dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
+                                                      (255, 255, 255))  # White font
+            dialogue_rect = dialogue_text.get_rect(
+                center=(self.display.get_width() // 2, self.display.get_height() - 75))
+            self.display.blit(dialogue_text, dialogue_rect)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sys.exit()
+
+                # Allow the player to skip the narration and move to the next slide with the spacebar
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
+                        self.narration_playing = False
+                        self.dialogue_index += 1
+                        if self.dialogue_index >= len(self.dialogue_lines):
+                            running = False  # End the dialogue and start the game
+                        else:
+                            play_narration()  # Play the next narration
+
+                # Check if narration finished
+                if event.type == pygame.USEREVENT and self.narration_playing:
+                    self.narration_playing = False
+                    self.dialogue_index += 1
+                    if self.dialogue_index >= len(self.dialogue_lines):
+                        running = False  # End the dialogue and start the game
+                    else:
+                        play_narration()  # Play the next narration
+
+            pygame.display.update()
+
+    def load_spritesheet(self,filename, frame_width, frame_height, scale_factor):
+        # Load the sprite sheet image
+        spritesheet = pygame.image.load(os.path.join('graphics', filename)).convert_alpha()
+        # Get the width and height of the entire sprite sheet
+        sheet_width, sheet_height = spritesheet.get_size()
+
+        # Create a list to hold individual frames
+        frames = []
+        for y in range(0, sheet_height, frame_height):
+            for x in range(0, sheet_width, frame_width):
+                # Extract each frame by using a sub-surface
+                frame = spritesheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
+                # Scale the frame to make it larger
+                scaled_frame = pygame.transform.scale(frame, (
+                int(frame_width * scale_factor), int(frame_height * scale_factor)))
+                frames.append(scaled_frame)
+
+        return frames
+
+    def run_dialogue_strip_2(self):
+        # Initialize pygame's mixer for audio (if needed)
+        pygame.mixer.init()
+
+        # Load the owl sprite sheet and extract frames for animation
+        owl_frames = self.load_spritesheet('owl-flying.png', 48, 48, scale_factor=6)
+        owl_frame_index = 0  # Start with the first frame of the animation
+        owl_animation_speed = 5  # Change the frame every 5 frames of the game loop
+
+        # Load character images (only one image for the player)
+        char1_image = pygame.image.load(os.path.join('graphics', 'character-avatar.png'))
+        char1_image = pygame.transform.scale(char1_image, (200, 200))
+
+        dialogue_data = [
+            {"name": "You", "text": "Ugh... What is this place? and who are you??", "image": char1_image},
+            {"name": "Magical Owl", "text": "Hello there, adventurer! I believe you heard my call.",
+             "audio": "owl-talking-1.mp3"},
+            {"name": "You", "text": "Huh? What call?", "image": char1_image},
+            {"name": "Magical Owl", "text": "The voice from the lake. I am the one who called on to you",
+             "audio": "owl-talking-2.mp3"},
+            {"name": "Magical Owl",
+             "text": "By the way, my name is Lexi and I'm an owl. You are inside our world, Dyscape.",
+             "audio": "owl-talking-3.mp3"},
+            {"name": "Lexi the Owl", "text": "I called you because this world needs your help.",
+             "audio": "owl-talking-4.mp3"},
+            {"name": "Lexi the Owl", "text": "Someone invaded us. And he is trying to take over our world.",
+             "audio": "owl-talking-5.mp3"},
+            {"name": "You", "text": "Who's he? Sorry I am still confused about all this.", "image": char1_image},
+            {"name": "Lexi the Owl",
+             "text": "His name is Confusion. He suddenly attacked the central where the castle is.",
+             "audio": "owl-talking-6.mp3"},
+            {"name": "Lexi the Owl", "text": "He took the king as his hostage and he is now at the tower of...",
+             "audio": "owl-talking-7.mp3"},
+            {"name": "Lexi the Owl", "text": "tower of.. uh... what is the name of the tower? I forgot.",
+             "audio": "owl-talking-8.mp3"},
+            {"name": "You", "text": "Okay, okay. But look, why me, Lexi? I don't even have any superpowers.",
+             "image": char1_image},
+            {"name": "Lexi the Owl",
+             "text": "Well, everyone here were infected by his hypnotism. So everyone here lost their ability to think.",
+             "audio": "owl-talking-9.mp3"},
+            {"name": "Lexi the Owl", "text": "Let's go, adventurer. We don't have much time left.",
+             "audio": "owl-talking-10.mp3"},
+            {"name": "You", "text": "Wait up! Okay Lexi, I'm coming with you", "image": char1_image},
+            {"name": "You", "text": "But where are we going?", "image": char1_image},
+            {"name": "Lexi the Owl", "text": "Listen here, we are entering Dyscape and there is only one PASSAGEWAY.",
+             "audio": "owl-talking-11.mp3"},
+            {"name": "Lexi the Owl",
+             "text": "That passageway is guarded by a TOAD. Do as he wish and he will let you pass.",
+             "audio": "owl-talking-12.mp3"},
+            {"name": "Lexi the Owl",
+             "text": "Me and that toad doesnt really get along. So you go on your own. Just follow this path",
+             "audio": "owl-talking-13.mp3"},
+            {"name": "Lexi the Owl", "text": "I'll meet you on the other side of the passageway. See you there!",
+             "audio": "owl-talking-14.mp3"},
+            {"name": "You", "text": "Hey! Hey!! Don't leave me alone.", "image": char1_image},
+            {"name": "You", "text": "Ugh. Guess I have to do it on my own first.", "image": char1_image},
+        ]
+
+        # Preload audio files
+        audio_files = {}
+        for dialogue in dialogue_data:
+            if "audio" in dialogue:
+                audio_file = dialogue["audio"]
+                audio_files[audio_file] = pygame.mixer.Sound(os.path.join("audio", audio_file))
+
+        dialogue_box_height = 150  # Height of the dialogue box surface
+        dialogue_font = pygame.font.Font(None, 32)  # Font for dialogue text
+        name_font = pygame.font.Font(None, 36)  # Font for character names
+        space_prompt_font = pygame.font.Font(None, 28)  # Font for "Press SPACE to continue"
+
+        current_line = 0
+        text_displayed = ""
+        text_index = 0
+        text_speed = 2  # Speed of text animation
+        audio_played = False  # Flag to track if audio has been played for the current line
+        current_sound = None  # Track the currently playing sound
+
+        running = True
+        clock = pygame.time.Clock()
+
+        while running:
+            self.display.blit(self.background_image_2, (0, 0))
+
+            # Create the dialogue box at the bottom
+            dialogue_box = pygame.Surface((self.display.get_width(), dialogue_box_height))
+            dialogue_box.fill((255, 219, 172))  # Light background for the dialogue box
+            dialogue_box_rect = dialogue_box.get_rect(topleft=(0, self.display.get_height() - dialogue_box_height))
+
+            # Draw the brown border around the dialogue box
+            border_color = (139, 69, 19)  # Brown color (RGB)
+            border_thickness = 20  # Thickness of the border
+            pygame.draw.rect(self.display, border_color, dialogue_box_rect.inflate(border_thickness, border_thickness),
+                             border_thickness)
+
+            # Get the current dialogue data
+            current_dialogue = dialogue_data[current_line]
+            character_name = current_dialogue["name"]
+            character_text = current_dialogue["text"]
+            antagonist = "Magical Owl"
+
+            # Play the audio file if it exists and hasn't been played yet
+            if "audio" in current_dialogue and not audio_played:
+                audio_file = current_dialogue["audio"]
+                if current_sound is not None:
+                    current_sound.stop()  # Stop the currently playing sound if it exists
+                current_sound = audio_files[audio_file]  # Get the new sound
+                current_sound.play()  # Play the new audio
+                audio_played = True  # Set the flag to True to prevent replaying the audio
+
+            # Update owl animation (cycle through the frames)
+            if character_name == antagonist or character_name == "Lexi the Owl":
+                owl_frame_index = (owl_frame_index + 1) % (len(owl_frames) * owl_animation_speed)
+                current_owl_frame = owl_frames[owl_frame_index // owl_animation_speed]
+                self.display.blit(current_owl_frame, (950, self.display.get_height() - dialogue_box_height - 300))
+
+            # Render the character image (player) if it's the player's turn
+            else:
+                self.display.blit(char1_image, (50, self.display.get_height() - dialogue_box_height - 200))
+
+            # Render the character name inside the dialogue box (above the text)
+            name_surface = name_font.render(character_name, True, BLACK)
+            dialogue_box.blit(name_surface, (20, 10))  # Draw name near the top inside the dialogue box
+
+            # Text animation (add one letter at a time)
+            if text_index < len(character_text):
+                text_index += text_speed  # Control how fast letters are added
+                text_displayed = character_text[:text_index]
+            else:
+                text_displayed = character_text
+
+            # Render the dialogue text below the name
+            text_surface = dialogue_font.render(text_displayed, True, BLACK)
+            dialogue_box.blit(text_surface, (20, 60))  # Draw the text inside the dialogue box below the name
+
+            # Add "Press SPACE to continue." prompt at the bottom right
+            if text_index >= len(character_text):  # Show prompt only if the text is fully displayed
+                space_prompt_surface = space_prompt_font.render("Press SPACE to continue.", True, (100, 100, 100))
+                dialogue_box.blit(space_prompt_surface,
+                                  (dialogue_box.get_width() - space_prompt_surface.get_width() - 20,
+                                   dialogue_box.get_height() - space_prompt_surface.get_height() - 10))
+
+            # Draw the dialogue box on the screen with the brown border
+            self.display.blit(dialogue_box, dialogue_box_rect.topleft)
+
+            # Event handling for advancing the dialogue
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:  # Only proceed on SPACE key
+                        if text_index >= len(character_text):
+                            # Move to the next line of dialogue if the text is fully displayed
+                            current_line += 1
+                            text_index = 0
+                            text_displayed = ""
+                            audio_played = False  # Reset the audio flag for the next line
+                            if current_line >= len(dialogue_data):
+                                running = False  # Exit dialogue when all lines are done
+
+            pygame.display.flip()
+            clock.tick(60)  # Control the frame rate
+
     def run_dialogue_strip(self):
         # Initialize pygame's mixer for audio
         pygame.mixer.init()
@@ -2338,61 +2738,6 @@ class FifthLevel:
             pygame.display.flip()
             clock.tick(60)  # Control the frame rate
 
-    def show_game_over_prompt(self):
-        # Fill the background with a semi-transparent overlay
-        overlay = pygame.Surface(self.display.get_size())
-        overlay.set_alpha(200)  # Set transparency level
-        overlay.fill((0, 0, 0))  # Black background
-        self.display.blit(overlay, (0, 0))
-
-        # Render the "You lost" message
-        game_over_text = "YOU LOST"
-        game_over_surface = self.font.render(game_over_text, True, (255, 255, 255))
-        game_over_rect = game_over_surface.get_rect(center=(self.display.get_width() // 2, 200))
-        self.display.blit(game_over_surface, game_over_rect)
-
-        # Define button positions and sizes
-        button_width, button_height = 200, 50
-        restart_button_rect = pygame.Rect(
-            (self.display.get_width() // 2 - button_width // 2, 300), (button_width, button_height))
-        main_menu_button_rect = pygame.Rect(
-            (self.display.get_width() // 2 - button_width // 2, 400), (button_width, button_height))
-
-        # Render buttons
-        pygame.draw.rect(self.display, (50, 255, 50), restart_button_rect)
-        restart_text_surface = self.font.render("Restart", True, (0, 0, 0))
-        restart_text_rect = restart_text_surface.get_rect(center=restart_button_rect.center)
-        self.display.blit(restart_text_surface, restart_text_rect)
-
-        pygame.draw.rect(self.display, (236, 112, 22), main_menu_button_rect)
-        main_menu_text_surface = self.font.render("Main Menu", True, (0, 0, 0))
-        main_menu_text_rect = main_menu_text_surface.get_rect(center=main_menu_button_rect.center)
-        self.display.blit(main_menu_text_surface, main_menu_text_rect)
-
-
-
-        running = True
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    exit()
-
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_pos = event.pos
-                    if restart_button_rect.collidepoint(mouse_pos):
-                        engine.say("Restart")
-                        self.reset_level()
-                        engine.runAndWait()
-                        running = False
-                    elif main_menu_button_rect.collidepoint(mouse_pos):
-                        engine.say("Return")
-                        self.reset_level()
-                        self.gameStateManager.set_state('main-menu')
-                        engine.runAndWait()
-                        running = False
-            pygame.display.update()
-
     def show_how_to_play(self):
         """Displays the 'how to play' instructions with a continue button."""
         running = True
@@ -2449,9 +2794,73 @@ class FifthLevel:
     def draw_rounded_rect(self, surface, color, rect, corner_radius):
         pygame.draw.rect(surface, color, rect, border_radius=corner_radius)
 
+    def show_end_screen(self):
+        """Display the end screen based on win/lose state."""
+        running = True
+        while running:
+            self.display.fill(self.black)  # Clear the screen
+            if self.win:
+                message = "You Win!"
+                next_level_button = pygame.Rect(self.display.get_width() // 2 - 100, 300, 200, 50)
+                restart_button = pygame.Rect(self.display.get_width() // 2 - 100, 370, 200, 50)
+                main_menu_button = pygame.Rect(self.display.get_width() // 2 - 100, 440, 200, 50)
+            else:
+                message = "You lose."
+                restart_button = pygame.Rect(self.display.get_width() // 2 - 100, 300, 200, 50)
+                main_menu_button = pygame.Rect(self.display.get_width() // 2 - 100, 370, 200, 50)
+
+            # Display the message
+            font_path = os.path.join('fonts', 'ARIAL.TTF')
+            font = pygame.font.Font(font_path, 20)
+            message_surface = font.render(message, True, self.white)
+            self.display.blit(message_surface, (self.display.get_width() // 2 - message_surface.get_width() // 2, 200))
+
+            # Draw buttons
+            if self.win:
+                pygame.draw.rect(self.display, (0, 0, 255), next_level_button)  # Blue button
+                next_level_text = self.font.render("Next Level", True, self.white)
+                # Center the text in the button
+                next_level_text_rect = next_level_text.get_rect(center=next_level_button.center)
+                self.display.blit(next_level_text, next_level_text_rect.topleft)
+
+            pygame.draw.rect(self.display, (0, 128, 0), restart_button)  # Green button
+            restart_text = self.font.render("Restart", True, self.white)
+            # Center the text in the button
+            restart_text_rect = restart_text.get_rect(center=restart_button.center)
+            self.display.blit(restart_text, restart_text_rect.topleft)
+
+            pygame.draw.rect(self.display, (128, 0, 0), main_menu_button)  # Red button
+            main_menu_text = self.font.render("Main Menu", True, self.white)
+            # Center the text in the button
+            main_menu_text_rect = main_menu_text.get_rect(center=main_menu_button.center)
+            self.display.blit(main_menu_text, main_menu_text_rect.topleft)
+
+            # Event handling for button clicks
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.win:
+                        if next_level_button.collidepoint(event.pos):
+                            # Go to the next level
+                            self.gameStateManager.set_state('second-level')
+                            running = False
+                    if restart_button.collidepoint(event.pos):
+                        # Restart the current level
+                        self.reset_level()
+                        running = False
+                    if main_menu_button.collidepoint(event.pos):
+                        # Go to the main menu
+                        self.gameStateManager.set_state('main-menu')
+                        running = False
+
+            pygame.display.update()
+
     def run(self):
         heart_image = pygame.image.load(os.path.join('graphics', 'heart.png'))
-        heart_image = pygame.transform.scale(heart_image, (40, 40))  # Scale heart image as needed
+        heart_image = pygame.transform.scale(heart_image, (80, 50))  # Scale heart image as needed
 
         # Load the paper scroll image
         scroll_image = pygame.image.load(os.path.join('graphics', 'paper-scroll.png'))
@@ -2459,7 +2868,7 @@ class FifthLevel:
         scroll_image = pygame.transform.scale(scroll_image, (scroll_width, scroll_height))
 
         # Load the audio button image
-        audio_button_image = pygame.image.load(os.path.join('graphics', 'audio-logo.png'))
+        audio_button_image = pygame.image.load(os.path.join('graphics', 'audio-logo-black.png'))
         audio_button_image = pygame.transform.scale(audio_button_image, (50, 50))  # Adjust size as needed
 
         correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
@@ -2491,6 +2900,8 @@ class FifthLevel:
 
         # Skip the animations if this is a restart
         if not self.is_restart:
+            self.run_dialogue_strip_1()
+            self.run_dialogue_strip_2()
             self.run_title_animation()
             self.run_dialogue_strip()
         else:
@@ -2507,7 +2918,7 @@ class FifthLevel:
 
             # Display the number of hearts for lives
             for i in range(self.lives):
-                self.display.blit(heart_image, (50 + i * 45, 20))  # Position hearts with spacing
+                self.display.blit(heart_image, (10 + i * 60, 10))  # Position hearts with spacing
 
             # Blit the scroll image in the center
             self.display.blit(scroll_image, (scroll_x, scroll_y))
@@ -2559,7 +2970,8 @@ class FifthLevel:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-
+                    pygame.quit()
+                    sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = event.pos
                     if pygame.Rect(audio_button_x, audio_button_y, 50, 50).collidepoint(mouse_pos):
@@ -2585,13 +2997,16 @@ class FifthLevel:
                                 overlay_start_time = pygame.time.get_ticks()
                                 self.lives -= 1
                                 if self.lives <= 0:
-                                    self.show_game_over_prompt()
+                                    print("You lost!")
+                                    self.win = False
+                                    self.show_end_screen()
                                     running = False
                                     break
 
                             if self.current_question_index >= len(self.questions):
                                 print("Level completed!")
-                                self.gameStateManager.set_state('main-menu')
+                                self.win = True
+                                self.show_end_screen()
                                 running = False
                             break
 
@@ -2611,6 +3026,3424 @@ class FifthLevel:
                 if current_time - overlay_start_time > overlay_duration:
                     show_red_overlay = False
             pygame.display.update()
+
+class EchoingChambers:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.display = pygame.display.set_mode((1280, 720))
+        self.screen_width = 1280
+        self.screen_height = 720
+
+        # Load background, heart, speaker, and wood sign images with resizing
+        self.background = pygame.image.load(os.path.join('graphics', 'cave.png')).convert_alpha()
+        self.heart_image = pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha(), (80, 50))
+        self.speaker_icon = pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha(), (100, 100))
+
+        # Separate left and right wood signs
+        self.left_wood_sign = pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', 'left-wood-sign.png')).convert_alpha(), (250, 250))
+        self.right_wood_sign = pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', 'right-wood-sign.png')).convert_alpha(), (250, 250))
+
+        self.lives = 3
+        self.current_round = 0
+        self.game_over = False
+        self.win = False
+        self.overlay_color = None
+        self.overlay_alpha = 0  # Alpha value for the overlay
+        self.overlay_duration = 0  # Duration for the overlay
+
+        # Define the list of words, choices, and correct answers
+        self.words = [
+            {"word": "RING", "choices": ["SING", "RING"], "correct": "RING"},
+            {"word": "CAR", "choices": ["CAR", "JAR"], "correct": "CAR"},
+            {"word": "MAP", "choices": ["CAP", "MAP"], "correct": "MAP"},
+            {"word": "NAIL", "choices": ["NAIL", "MAIL"], "correct": "NAIL"},
+            {"word": "WOOD", "choices": ["FOOD", "WOOD"], "correct": "WOOD"},
+            {"word": "OWL", "choices": ["OWL", "BOWL"], "correct": "OWL"},
+            {"word": "BIKE", "choices": ["LIKE", "BIKE"], "correct": "BIKE"},
+            {"word": "BOOK", "choices": ["HOOK", "BOOK"], "correct": "BOOK"},
+            {"word": "OIL", "choices": ["OIL", "FOIL"], "correct": "OIL"},
+            {"word": "VAN", "choices": ["CAN", "VAN"], "correct": "VAN"}
+        ]
+        self.current_word_data = self.words[self.current_round]
+
+        # Initialize pyttsx3 for text-to-speech
+        self.tts_engine = pyttsx3.init()
+
+        # Load choice images, resize them to fit on the wood signs
+        self.choice_images = {choice: pygame.transform.scale(
+            pygame.image.load(os.path.join('graphics', f'{choice.lower()}.png')).convert_alpha(), (110, 110)
+        ) for word_data in self.words for choice in word_data["choices"]}
+
+        # Set the positions for the left and right wood signs
+        self.left_wood_sign_position = (self.screen_width * 0.1, 450)
+        self.right_wood_sign_position = (self.screen_width * 0.7, 450)
+
+        # Button positions for restart, next level, and exit
+        self.restart_button = pygame.Rect(0, 0, 200, 60)
+        self.next_level_button = pygame.Rect(0, 0, 200, 60)  # Next level button
+        self.exit_button = pygame.Rect(0, 0, 200, 60)
+
+    def run_title_animation(self):
+        title_heading = "Fifth Level:"
+        title_text = "ECHOING CHAMBERS"
+        font_path = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
+        title_font = pygame.font.Font(font_path, 50)  # Large font for the title
+
+        alpha = 0  # Start fully transparent
+        max_alpha = 255
+        fade_speed = 5  # How fast the title fades in and out
+
+        running = True
+        while running:
+            self.display.fill((0,0,0))
+
+            # Render the title with fading effect
+            title_surface = title_font.render(title_text, True, (255,255,255))
+            title_surface.set_alpha(alpha)  # Set transparency level
+            title_rect = title_surface.get_rect(center=(self.display.get_width() // 2, self.display.get_height() // 2))
+            self.display.blit(title_surface, title_rect)
+
+            # Update the alpha to create fade-in effect
+            alpha += fade_speed
+            if alpha >= max_alpha:
+                alpha = max_alpha
+                pygame.time.delay(500)  # Pause for a short moment at full opacity
+
+                # Fade out effect
+                while alpha > 0:
+                    self.display.fill((0,0,0))
+                    title_surface.set_alpha(alpha)  # Set transparency level
+                    self.display.blit(title_surface, title_rect)
+                    alpha -= fade_speed
+                    if alpha < 0:
+                        alpha = 0
+                    pygame.display.flip()
+                    pygame.time.delay(30)  # Control the fade-out speed
+                pygame.time.delay(80)
+                running = False  # Exit the animation loop after fade-out
+
+            pygame.display.flip()
+            pygame.time.delay(30)  # Control the fade-in speed
+
+    def speak_word(self, word):
+        """Use pyttsx3 to pronounce the word."""
+        self.tts_engine.say(word)
+        self.tts_engine.runAndWait()
+
+    def next_round(self):
+        """Proceed to the next round or end the game if all rounds are done."""
+        self.current_round += 1
+        if self.current_round >= len(self.words):
+            self.win = True
+        else:
+            self.current_word_data = self.words[self.current_round]
+
+    def restart_level(self):
+        """Reset all level values to restart the level."""
+        self.lives = 3
+        self.current_round = 0
+        self.game_over = False
+        self.win = False
+        self.current_word_data = self.words[self.current_round]
+
+    def show_overlay(self, color):
+        """Display a transparent overlay for a short duration."""
+        self.overlay_color = color
+        self.overlay_alpha = 75  # Set the initial alpha value
+        self.overlay_duration = 30  # Set the duration (frames)
+
+    def run(self):
+        self.run_title_animation()
+
+        """Main game loop for the seventh level."""
+        correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
+        wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
+
+        running = True
+        clock = pygame.time.Clock()
+        while running:
+            self.display.blit(self.background, (0, 0))
+
+            # Display lives (hearts) resized to 50x50
+            for i in range(self.lives):
+                self.display.blit(self.heart_image, (10 + i * 60, 10))
+
+            # Display speaker icon resized to 60x60
+            speaker_icon_rect = self.speaker_icon.get_rect(center=(self.screen_width // 2, 80))
+            self.display.blit(self.speaker_icon, speaker_icon_rect)
+
+            # Display left wood sign
+            self.display.blit(self.left_wood_sign, self.left_wood_sign_position)
+
+            # Display right wood sign
+            self.display.blit(self.right_wood_sign, self.right_wood_sign_position)
+
+            # Resize and center the choice image on the left wood sign
+            left_choice = self.current_word_data["choices"][0]
+            left_image_rect = self.choice_images[left_choice].get_rect(
+                center=(self.left_wood_sign_position[0] + 125, self.left_wood_sign_position[1] + 85))
+            self.display.blit(self.choice_images[left_choice], left_image_rect)
+
+            # Resize and center the choice image on the right wood sign
+            right_choice = self.current_word_data["choices"][1]
+            right_image_rect = self.choice_images[right_choice].get_rect(
+                center=(self.right_wood_sign_position[0] + 125, self.right_wood_sign_position[1] + 85))
+            self.display.blit(self.choice_images[right_choice], right_image_rect)
+
+            mouse_pos = pygame.mouse.get_pos()
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if speaker_icon_rect.collidepoint(mouse_pos):
+                        self.speak_word(self.current_word_data["word"])  # Speak the word when speaker icon is clicked
+
+                    # Check if the player clicked the left or right wood sign
+                    if left_image_rect.collidepoint(mouse_pos):
+                        if left_choice == self.current_word_data["correct"]:
+                            correct_answer_sound.play()
+                            self.show_overlay((0, 255, 0))  # Show green overlay for correct answer
+                            self.next_round()  # Proceed to the next round if correct
+                        else:
+                            wrong_answer_sound.play()
+                            self.show_overlay((255, 0, 0))  # Show red overlay for incorrect answer
+                            self.lives -= 1  # Deduct a life if incorrect
+                    elif right_image_rect.collidepoint(mouse_pos):
+                        if right_choice == self.current_word_data["correct"]:
+                            correct_answer_sound.play()
+                            self.show_overlay((0, 255, 0))  # Show green overlay for correct answer
+                            self.next_round()  # Proceed to the next round if correct
+                        else:
+                            wrong_answer_sound.play()
+                            self.show_overlay((255, 0, 0))  # Show red overlay for incorrect answer
+                            self.lives -= 1  # Deduct a life if incorrect
+
+            # Update overlay
+            if self.overlay_alpha > 0:
+                s = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
+                s.fill((self.overlay_color[0], self.overlay_color[1], self.overlay_color[2], self.overlay_alpha))
+                self.display.blit(s, (0, 0))
+                self.overlay_alpha -= 4  # Decrease alpha value
+                self.overlay_duration -= 1  # Decrease duration
+                if self.overlay_duration <= 0:
+                    self.overlay_alpha = 0  # Reset alpha value
+
+            # Check game over condition
+            if self.lives <= 0:
+                self.game_over = True
+                self.show_end_screen()
+                running = False
+
+            # Check win condition
+            if self.win:
+                self.show_end_screen()
+                running = False
+
+            pygame.display.update()
+            clock.tick(FPS)
+
+    def show_end_screen(self):
+        """Display the end screen based on win/lose state."""
+        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        font = pygame.font.Font(font_path, 20)
+        if self.win:
+            text = font.render("You Win!", True, (255, 255, 255))
+            self.display.fill((0, 0, 0))
+            self.display.blit(text,
+                              (self.display.get_width() // 2 - text.get_width() // 2, self.display.get_height() // 3))
+
+            # Calculate button positions with adjusted start_y to lower the buttons
+            button_width = 200
+            button_height = 60
+            button_gap = 20
+            total_button_height = button_height * 3 + button_gap * 2
+            start_y = self.screen_height // 2 - total_button_height // 2 + 50  # Lower buttons by 50 pixels
+
+            self.next_level_button.x = self.screen_width // 2 - button_width // 2
+            self.next_level_button.y = start_y
+            self.restart_button.x = self.screen_width // 2 - button_width // 2
+            self.restart_button.y = start_y + button_height + button_gap
+            self.exit_button.x = self.screen_width // 2 - button_width // 2
+            self.exit_button.y = start_y + 2 * (button_height + button_gap)
+
+            # Draw buttons with fill colors
+            pygame.draw.rect(self.display, (0, 0, 255), self.next_level_button)  # Blue fill for Next Level button
+            pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)  # Green fill for Restart button
+            pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)  # Red fill for Exit button
+
+            # Button text
+            font = pygame.font.Font(None, 36)
+            next_level_text = font.render("Next Level", True, (255, 255, 255))
+            restart_text = font.render("Restart", True, (255, 255, 255))
+            exit_text = font.render("Exit", True, (255, 255, 255))
+
+            # Center text in each button
+            self.display.blit(next_level_text, (
+                self.next_level_button.x + (button_width - next_level_text.get_width()) // 2,
+                self.next_level_button.y + (button_height - next_level_text.get_height()) // 2
+            ))
+            self.display.blit(restart_text, (
+                self.restart_button.x + (button_width - restart_text.get_width()) // 2,
+                self.restart_button.y + (button_height - restart_text.get_height()) // 2
+            ))
+            self.display.blit(exit_text, (
+                self.exit_button.x + (button_width - exit_text.get_width()) // 2,
+                self.exit_button.y + (button_height - exit_text.get_height()) // 2
+            ))
+
+            pygame.display.update()
+
+            # Button event handling
+            running = True
+            while running:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        mouse_pos = pygame.mouse.get_pos()
+                        if self.next_level_button.collidepoint(mouse_pos):
+                            # Go to the next level
+                            self.gameStateManager.set_state('eighth-level')
+                            running = False
+                        elif self.restart_button.collidepoint(mouse_pos):
+                            # Restart the current level
+                            self.restart_level()
+                            running = False
+                        elif self.exit_button.collidepoint(mouse_pos):
+                            # Exit the game
+                            self.gameStateManager.set_state('main-menu')
+                            running = False
+        else:
+            text = font.render("Game Over!", True, (255, 255, 255))
+            self.display.fill((0, 0, 0))
+            self.display.blit(text,
+                              (self.display.get_width() // 2 - text.get_width() // 2, self.display.get_height() // 3))
+
+            # Calculate button positions
+            button_width = 200
+            button_height = 60
+            button_gap = 20
+            total_button_height = button_height * 2 + button_gap
+            start_y = self.screen_height // 2 - total_button_height // 2
+
+            self.restart_button.x = self.screen_width // 2 - button_width // 2
+            self.restart_button.y = start_y
+            self.exit_button.x = self.screen_width // 2 - button_width // 2
+            self.exit_button.y = start_y + button_height + button_gap
+
+            # Draw buttons with fill colors
+            pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)  # Green fill for Restart button
+            pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)  # Red fill for Exit button
+
+            # Button text
+            font = pygame.font.Font(None, 36)
+            restart_text = font.render("Restart", True, (255, 255, 255))
+            exit_text = font.render("Exit", True, (255, 255, 255))
+
+            # Center text within each button
+            self.display.blit(restart_text, (
+                self.restart_button.x + (button_width - restart_text.get_width()) // 2,
+                self.restart_button.y + (button_height - restart_text.get_height()) // 2
+            ))
+            self.display.blit(exit_text, (
+                self.exit_button.x + (button_width - exit_text.get_width()) // 2,
+                self.exit_button.y + (button_height - exit_text.get_height()) // 2
+            ))
+
+            pygame.display.update()
+
+            # Button event handling
+            running = True
+            while running:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        mouse_pos = pygame.mouse.get_pos()
+                        if self.restart_button.collidepoint(mouse_pos):
+                            # Restart the current level
+                            self.restart_level()
+                            running = False
+                        elif self.exit_button.collidepoint(mouse_pos):
+                            # Exit the game
+                            self.gameStateManager.set_state('main-menu')
+                            running = False
+
+class LavaRush:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+
+        # Initialize the TTS engine
+
+        # Word and syllable data for Lava Labyrinth
+        self.word_list = [
+            {"word": "volcano", "syllables": ["vol", "ca", "no"], "audio": "vol, cay, no", "image": "graphics/volcano.png"},
+            {"word": "basketball", "syllables": ["bas", "ket", "ball"], "audio": "bas, ket, ball", "image": "graphics/basketball.png"},
+            {"word": "lava", "syllables": ["la", "va"], "audio": "la, vah", "image": "graphics/lava.png"},
+            {"word": "envelope", "syllables": ["en", "ve", "lope"], "audio": "ehn, veh, lope", "image": "graphics/envelope.png"},
+            {"word": "tornado", "syllables": ["tor", "na", "do"], "audio": "tor, nay, dough", "image": "graphics/tornado.png"},
+            {"word": "dragonfly", "syllables": ["dra", "gon", "fly"], "audio": "drah, gon, fly", "image": "graphics/dragonfly.png"},
+            {"word": "dentist", "syllables": ["den", "tist"], "audio": "den, tist", "image": "graphics/dentist.png"},
+            {"word": "microphone", "syllables": ["mi", "cro", "phone"], "audio": "mai, crow, phone", "image": "graphics/microphone.png"},
+            {"word": "octopus", "syllables": ["oc", "to", "pus"], "audio": "aak, tow, puhs", "image": "graphics/octopus.png"},
+            {"word": "radio", "syllables": ["ra", "dio"], "audio": "ray, deeyow", "image": "graphics/radio.png"},
+        ]
+        self.current_word_data = None
+        self.correct_syllables = []
+        self.current_syllable_selection = []
+        self.syllable_buttons = []
+        self.lives = 3  # Initialize lives
+        self.correct_answers_count = 0  # Counter for correct answers
+        self.last_word = None  # Keep track of the last word
+        self.win = False
+
+        self.font = pygame.font.SysFont('Arial', 40)
+        self.button_font = pygame.font.SysFont('Arial', 25)
+
+        # Load background (Lava Labyrinth background)
+        background_image_path = os.path.join('graphics', 'lava_labyrinth.jpg')
+        self.background_image = pygame.image.load(background_image_path).convert_alpha()
+        self.background_image = pygame.transform.scale(self.background_image,
+                                                       (self.display.get_width(), self.display.get_height()))
+
+        background_image_path_2 = os.path.join('graphics', 'dyscape-entrance-bg-2.png')
+        self.background_image_2 = pygame.image.load(background_image_path_2).convert_alpha()
+        self.background_image_2 = pygame.transform.scale(self.background_image_2,
+                                                         (self.display.get_width(), self.display.get_height()))
+
+        # Load heart image for lives
+        self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
+        self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))
+
+        # Load audio logo image
+        self.audio_logo = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
+        self.audio_logo = pygame.transform.scale(self.audio_logo, (75, 75))  # Resize the logo if needed
+        self.audio_button_rect = self.audio_logo.get_rect(center=(self.display.get_width() // 2, 300))  # Centered at the top
+
+        self.start_time = None
+        self.lava_flow_time_limit = 20  # 20-second lava flow timer
+        self.load_new_word()
+
+        # Define Submit and Reset button positions and dimensions
+        self.submit_button_rect = pygame.Rect(self.display.get_width() // 2 + 60, self.display.get_height() // 2 + 200 ,
+                                              120, 50)  # Moved to the left
+        self.reset_button_rect = pygame.Rect(self.display.get_width() // 2 - 180, self.display.get_height() // 2 + 200,
+                                             120, 50)  # Remains on the right
+
+        self.overlay_color = None
+        self.overlay_start_time = None
+
+    def run_title_animation(self):
+        title_heading = "Fifth Level:"
+        title_text = "LAVA RUSH"
+        font_path = os.path.join('fonts','ARIALBLACKITALIC.TTF')
+        title_font = pygame.font.Font(font_path, 50)  # Large font for the title
+
+        alpha = 0  # Start fully transparent
+        max_alpha = 255
+        fade_speed = 5  # How fast the title fades in and out
+
+        running = True
+        while running:
+            self.display.fill(BLACK)
+
+            # Render the title with fading effect
+            title_surface = title_font.render(title_text, True, WHITE)
+            title_surface.set_alpha(alpha)  # Set transparency level
+            title_rect = title_surface.get_rect(center=(self.display.get_width() // 2, self.display.get_height() // 2))
+            self.display.blit(title_surface, title_rect)
+
+            # Update the alpha to create fade-in effect
+            alpha += fade_speed
+            if alpha >= max_alpha:
+                alpha = max_alpha
+                pygame.time.delay(500)  # Pause for a short moment at full opacity
+
+                # Fade out effect
+                while alpha > 0:
+                    self.display.fill(BLACK)
+                    title_surface.set_alpha(alpha)  # Set transparency level
+                    self.display.blit(title_surface, title_rect)
+                    alpha -= fade_speed
+                    if alpha < 0:
+                        alpha = 0
+                    pygame.display.flip()
+                    pygame.time.delay(30)  # Control the fade-out speed
+                pygame.time.delay(80)
+                running = False  # Exit the animation loop after fade-out
+
+            pygame.display.flip()
+            pygame.time.delay(30)  # Control the fade-in speed
+
+    def load_spritesheet(self,filename, frame_width, frame_height, scale_factor):
+        # Load the sprite sheet image
+        spritesheet = pygame.image.load(os.path.join('graphics', filename)).convert_alpha()
+        # Get the width and height of the entire sprite sheet
+        sheet_width, sheet_height = spritesheet.get_size()
+
+        # Create a list to hold individual frames
+        frames = []
+        for y in range(0, sheet_height, frame_height):
+            for x in range(0, sheet_width, frame_width):
+                # Extract each frame by using a sub-surface
+                frame = spritesheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
+                # Scale the frame to make it larger
+                scaled_frame = pygame.transform.scale(frame, (
+                int(frame_width * scale_factor), int(frame_height * scale_factor)))
+                frames.append(scaled_frame)
+
+        return frames
+
+    def run_dialogue_strip_1(self):
+        # Initialize pygame's mixer for audio (if needed)
+        pygame.mixer.init()
+
+        # Load the owl sprite sheet and extract frames for animation
+        owl_frames = self.load_spritesheet('owl-flying.png', 48, 48, scale_factor=6)
+        owl_frame_index = 0  # Start with the first frame of the animation
+        owl_animation_speed = 5  # Change the frame every 5 frames of the game loop
+
+        # Load character images (only one image for the player)
+        char1_image = pygame.image.load(os.path.join('graphics', 'character-avatar.png'))
+        char1_image = pygame.transform.scale(char1_image, (200, 200))
+
+        dialogue_data = [
+            {"name": "Lexi the Owl", "text": "Hello there, adventurer! How was your interaction with the toad?", "audio": "owl-talking-15.mp3"},
+            {"name": "You", "text": "That feels weird. An owl talking, a toad talking. All this still feels unreal to me.", "image": char1_image},
+            {"name": "Lexi the Owl", "text": "You will get used to it. By the way, let us proceed now.", "audio": "owl-talking-16.mp3"},
+            {"name": "Lexi the Owl", "text": "The journey is long so let us not waste any time.", "audio": "owl-talking-17.mp3"},
+            {"name": "You", "text": "Where are we going next, Lexi?", "image": char1_image},
+            {"name": "Lexi the Owl", "text": "We are going past an ERUPTING VOLCANO.", "audio": "owl-talking-18.mp3"},
+            {"name": "You", "text": "A VOLCANO!??", "image": char1_image},
+        ]
+
+        # Preload audio files
+        audio_files = {}
+        for dialogue in dialogue_data:
+            if "audio" in dialogue:
+                audio_file = dialogue["audio"]
+                audio_files[audio_file] = pygame.mixer.Sound(os.path.join("audio", audio_file))
+
+        dialogue_box_height = 150  # Height of the dialogue box surface
+        dialogue_font = pygame.font.Font(None, 32)  # Font for dialogue text
+        name_font = pygame.font.Font(None, 36)  # Font for character names
+        space_prompt_font = pygame.font.Font(None, 28)  # Font for "Press SPACE to continue"
+
+        current_line = 0
+        text_displayed = ""
+        text_index = 0
+        text_speed = 2  # Speed of text animation
+        audio_played = False  # Flag to track if audio has been played for the current line
+        current_sound = None  # Track the currently playing sound
+
+        running = True
+        clock = pygame.time.Clock()
+
+        while running:
+            self.display.blit(self.background_image_2, (0, 0))
+
+            # Create the dialogue box at the bottom
+            dialogue_box = pygame.Surface((self.display.get_width(), dialogue_box_height))
+            dialogue_box.fill((255, 219, 172))  # Light background for the dialogue box
+            dialogue_box_rect = dialogue_box.get_rect(topleft=(0, self.display.get_height() - dialogue_box_height))
+
+            # Draw the brown border around the dialogue box
+            border_color = (139, 69, 19)  # Brown color (RGB)
+            border_thickness = 20  # Thickness of the border
+            pygame.draw.rect(self.display, border_color, dialogue_box_rect.inflate(border_thickness, border_thickness),
+                             border_thickness)
+
+            # Get the current dialogue data
+            current_dialogue = dialogue_data[current_line]
+            character_name = current_dialogue["name"]
+            character_text = current_dialogue["text"]
+            antagonist = "Magical Owl"
+
+            # Play the audio file if it exists and hasn't been played yet
+            if "audio" in current_dialogue and not audio_played:
+                audio_file = current_dialogue["audio"]
+                if current_sound is not None:
+                    current_sound.stop()  # Stop the currently playing sound if it exists
+                current_sound = audio_files[audio_file]  # Get the new sound
+                current_sound.play()  # Play the new audio
+                audio_played = True  # Set the flag to True to prevent replaying the audio
+
+            # Update owl animation (cycle through the frames)
+            if character_name == antagonist or character_name == "Lexi the Owl":
+                owl_frame_index = (owl_frame_index + 1) % (len(owl_frames) * owl_animation_speed)
+                current_owl_frame = owl_frames[owl_frame_index // owl_animation_speed]
+                self.display.blit(current_owl_frame, (950, self.display.get_height() - dialogue_box_height - 300))
+
+            # Render the character image (player) if it's the player's turn
+            else:
+                self.display.blit(char1_image, (50, self.display.get_height() - dialogue_box_height - 200))
+
+            # Render the character name inside the dialogue box (above the text)
+            name_surface = name_font.render(character_name, True, BLACK)
+            dialogue_box.blit(name_surface, (20, 10))  # Draw name near the top inside the dialogue box
+
+            # Text animation (add one letter at a time)
+            if text_index < len(character_text):
+                text_index += text_speed  # Control how fast letters are added
+                text_displayed = character_text[:text_index]
+            else:
+                text_displayed = character_text
+
+            # Render the dialogue text below the name
+            text_surface = dialogue_font.render(text_displayed, True, BLACK)
+            dialogue_box.blit(text_surface, (20, 60))  # Draw the text inside the dialogue box below the name
+
+            # Add "Press SPACE to continue." prompt at the bottom right
+            if text_index >= len(character_text):  # Show prompt only if the text is fully displayed
+                space_prompt_surface = space_prompt_font.render("Press SPACE to continue.", True, (100, 100, 100))
+                dialogue_box.blit(space_prompt_surface,
+                                  (dialogue_box.get_width() - space_prompt_surface.get_width() - 20,
+                                   dialogue_box.get_height() - space_prompt_surface.get_height() - 10))
+
+            # Draw the dialogue box on the screen with the brown border
+            self.display.blit(dialogue_box, dialogue_box_rect.topleft)
+
+            # Event handling for advancing the dialogue
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:  # Only proceed on SPACE key
+                        if text_index >= len(character_text):
+                            # Move to the next line of dialogue if the text is fully displayed
+                            current_line += 1
+                            text_index = 0
+                            text_displayed = ""
+                            audio_played = False  # Reset the audio flag for the next line
+                            if current_line >= len(dialogue_data):
+                                running = False  # Exit dialogue when all lines are done
+
+            pygame.display.flip()
+            clock.tick(60)  # Control the frame rate
+
+    def run_dialogue_strip_2(self):
+        self.dialogue_font = pygame.font.Font(None, 36)
+
+        # Dialogue list (narrating the FourthLevel)
+        self.dialogue_lines = [
+            "The adventurer and Lexi starts walking as they make their way to their next place.",
+            "During the walk, they start talking about each other.",
+            "As they share more about themselves, their friendship starts to blossom.",
+            "After an hour, they could already see the erupting volcano from afar.",
+            "Finally, they made their way to the entrance of the volcano.",
+            "As they enter, they were welcomed by burning lava and the hot steam surrounding the volcano."
+        ]
+
+        # Corresponding images for each dialogue line
+        self.dialogue_images = [
+            pygame.image.load(os.path.join('graphics', 'travel-to-lava-rush-1.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'travel-to-lava-rush-3.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'travel-to-lava-rush-3.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'travel-to-lava-rush-2.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'travel-to-lava-rush-2.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'travel-to-lava-rush-4.png')).convert_alpha()
+        ]
+
+        # Corresponding narration files for each dialogue line
+        self.dialogue_sounds = [
+            pygame.mixer.Sound(os.path.join('audio', 'second-narrator-1.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'second-narrator-2.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'second-narrator-3.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'second-narrator-4.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'second-narrator-5.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'second-narrator-6.mp3'))
+        ]
+
+        # Scale the images to fit the screen
+        self.dialogue_images = [
+            pygame.transform.scale(img, (self.display.get_width(), self.display.get_height()-150)) for img in
+            self.dialogue_images
+        ]
+
+        self.dialogue_index = 0
+        running = True
+
+        # Initialize the mixer for playing audio
+        pygame.mixer.init()
+
+        # Flag to check if narration is playing
+        self.narration_playing = False
+
+        def play_narration():
+            """Play the narration for the current dialogue line."""
+            self.narration_playing = True
+            self.dialogue_sounds[self.dialogue_index].play()
+            pygame.time.set_timer(pygame.USEREVENT, int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
+
+        # Play the first narration automatically
+        play_narration()
+
+        while running:
+            self.display.fill((0, 0, 0))  # Black background for the dialogue screen
+
+            # Display the corresponding image
+            self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
+
+            # Create and display the dialogue box
+            dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
+            pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
+
+            # Render the current dialogue line
+            dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
+                                                      (255, 255, 255))  # White font
+            dialogue_rect = dialogue_text.get_rect(
+                center=(self.display.get_width() // 2, self.display.get_height() - 75))
+            self.display.blit(dialogue_text, dialogue_rect)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sys.exit()
+
+                # Allow the player to skip the narration and move to the next slide with the spacebar
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
+                        self.narration_playing = False
+                        self.dialogue_index += 1
+                        if self.dialogue_index >= len(self.dialogue_lines):
+                            running = False  # End the dialogue and start the game
+                        else:
+                            play_narration()  # Play the next narration
+
+                # Check if narration finished
+                if event.type == pygame.USEREVENT and self.narration_playing:
+                    self.narration_playing = False
+                    self.dialogue_index += 1
+                    if self.dialogue_index >= len(self.dialogue_lines):
+                        running = False  # End the dialogue and start the game
+                    else:
+                        play_narration()  # Play the next narration
+
+            pygame.display.update()
+
+    def run_dialogue_strip_3(self):
+        # Initialize pygame's mixer for audio (if needed)
+        pygame.mixer.init()
+
+        # Load the owl sprite sheet and extract frames for animation
+        owl_frames = self.load_spritesheet('owl-flying.png', 48, 48, scale_factor=6)
+        owl_frame_index = 0  # Start with the first frame of the animation
+        owl_animation_speed = 5  # Change the frame every 5 frames of the game loop
+
+        # Load character images (only one image for the player)
+        char1_image = pygame.image.load(os.path.join('graphics', 'character-avatar.png'))
+        char1_image = pygame.transform.scale(char1_image, (200, 200))
+
+        dialogue_data = [
+            {"name": "Lexi the Owl", "text": "Here we are inside the volcano. It sure is hot in here.", "audio": "owl-talking-19.mp3"},
+            {"name": "Lexi the Owl", "text": "We need to cross this scorching lava until we reach the EXIT.", "audio": "owl-talking-20.mp3"},
+            {"name": "Lexi the Owl", "text": "There are PUZZLES that we may encounter along our path.", "audio": "owl-talking-21.mp3"},
+            {"name": "You", "text": "Wews! This is my first time inside a volcano. I feel like i could pass out.", "image": char1_image},
+            {"name": "Lexi the Owl", "text": "Me, too! And the only way we can survive this is to complete all its PUZZLES.", "audio": "owl-talking-22.mp3"},
+            {"name": "Lexi the Owl", "text": "Are you ready to go, adventurer?", "audio": "owl-talking-23.mp3"},
+            {"name": "You", "text": "Bring it on! There's no turning back now.", "image": char1_image},
+        ]
+
+        # Preload audio files
+        audio_files = {}
+        for dialogue in dialogue_data:
+            if "audio" in dialogue:
+                audio_file = dialogue["audio"]
+                audio_files[audio_file] = pygame.mixer.Sound(os.path.join("audio", audio_file))
+
+        dialogue_box_height = 150  # Height of the dialogue box surface
+        dialogue_font = pygame.font.Font(None, 32)  # Font for dialogue text
+        name_font = pygame.font.Font(None, 36)  # Font for character names
+        space_prompt_font = pygame.font.Font(None, 28)  # Font for "Press SPACE to continue"
+
+        current_line = 0
+        text_displayed = ""
+        text_index = 0
+        text_speed = 2  # Speed of text animation
+        audio_played = False  # Flag to track if audio has been played for the current line
+        current_sound = None  # Track the currently playing sound
+
+        running = True
+        clock = pygame.time.Clock()
+
+        while running:
+            self.display.blit(self.background_image, (0, 0))
+
+            # Create the dialogue box at the bottom
+            dialogue_box = pygame.Surface((self.display.get_width(), dialogue_box_height))
+            dialogue_box.fill((255, 219, 172))  # Light background for the dialogue box
+            dialogue_box_rect = dialogue_box.get_rect(topleft=(0, self.display.get_height() - dialogue_box_height))
+
+            # Draw the brown border around the dialogue box
+            border_color = (139, 69, 19)  # Brown color (RGB)
+            border_thickness = 20  # Thickness of the border
+            pygame.draw.rect(self.display, border_color, dialogue_box_rect.inflate(border_thickness, border_thickness),
+                             border_thickness)
+
+            # Get the current dialogue data
+            current_dialogue = dialogue_data[current_line]
+            character_name = current_dialogue["name"]
+            character_text = current_dialogue["text"]
+            antagonist = "Magical Owl"
+
+            # Play the audio file if it exists and hasn't been played yet
+            if "audio" in current_dialogue and not audio_played:
+                audio_file = current_dialogue["audio"]
+                if current_sound is not None:
+                    current_sound.stop()  # Stop the currently playing sound if it exists
+                current_sound = audio_files[audio_file]  # Get the new sound
+                current_sound.play()  # Play the new audio
+                audio_played = True  # Set the flag to True to prevent replaying the audio
+
+            # Update owl animation (cycle through the frames)
+            if character_name == antagonist or character_name == "Lexi the Owl":
+                owl_frame_index = (owl_frame_index + 1) % (len(owl_frames) * owl_animation_speed)
+                current_owl_frame = owl_frames[owl_frame_index // owl_animation_speed]
+                self.display.blit(current_owl_frame, (950, self.display.get_height() - dialogue_box_height - 300))
+
+            # Render the character image (player) if it's the player's turn
+            else:
+                self.display.blit(char1_image, (50, self.display.get_height() - dialogue_box_height - 200))
+
+            # Render the character name inside the dialogue box (above the text)
+            name_surface = name_font.render(character_name, True, BLACK)
+            dialogue_box.blit(name_surface, (20, 10))  # Draw name near the top inside the dialogue box
+
+            # Text animation (add one letter at a time)
+            if text_index < len(character_text):
+                text_index += text_speed  # Control how fast letters are added
+                text_displayed = character_text[:text_index]
+            else:
+                text_displayed = character_text
+
+            # Render the dialogue text below the name
+            text_surface = dialogue_font.render(text_displayed, True, BLACK)
+            dialogue_box.blit(text_surface, (20, 60))  # Draw the text inside the dialogue box below the name
+
+            # Add "Press SPACE to continue." prompt at the bottom right
+            if text_index >= len(character_text):  # Show prompt only if the text is fully displayed
+                space_prompt_surface = space_prompt_font.render("Press SPACE to continue.", True, (100, 100, 100))
+                dialogue_box.blit(space_prompt_surface,
+                                  (dialogue_box.get_width() - space_prompt_surface.get_width() - 20,
+                                   dialogue_box.get_height() - space_prompt_surface.get_height() - 10))
+
+            # Draw the dialogue box on the screen with the brown border
+            self.display.blit(dialogue_box, dialogue_box_rect.topleft)
+
+            # Event handling for advancing the dialogue
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:  # Only proceed on SPACE key
+                        if text_index >= len(character_text):
+                            # Move to the next line of dialogue if the text is fully displayed
+                            current_line += 1
+                            text_index = 0
+                            text_displayed = ""
+                            audio_played = False  # Reset the audio flag for the next line
+                            if current_line >= len(dialogue_data):
+                                running = False  # Exit dialogue when all lines are done
+
+            pygame.display.flip()
+            clock.tick(60)  # Control the frame rate
+
+    def load_new_word(self):
+        print("Load new word...")
+        new_word_data = random.choice(self.word_list)
+        while new_word_data == self.last_word:
+            new_word_data = random.choice(self.word_list)
+
+        self.current_word_data = new_word_data
+        self.current_word_image = pygame.image.load(self.current_word_data["image"]).convert_alpha()
+        self.current_word_image = pygame.transform.scale(self.current_word_image, (150, 150))
+
+        self.correct_syllables = self.current_word_data["syllables"]
+        self.last_word = self.current_word_data
+
+        incorrect_syllables = ["ba", "do", "re", "mi", "fa", "sol", "la", "ti"]
+        choices = self.correct_syllables + random.sample(incorrect_syllables, 2)
+        random.shuffle(choices)
+
+        self.create_syllable_buttons(choices)
+        self.current_syllable_selection = []
+        self.start_time = time.time()
+
+    def create_syllable_buttons(self, choices):
+        self.syllable_buttons = []
+        button_width, button_height = 100, 50
+        total_width = len(choices) * (button_width + 20)
+        x_start = (self.display.get_width() - total_width) // 2
+
+        for i, syllable in enumerate(choices):
+            x_position = x_start + i * (button_width + 20)
+            y_position = self.display.get_height() // 2 + 50
+            button_rect = pygame.Rect(x_position, y_position, button_width, button_height)
+            self.syllable_buttons.append({"rect": button_rect, "syllable": syllable})
+
+    def check_answer(self):
+        print(f"Player's selection : {self.current_syllable_selection}")
+        print(f"Correct syllables: {self.correct_syllables}")
+        return self.current_syllable_selection == self.correct_syllables
+
+    def show_end_screen(self):
+        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        self.endscreen_font = pygame.font.Font(font_path, 20)
+        self.display.fill((0, 0, 0))
+
+        message_y_position = 150
+        if self.win:
+            message_text = self.endscreen_font.render("You win!", True, (255, 255, 255))
+            message_rect = message_text.get_rect(center=(self.display.get_width() // 2, message_y_position))
+            self.display.blit(message_text, message_rect)
+
+            next_level_button = pygame.Rect(self.display.get_width() // 2 - 100, 250, 200, 50)
+            restart_level_button = pygame.Rect(self.display.get_width() // 2 - 100, 320, 200, 50)
+            main_menu_button = pygame.Rect(self.display.get_width() // 2 - 100, 390, 200, 50)
+
+            pygame.draw.rect(self.display, (0, 0, 255), next_level_button)
+            pygame.draw.rect(self.display, (0, 128, 0), restart_level_button)
+            pygame.draw.rect(self.display, (128, 0, 0), main_menu_button)
+
+            next_level_text = self.endscreen_font.render("Next Level", True, (255, 255, 255))
+            restart_level_text = self.endscreen_font.render("Restart Level", True, (255, 255, 255))
+            main_menu_text = self.endscreen_font.render("Main Menu", True, (255, 255, 255))
+
+            next_level_rect = next_level_text.get_rect(center=next_level_button.center)
+            restart_level_rect = restart_level_text.get_rect(center=restart_level_button.center)
+            main_menu_rect = main_menu_text.get_rect(center=main_menu_button.center)
+
+            self.display.blit(next_level_text, next_level_rect)
+            self.display.blit(restart_level_text, restart_level_rect)
+            self.display.blit(main_menu_text, main_menu_rect)
+
+            running = True
+            while running:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        return
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if next_level_button.collidepoint(event.pos):
+                            self.gameStateManager.set_state('third-level')
+                            running = False
+                        elif restart_level_button.collidepoint(event.pos):
+                            self.restart_level()
+                            running = False
+                        elif main_menu_button.collidepoint(event.pos):
+                            self.gameStateManager.set_state('main-menu')
+                            running = False
+
+                pygame.display.update ()
+                pygame.time.Clock().tick(60)
+        else:
+            message_text = self.endscreen_font.render("You lose!", True, (255, 255, 255))
+            message_rect = message_text.get_rect(center=(self.display.get_width() // 2, message_y_position))
+            self.display.blit(message_text, message_rect)
+
+            restart_level_button = pygame.Rect(self.display.get_width() // 2 - 100, 250, 200, 50)
+            main_menu_button = pygame.Rect(self.display.get_width() // 2 - 100, 320, 200, 50)
+
+            pygame.draw.rect(self.display, (0, 128, 0), restart_level_button)
+            pygame.draw.rect(self.display, (128, 0, 0), main_menu_button)
+
+            restart_level_text = self.endscreen_font.render("Restart Level", True, (255, 255, 255))
+            main_menu_text = self.endscreen_font.render("Main Menu", True, (255, 255, 255))
+
+            restart_level_rect = restart_level_text.get_rect(center=restart_level_button.center)
+            main_menu_rect = main_menu_text.get_rect(center=main_menu_button.center)
+
+            self.display.blit(restart_level_text, restart_level_rect)
+            self.display.blit(main_menu_text, main_menu_rect)
+
+            running = True
+            while running:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        return
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if restart_level_button.collidepoint(event.pos):
+                            self.restart_level()
+                            running = False
+                        elif main_menu_button.collidepoint(event.pos):
+                            self.gameStateManager.set_state('main-menu')
+                            running = False
+
+                pygame.display.update()
+                pygame.time.Clock().tick(60)
+
+    def restart_level(self):
+        """Reset the level and restart."""
+        self.lives = 3  # Reset lives
+        self.correct_answers_count = 0  # Reset correct answers count
+        self.current_syllable_selection = []  # Reset syllable selection
+        self.load_new_word()  # Load a new word
+
+    def run(self):
+        self.run_dialogue_strip_1()
+        self.run_title_animation()
+        self.run_dialogue_strip_2()
+        self.run_dialogue_strip_3()
+        self.start_time = time.time()  # Start the timer immediately after the title animation
+        running = True
+        while running:
+            elapsed_time = time.time() - self.start_time
+            remaining_time = max(0.0, self.lava_flow_time_limit - elapsed_time)
+
+            # Calculate minutes and seconds
+            minutes = int(remaining_time // 60)
+            seconds = int(remaining_time % 60)
+
+            self.display.blit(self.background_image, (0, 0))
+
+            # Render the message text
+            message_text = self.font.render("Segment the syllables of this word:", True, (255, 255, 255))
+            # Position the message above the word image
+            message_x = self.display.get_width() // 2 - message_text.get_width() // 2
+            message_y = 30  # Adjust the Y position as needed
+            self.display.blit(message_text, (message_x, message_y))
+
+            # Display the current word image
+            self.display.blit(self.current_word_image,
+                              (self.display.get_width() // 2 - self.current_word_image.get_width() // 2, 100))
+
+            for button_data in self.syllable_buttons:
+                rect = button_data["rect"]
+                syllable = button_data["syllable"]
+                pygame.draw.rect(self.display, (200, 0, 0), rect)
+                syllable_text = self.button_font.render(syllable, True, (255, 255, 255))
+                self.display.blit(syllable_text, (rect.x + 10, rect.y + 10))
+
+            selection_text = self.font.render(f"Your selection: {'-'.join(self.current_syllable_selection)}", True,
+                                              (255, 255, 255))
+            self.display.blit(selection_text, (self.display.get_width() // 2 - selection_text.get_width() // 2, 350))
+
+            for i in range(self.lives):
+                self.display.blit(self.heart_image, (10 + i * 60, 10))
+
+            # Display the timer in the format 0:00
+            timer_text = self.font.render(f"Time: {minutes}:{seconds:02d}", True, (255, 255, 255))
+            self.display.blit(timer_text, (10, 70))  # Display time below the lives
+
+            self.display.blit(self.audio_logo, self.audio_button_rect)
+
+            submit_button_text = self.button_font.render("SUBMIT", True, (0, 0, 0))
+            reset_button_text = self.button_font.render("RESET", True, (0, 0, 0))
+
+            pygame.draw.rect(self.display, (254, 223, 0), self.submit_button_rect)
+            pygame.draw.rect(self.display, (254, 223, 0), self.reset_button_rect)
+
+            submit_button_rect = submit_button_text.get_rect(center=self.submit_button_rect.center)
+            reset_button_rect = reset_button_text.get_rect(center=self.reset_button_rect.center)
+
+            self.display.blit(submit_button_text, submit_button_rect)
+            self.display.blit(reset_button_text, reset_button_rect)
+
+            if self.overlay_color is not None:
+                overlay_surface = pygame.Surface((self.display.get_width(), self.display.get_height()))
+                overlay_surface.set_alpha(75)
+                overlay_surface.fill(self.overlay_color)
+                self.display.blit(overlay_surface, (0, 0))
+                if time.time() - self.overlay_start_time > 0.25:
+                    self.overlay_color = None
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    for button_data in self.syllable_buttons:
+                        if button_data["rect"].collidepoint(event.pos):
+                            syllable = button_data["syllable"]
+                            self.current_syllable_selection.append(syllable)
+                    if self.audio_button_rect.collidepoint(event.pos):
+                        engine.say(self.current_word_data["audio"])
+                        engine.runAndWait()
+                    elif self.submit_button_rect.collidepoint(event.pos):
+                        if len(self.current_syllable_selection) >= len(self.correct_syllables):
+                            if self.check_answer():
+                                print("Correct! You unlocked the gate.")
+                                self.correct_answers_count += 1
+                                self.overlay_color = (0, 255, 0)
+                                self.overlay_start_time = time.time()
+                                if self.correct_answers_count >= 15:
+                                    print("Congratulations! You completed the level.")
+                                    self.win = True
+                                    self.show_end_screen()
+                                    running = False
+                                else:
+                                    self.load_new_word()
+                            else:
+                                print("Incorrect segmentation!")
+                                self.current_syllable_selection = []
+                                if self.lives <= 0:
+                                    print("You lost all your lives! Game over.")
+                                    self.show_end_screen()
+                                    running = False
+                    elif self.reset_button_rect.collidepoint(event.pos):
+                        self.current_syllable_selection = []
+
+            if remaining_time <= 0:
+                print("Lava erupted! You failed.")
+                self.lives -= 1
+                self.overlay_color = (255, 0, 0)
+                self.overlay_start_time = time.time()
+                self.load_new_word()
+                self.current_syllable_selection = []
+                if self.lives <= 0:
+                    print("You lost all your lives! Game over.")
+                    self.show_end_screen()
+                    running = False
+
+            pygame.display.update()
+            pygame.time.Clock().tick(60)
+
+
+class EighthLevel:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.lives = 3
+        self.current_gate = 1
+        self.win = False
+        self.game_over = False
+        self.end_screen_displayed = False  # Flag to track if end screen has been displayed
+        self.is_restart = False
+
+
+        # Initialize the TTS engine
+        self.tts_engine = pyttsx3.init()
+        self.tts_engine.setProperty('rate', 150)
+
+        # Calculate the center of the screen
+        self.screen_width, self.screen_height = self.display.get_size()
+        self.center_x = self.screen_width // 2
+        self.center_y = self.screen_height // 2
+
+        # Load the audio logo image
+        self.audio_logo_image = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
+        self.audio_logo_rect = self.audio_logo_image.get_rect(center=(self.center_x, 60))  # Centered at the top
+
+        self.heart_image = pygame.image.load(os.path.join('graphics', 'heart.png')).convert_alpha()
+        self.heart_image = pygame.transform.scale(self.heart_image, (80, 50))
+
+        # Lamp animation parameters
+        self.lamp_opacity = 120
+        self.opacity_increasing = True
+        self.lamp_positions = [(275, 265), (982, 272)]
+
+        # Slot and word settings
+        self.slot_width = 60
+        self.slot_height = 40
+        self.slot_gap = 20
+        self.word_width = 60
+        self.word_height = 40
+        self.word_gap = 20
+
+        # Load background image
+        background_image_path = os.path.join('graphics', 'test-bg.png')
+        self.background_image = pygame.image.load(background_image_path).convert_alpha()
+        self.background_image = pygame.transform.scale(self.background_image,
+                                                       (self.display.get_width(), self.display.get_height()))
+
+        # List of sentence segmenting rounds
+        self.rounds = [
+            {"sentence": "Iwenttothestore", "words": ["I", "went", "to", "the", "store"],
+             "correct-sentence": "I went to the store"},
+            {"sentence": "Heplaysintheyard", "words": ["He", "plays", "in", "the", "yard"],
+             "correct-sentence": "He plays in the yard"},
+            {"sentence": "Weclimbonthehill", "words": ["We", "climb", "on", "the", "hill"],
+             "correct-sentence": "We climb on the hill"},
+            {"sentence": "Thecatjumpshigh", "words": ["The", "cat", "jumps", "high"],
+             "correct-sentence": "The cat jumps high"}
+        ]
+
+        # List of syllable segmenting rounds
+        self.syllable_rounds = [
+            {"word": "banana", "syllables": ["ba", "na", "na"]},
+            {"word": "butterfly", "syllables": ["but", "ter", "fly"]},
+            {"word": "telephone", "syllables": ["te", "le", "phone"]},
+            {"word": "hospital", "syllables": ["hos", "pi", "tal"]},
+        ]
+        self.word_images = {
+            'banana': pygame.image.load('graphics/banana.png'),
+            'butterfly': pygame.image.load('graphics/butterfly.png'),
+            'telephone': pygame.image.load('graphics/telephone.png'),
+            'hospital': pygame.image.load('graphics/hospital.png'),
+        }
+
+        self.correct_slots = []
+        self.last_answer = []
+        self.current_round = 0
+        self.is_syllable_round = False
+        self.load_round()
+
+        # Cutscene attributes
+        self.cutscene_frames = self.load_cutscene_frames()
+        self.cutscene_index = 0
+        self.is_playing_cutscene = False
+        self.cutscene_done = False
+        self.cutscene_frame_delay = 100  # Delay in milliseconds between frames
+        self.last_frame_time = pygame.time.get_ticks()  # Initialize the last frame time
+
+    def load_spritesheet(self, filename, frame_width, frame_height, scale_factor):
+        # Load the sprite sheet image
+        spritesheet = pygame.image.load(os.path.join('graphics', filename)).convert_alpha()
+        # Get the width and height of the entire sprite sheet
+        sheet_width, sheet_height = spritesheet.get_size()
+
+        # Create a list to hold individual frames
+        frames = []
+        for y in range(0, sheet_height, frame_height):
+            for x in range(0, sheet_width, frame_width):
+                # Extract each frame by using a sub-surface
+                frame = spritesheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
+                # Scale the frame to make it larger
+                scaled_frame = pygame.transform.scale(frame, (
+                    int(frame_width * scale_factor), int(frame_height * scale_factor)))
+                frames.append(scaled_frame)
+
+        return frames
+
+    def run_dialogue_strip(self):
+        self.dialogue_font = pygame.font.Font(None, 36)
+
+        # Dialogue list (narrating the FourthLevel)
+        self.dialogue_lines = [
+            "After how many hours, they reached the center of Dyscape. And finally, reached the foot of the tower. ",
+            "Lexi and the adventurer climbed the very long stairs of the tower despite the weather being dark and windy.",
+            "As they reached the entrance, their eyes wandered as they look for the door to the top.",
+            "They saw only one passageway, and as they approached it, they were shocked.",
+            "They are blocked by a very big gate that is locked and has some kind of puzzle in it."
+        ]
+
+        # Corresponding images for each dialogue line
+        self.dialogue_images = [
+            pygame.image.load(os.path.join('graphics', 'reached-the-tower-1.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'reached-the-tower-2.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'reached-the-tower-3.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'reached-the-tower-4.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'reached-the-tower-5.png')).convert_alpha(),
+        ]
+
+        # Corresponding narration files for each dialogue line
+        self.dialogue_sounds = [
+            pygame.mixer.Sound(os.path.join('audio', 'eighth-narrator-1.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'eighth-narrator-2.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'eighth-narrator-3.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'eighth-narrator-4.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'eighth-narrator-5.mp3')),
+        ]
+
+        # Scale the images to fit the screen
+        self.dialogue_images = [
+            pygame.transform.scale(img, (self.display.get_width(), self.display.get_height() - 150)) for img in
+            self.dialogue_images
+        ]
+
+        self.dialogue_index = 0
+        running = True
+
+        # Initialize the mixer for playing audio
+        pygame.mixer.init()
+
+        # Flag to check if narration is playing
+        self.narration_playing = False
+
+        def play_narration():
+            """Play the narration for the current dialogue line."""
+            self.narration_playing = True
+            self.dialogue_sounds[self.dialogue_index].play()
+            pygame.time.set_timer(pygame.USEREVENT, int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
+
+        # Stop any currently playing narration before starting the new one
+        for sound in self.dialogue_sounds:
+            sound.stop()
+
+        # Play the first narration automatically
+        play_narration()
+
+        while running:
+            self.display.fill((0, 0, 0))  # Black background for the dialogue screen
+
+            # Display the corresponding image
+            self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
+
+            # Create and display the dialogue box
+            dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
+            pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
+
+            # Render the current dialogue line
+            dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
+                                                      (255, 255, 255))  # White font
+            dialogue_rect = dialogue_text.get_rect(
+                center=(self.display.get_width() // 2, self.display.get_height() - 75))
+            self.display.blit(dialogue_text, dialogue_rect)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sys.exit()
+
+                # Allow the player to skip the narration and move to the next slide with the spacebar
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
+                        self.narration_playing = False
+                        self.dialogue_index += 1
+                        if self.dialogue_index >= len(self.dialogue_lines):
+                            running = False  # End the dialogue and start the game
+                        else:
+                            play_narration()  # Play the next narration
+
+                # Check if narration finished
+                if event.type == pygame.USEREVENT and self.narration_playing:
+                    self.narration_playing = False
+                    self.dialogue_index += 1
+                    if self.dialogue_index >= len(self.dialogue_lines):
+                        running = False  # End the dialogue and start the game
+                    else:
+                        play_narration()  # Play the next narration
+
+            pygame.display.update()
+
+    def run_dialogue_strip_1(self):
+        # Initialize pygame's mixer for audio (if needed)
+        pygame.mixer.init()
+
+        # Load the owl sprite sheet and extract frames for animation
+        owl_frames = self.load_spritesheet('owl-flying.png', 48, 48, scale_factor=6)
+        owl_frame_index = 0  # Start with the first frame of the animation
+        owl_animation_speed = 5  # Change the frame every 5 frames of the game loop
+
+        # Load character images (only one image for the player)
+        char1_image = pygame.image.load(os.path.join('graphics', 'character-avatar.png'))
+        char1_image = pygame.transform.scale(char1_image, (200, 200))
+
+        dialogue_data = [
+            {"name": "You", "text": "The king was really loved by the people that they put out a very secure tower for him.", "image": char1_image},
+            {"name": "Magical Owl", "text": "You're right about that. Unfortunately, Confusion was just too powerful\n that this gate dont have a chance."},
+            {"name": "You", "text": "I can't wait to defeat him.", "image": char1_image},
+            {"name": "Magical Owl", "text": "Yes. I know. But for now, let's focus at the task at hand."},
+            {"name": "Magical Owl", "text": "This is the GATES OF ALPHA-BETA. A tightly secure set of gates that lead to the top of the tower."},
+            {"name": "You", "text": "Set of gates? So it's just not a single gate?", "image": char1_image},
+            {"name": "Magical Owl", "text": "Yes. It is a set of EIGHT gates all lined up. Do you see how secured this is?"},
+            {"name": "You", "text": "Wow! That is some amazing architecture.", "image": char1_image},
+            {"name": "Magical Owl", "text": "Moreover, each gate has its own unique way of opening it."},
+            {"name": "Magical Owl", "text": "Each gate has its own puzzle that needs to be solved for it to be opened."},
+            {"name": "You", "text": "So we just to solve all 8 problems to get trough?", "image": char1_image},
+            {"name": "Magical Owl", "text": "You're right, adventurer! Are you ready to go?"},
+            {"name": "You", "text": "Let's get it on!", "image": char1_image},
+        ]
+
+        # Preload audio files
+        audio_files = {}
+        for dialogue in dialogue_data:
+            if "audio" in dialogue:
+                audio_file = dialogue["audio"]
+                audio_files[audio_file] = pygame.mixer.Sound(os.path.join("audio", audio_file))
+
+        dialogue_box_height = 150  # Height of the dialogue box surface
+        dialogue_font = pygame.font.Font(None, 32)  # Font for dialogue text
+        name_font = pygame.font.Font(None, 36)  # Font for character names
+        space_prompt_font = pygame.font.Font(None, 28)  # Font for "Press SPACE to continue"
+
+        current_line = 0
+        text_displayed = ""
+        text_index = 0
+        text_speed = 2  # Speed of text animation
+        audio_played = False  # Flag to track if audio has been played for the current line
+        current_sound = None  # Track the currently playing sound
+
+        running = True
+        clock = pygame.time.Clock()
+
+        while running:
+            self.display.blit(self.background_image, (0, 0))
+
+            # Create the dialogue box at the bottom
+            dialogue_box = pygame.Surface((self.display.get_width(), dialogue_box_height))
+            dialogue_box.fill((255, 219, 172))  # Light background for the dialogue box
+            dialogue_box_rect = dialogue_box.get_rect(topleft=(0, self.display.get_height() - dialogue_box_height))
+
+            # Draw the brown border around the dialogue box
+            border_color = (139, 69, 19)  # Brown color (RGB)
+            border_thickness = 20  # Thickness of the border
+            pygame.draw.rect(self.display, border_color, dialogue_box_rect.inflate(border_thickness, border_thickness),
+                             border_thickness)
+
+            # Get the current dialogue data
+            current_dialogue = dialogue_data[current_line]
+            character_name = current_dialogue["name"]
+            character_text = current_dialogue["text"]
+            antagonist = "Magical Owl"
+
+            # Play the audio file if it exists and hasn't been played yet
+            if "audio" in current_dialogue and not audio_played:
+                audio_file = current_dialogue["audio"]
+                if current_sound is not None:
+                    current_sound.stop()  # Stop the currently playing sound if it exists
+                current_sound = audio_files[audio_file]  # Get the new sound
+                current_sound.play()  # Play the new audio
+                audio_played = True  # Set the flag to True to prevent replaying the audio
+
+            # Update owl animation (cycle through the frames)
+            if character_name == antagonist or character_name == "Lexi the Owl":
+                owl_frame_index = (owl_frame_index + 1) % (len(owl_frames) * owl_animation_speed)
+                current_owl_frame = owl_frames[owl_frame_index // owl_animation_speed]
+                self.display.blit(current_owl_frame, (950, self.display.get_height() - dialogue_box_height - 300))
+
+            # Render the character image (player) if it's the player's turn
+            else:
+                self.display.blit(char1_image, (50, self.display.get_height() - dialogue_box_height - 200))
+
+            # Render the character name inside the dialogue box (above the text)
+            name_surface = name_font.render(character_name, True, (0,0,0))
+            dialogue_box.blit(name_surface, (20, 10))  # Draw name near the top inside the dialogue box
+
+            # Text animation (add one letter at a time)
+            if text_index < len(character_text):
+                text_index += text_speed  # Control how fast letters are added
+                text_displayed = character_text[:text_index]
+            else:
+                text_displayed = character_text
+
+            # Render the dialogue text below the name
+            text_surface = dialogue_font.render(text_displayed, True, (0,0,0))
+            dialogue_box.blit(text_surface, (20, 60))  # Draw the text inside the dialogue box below the name
+
+            # Add "Press SPACE to continue." prompt at the bottom right
+            if text_index >= len(character_text):  # Show prompt only if the text is fully displayed
+                space_prompt_surface = space_prompt_font.render("Press SPACE to continue.", True, (100, 100, 100))
+                dialogue_box.blit(space_prompt_surface,
+                                  (dialogue_box.get_width() - space_prompt_surface.get_width() - 20,
+                                   dialogue_box.get_height() - space_prompt_surface.get_height() - 10))
+
+            # Draw the dialogue box on the screen with the brown border
+            self.display.blit(dialogue_box, dialogue_box_rect.topleft)
+
+            # Event handling for advancing the dialogue
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:  # Only proceed on SPACE key
+                        if text_index >= len(character_text):
+                            # Move to the next line of dialogue if the text is fully displayed
+                            current_line += 1
+                            text_index = 0
+                            text_displayed = ""
+                            audio_played = False  # Reset the audio flag for the next line
+                            if current_line >= len(dialogue_data):
+                                running = False  # Exit dialogue when all lines are done
+
+            pygame.display.flip()
+            clock.tick(60)  # Control the frame rate
+
+    def load_cutscene_frames(self):
+        # Load and split the gate-open-animation sprite sheet into individual frames
+        cutscene_frames = []
+        sprite_sheet_path = os.path.join('graphics', 'gate-open-animation.png')
+        sprite_sheet = pygame.image.load(sprite_sheet_path).convert_alpha()
+
+        # Assume 25 frames, each 1280x720
+        for i in range(25):
+            frame = sprite_sheet.subsurface((i * 1280, 0, 1280, 720))
+            cutscene_frames.append(frame)
+
+        return cutscene_frames
+
+    def load_round(self):
+        # print("Loading round...")  # Debugging line
+        if not self.is_syllable_round:
+            round_data = self.rounds[self.current_round]
+            self.sentence = round_data["sentence"]
+            self.words = round_data["words"]
+            self.correct_sentence = round_data["correct-sentence"]
+            self.correct_slots = self.words[:]  # Store the correct order for this round
+        else:
+            round_data = self.syllable_rounds[self.current_round]
+            self.sentence = round_data["word"]
+            self.words = round_data["syllables"]
+            self.correct_slots = self.words[:]  # Store the correct order for this round
+
+        self.word_slots = [None] * len(self.words)
+        self.dragging_word = None
+        self.drag_offset_x = 0
+        self.drag_offset_y = 0
+
+        # Calculate slot positions
+        self.slot_positions = []
+        for i in range(len(self.words)):
+            slot_x = self.center_x - (len(self.words) * (self.slot_width + self.slot_gap)) // 2 + i * (
+                    self.slot_width + self.slot_gap)
+            slot_y = self.center_y - (self.slot_height - 50)
+            self.slot_positions.append((slot_x, slot_y))
+
+        # Create a copy of words for shuffling
+        self.words_copy = self.words[:]  # Make a copy of the words
+        random.shuffle(self.words_copy)  # Shuffle the copy
+
+        # Calculate initial word positions based on shuffled words
+        self.word_positions = []
+        for i in range(len(self.words_copy)):
+            word_x = self.center_x - (len(self.words_copy) * (self.word_width + self.word_gap)) // 2 + i * (
+                    self.word_width + self.word_gap)
+            word_y = self.center_y - self.word_height // 2 + 200
+            self.word_positions.append((word_x, word_y))
+
+        # Set original positions to match shuffled positions
+        self.original_word_positions = list(self.word_positions)
+        self.display_words = self.words_copy
+        print(self.words)
+        print(self.words_copy)
+
+
+        # Debugging output
+        # print("Shuffled words or syllables:", self.words)
+        # print("Shuffled word or syllable positions:", self.word_positions)
+
+    def check_slots_correctness(self):
+        # Check if the current slots match the correct order
+        print(f"Checking slots: {self.word_slots} against {self.correct_slots}")  # Debugging line
+        return self.word_slots == self.correct_slots
+
+    def advance_round(self):
+        """Advance to the next round or handle incorrect answers."""
+        if self.check_slots_correctness():
+            self.last_answer = self.word_slots[:]
+            self.current_round += 1
+            if not self.is_syllable_round and self.current_round < len(self.rounds):
+                self.load_round()
+                print(f"Successfully completed round {self.current_round}. Proceeding to the next round.")
+                self.is_playing_cutscene = True
+            elif not self.is_syllable_round and self.current_round >= len(self.rounds):
+                print("Sentence segmenting completed! Transitioning to syllable segmenting rounds.")
+                self.is_playing_cutscene = True
+                self.current_round = 0
+                self.is_syllable_round = True
+                self.load_round()
+            elif self.is_syllable_round and self.current_round < len(self.syllable_rounds):
+                self.load_round()
+                print(f"Successfully completed syllable round {self.current_round}. Proceeding to the next round.")
+                self.is_playing_cutscene = True
+            else:
+                print("All rounds completed! Proceed to the next stage.")
+                self.win = True
+
+    def reset_slots(self):
+        # Check if the game is over after losing a life
+        if self.lives > 0:
+            # Reset the slots to None and return words to original positions
+            self.word_slots = [None] * len(self.display_words)
+            for i in range(len(self.display_words)):
+                self.word_positions[i] = self.original_word_positions[i]
+            print(self.rounds)
+        else:
+            self.last_answer = self.word_slots[:]
+            self.check_game_over()  # Trigger game over if lives are zero
+
+    def check_game_over(self):
+        """Check if the player has lost all lives and end the game."""
+        if self.lives <= 0:
+            print("Game Over! The player has lost all lives.")
+            self.game_over = True
+            self.set_correct_order()
+
+            # You can use self.last_answer for feedback or display purposes
+            print(f"Last answer provided by the player: {self.last_answer}")
+
+    def set_correct_order(self):
+        """Set the word slots and positions to the correct order based on the current round."""
+        if self.current_round < len(self.rounds):
+            correct_words = self.rounds[self.current_round]["words"]
+            self.word_slots = correct_words[:]  # Set word slots to the correct words
+            self.word_positions = [(-100, -100)] * len(correct_words)  # Hide the words by moving them off-screen
+            print(f"Correct order set: {self.rounds}")
+
+    def show_end_screen(self):
+        self.display.blit(self.background_image, (0, 0))
+        overlay = pygame.Surface(self.display.get_size())
+        overlay.set_alpha(150)  # Set transparency level
+        overlay.fill((0, 0, 0))  # Black background
+        self.display.blit(overlay, (0, 0))  # Fill the screen with black
+        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        self.font = pygame.font.Font(font_path, 20)
+
+        # Display the appropriate message based on win or loss
+        message = "You Win!" if self.win else "Game Over!"
+        text_surface = self.font.render(message, True, (255, 255, 255))
+        self.display.blit(text_surface, (
+            self.display.get_width() // 2 - text_surface.get_width() // 2, self.display.get_height() // 3))
+
+        # Define button positions
+        self.restart_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2), self.display.get_height() // 2,
+                                          250,
+                                          50)
+        self.exit_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2), self.display.get_height() // 2 + 70,
+                                       250, 50)
+
+        if self.win:
+            # If player wins, add a Next Level button
+            self.next_level_button = pygame.Rect(self.display.get_width() // 2 - (250 // 2),
+                                                 self.display.get_height() // 2 - 70, 250, 50)
+
+            # Draw the Next Level button (Blue)
+            pygame.draw.rect(self.display, (0, 0, 255), self.next_level_button)
+            next_level_text = self.font.render("Next Level", True, (255, 255, 255))
+            self.display.blit(next_level_text, (self.next_level_button.x + 80, self.next_level_button.y + 10))
+
+        # Draw the Restart button (Green)
+        pygame.draw.rect(self.display, (0, 128, 0), self.restart_button)
+        restart_text = self.font.render("Restart Level", True, (255, 255, 255))
+        self.display.blit(restart_text, (self.restart_button.x + 65, self.restart_button.y + 10))
+
+        # Draw the Exit button (Red)
+        pygame.draw.rect(self.display, (128, 0, 0), self.exit_button)
+        exit_text = self.font.render("Return to Main Menu", True, (255, 255, 255))
+        self.display.blit(exit_text, (self.exit_button.x + 30, self.exit_button.y + 10))
+
+    def play_cutscene(self):
+        current_time = pygame.time.get_ticks()  # Get the current time
+        if current_time - self.last_frame_time >= self.cutscene_frame_delay:
+            # Update the frame only if the delay has passed
+            if self.cutscene_index < len(self.cutscene_frames):
+                self.display.blit(self.cutscene_frames[self.cutscene_index], (0, 0))
+                self.cutscene_index += 1
+            else:
+                # Cutscene done, move to the next round
+                self.is_playing_cutscene = False
+                self.cutscene_index = 0
+                self.advance_round()
+
+            self.last_frame_time = current_time
+
+    def speak_current_text(self):
+        def speak():
+            if not self.is_syllable_round:
+                text_to_speak = self.correct_sentence  # Use the correct sentence for TTS
+            else:
+                text_to_speak = self.sentence  # Word for self.syllable_rounds
+
+            # Speak the text using pyttsx3
+            self.tts_engine.say(text_to_speak)
+            self.tts_engine.runAndWait()
+
+            # Create and start a new thread for TTS
+
+        tts_thread = threading.Thread(target=speak)
+        tts_thread.start()
+
+    def handle_events(self, event):
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+        if not self.is_playing_cutscene:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = event.pos
+                if self.audio_logo_rect.collidepoint(mouse_x, mouse_y):
+                    self.speak_current_text()
+                # Check if clicking on a placed word to remove it from the slot
+                for i, (slot_word, slot_pos) in enumerate(zip(self.word_slots, self.slot_positions)):
+                    if slot_word is not None:
+                        slot_x, slot_y = slot_pos
+                        if slot_x <= mouse_x <= slot_x + 60 and slot_y <= mouse_y <= slot_y + 40:
+                            self.word_slots[i] = None
+                            original_pos = self.original_word_positions[self.display_words.index(slot_word)]
+                            self.word_positions[self.display_words.index(slot_word)] = original_pos
+                            return
+                # Start dragging if clicking on a word in the draggable area
+                for i, word in enumerate(self.display_words):
+                    word_x, word_y = self.word_positions[i]
+                    if word_x <= mouse_x <= word_x + 60 and word_y <= mouse_y <= word_y + 40:
+                        self.dragging_word = i
+                        self.drag_offset_x = mouse_x - word_x
+                        self.drag_offset_y = mouse_y - word_y
+                        break
+
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if self.dragging_word is not None:
+                    mouse_x, mouse_y = event.pos
+                    # Snap to nearest slot if within range
+                    for i, (slot_x, slot_y) in enumerate(self.slot_positions):
+                        if slot_x <= mouse_x <= slot_x + 60 and slot_y <= mouse_y <= slot_y + 40:
+                            if self.word_slots[i] is None:
+                                self.word_slots[i] = self.display_words[self.dragging_word]
+                                self.word_positions[self.dragging_word] = (-100, -100)
+                                break
+                    self.dragging_word = None
+                    # Check if the round is complete
+                    if None not in self.word_slots:
+                        if self.check_slots_correctness():
+                            self.advance_round()  # Call this only if the answer is correct
+                        else:
+                            self.lives -= 1
+                            print("Incorrect order. Lives remaining: ", self.lives)
+                            self.reset_slots()  # Reset slots and check for game over after incorrect answer
+
+            elif event.type == pygame.MOUSEMOTION and self.dragging_word is not None:
+                mouse_x, mouse_y = event.pos
+                self.word_positions[self.dragging_word] = (mouse_x - self.drag_offset_x, mouse_y - self.drag_offset_y)
+
+
+    def draw(self):
+        # Draw background and elements
+        if not self.is_playing_cutscene:
+            self.display.blit(self.background_image, (0, 0))
+
+            # Draw the audio logo image
+            self.display.blit(self.audio_logo_image, self.audio_logo_rect)
+
+            # Animate the lamps by adjusting the opacity
+            for pos in self.lamp_positions:
+                lamp_surface = pygame.Surface((100, 100), pygame.SRCALPHA)
+                pygame.draw.circle(lamp_surface, (255, 255, 100, self.lamp_opacity), (50, 50), 50)
+                self.display.blit(lamp_surface, (pos[0] - 50, pos[1] - 50))
+
+            if self.opacity_increasing:
+                self.lamp_opacity += 1
+                if self.lamp_opacity >= 255:
+                    self.opacity_increasing = False
+            else:
+                self.lamp_opacity -= 1
+                if self.lamp_opacity <= 120:
+                    self.opacity_increasing = True
+
+            # Display the sentence or word/illustration above the slots
+            font = pygame.font.Font(None, 36)
+            if not self.is_syllable_round:
+                # Display the sentence in non-syllable rounds
+                sentence_text = self.sentence
+                sentence_surface = font.render(sentence_text, True, (255, 255, 255))
+                sentence_rect = sentence_surface.get_rect(center=(self.center_x, self.center_y - 100))
+                self.display.blit(sentence_surface, sentence_rect)
+            else:
+                # Display the illustration in syllable rounds
+                word_image = self.word_images.get(self.sentence, None)
+                if word_image:
+                    # Adjust image size and position if necessary
+                    scaled_image = pygame.transform.scale(word_image, (75, 75))
+                    image_rect = word_image.get_rect(center=(self.center_x + 75, self.center_y - 50))
+                    self.display.blit(scaled_image, image_rect)
+
+            # Draw slots
+            for (slot_x, slot_y) in self.slot_positions:
+                pygame.draw .rect(self.display, (255, 255, 255), (slot_x, slot_y, 60, 40), 2)
+
+            # Draw words and placed words
+            for i, word in enumerate(self.display_words):
+                word_x, word_y = self.word_positions[i]
+                pygame.draw.rect(self.display, (36, 34, 33), (word_x, word_y, 60, 40))
+                word_surface = font.render(word, True, (255, 255, 255))
+                word_rect = word_surface.get_rect(center=(word_x + 30, word_y + 20))
+                self.display.blit(word_surface, word_rect)
+
+            for i, word in enumerate(self.word_slots):
+                if word is not None:
+                    slot_x, slot_y = self.slot_positions[i]
+                    pygame.draw.rect(self.display, (36, 34, 33), (slot_x, slot_y, 60, 40))
+                    word_surface = font.render(word, True, (255, 255, 255))
+                    word_rect = word_surface.get_rect(center=(slot_x + 30, slot_y + 20))
+                    self.display.blit(word_surface, word_rect)
+
+            # Draw player lives on the screen
+            for i in range(self.lives):
+                self.display.blit(self.heart_image, (10 + i * 60, 10))
+
+        else:
+            self.play_cutscene()
+
+
+    def reset_game(self):
+        """Reset the game state to the initial conditions."""
+        print("Resetting game...")
+        self.lives = 3
+        self.current_round = 0
+        self.correct_slots = self.initialize_correct_slots()  # Call to set correct slots
+        self.word_slots = [None] * len(self.words)  # Reset word slots
+        round_data = self.rounds[self.current_round]
+        self.sentence = round_data["sentence"]
+        self.words = round_data["words"]
+        self.correct_sentence = round_data["correct-sentence"]
+        self.correct_slots = self.words[:]  # Store the correct order for this round
+        print(self.correct_slots)
+        self.load_round()  # Load the first round
+        self.game_over = False  # Reset game over state
+        self.win = False  # Reset win state
+        self.end_screen_displayed = False  # Reset end screen display flag
+        print("Game has been reset.")
+        self.is_restart = True
+
+    def initialize_correct_slots(self):
+        """Return the correct slots for the current level based on the current round."""
+        if self.current_round < len(self.rounds):
+            return self.rounds[self.current_round]["words"]  # Ensure this retrieves the correct order
+        return []
+
+    def load_next_level(self):
+        self.gameStateManager.set_state('ninth-level')
+
+    def run(self):
+        pygame.mixer.init()
+        if not self.is_restart:
+            pygame.mixer.music.unload()
+            pygame.mixer.music.load(os.path.join('audio', '02 Wonderin.mp3'))
+            pygame.mixer.music.set_volume(0.05)
+            pygame.mixer.music.play(-1)
+            self.run_dialogue_strip()
+            self.run_dialogue_strip_1()
+            pygame.mixer.music.stop()
+        else:
+            self.is_restart = False
+        pygame.mixer.music.unload()
+        pygame.mixer.music.load(os.path.join('audio', '02 Wonderin.mp3'))
+        pygame.mixer.music.set_volume(0.2)
+        pygame.mixer.music.play(-1)
+        running = True
+        while running:
+            for event in pygame.event.get():
+                self.handle_events(event)
+
+                # Check for mouse button clicks
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
+                    mouse_pos = event.pos  # Get the mouse position
+                    if self.game_over or self.win:  # Only check button clicks when game is over or won
+                        # Check if the Next Level button is clicked
+                        if self.win and self.next_level_button.collidepoint(mouse_pos):
+                            pygame.mixer.music.stop()
+                            self.load_next_level()  # Replace with your method to load the next level
+                            running = False
+                        # Check if the Restart button is clicked
+                        elif self.restart_button.collidepoint(mouse_pos):
+                            pygame.mixer.music.play(-1)
+                            self.reset_game()
+                            print("Reset button clicked!")
+                        # Check if the Exit button is clicked
+                        elif self.exit_button.collidepoint(mouse_pos):
+                            pygame.mixer.music.stop()
+                            self.gameStateManager.set_state('main-menu')
+                            running = False  # Exit the game loop (or you could go to the main menu)
+
+            if self.game_over or self.win:
+                if not self.end_screen_displayed:  # Check if end screen is not yet displayed
+                    pygame.mixer.music.stop()
+                    self.show_end_screen()  # Display the end screen
+                    pygame.display.update()  # Update the display
+                    self.end_screen_displayed = True  # Set flag to indicate end screen has been displayed
+            else:
+                self.draw()  # Only draw if the game is not over or won
+                pygame.display.update()  # Update the display
+        pygame.mixer.music.stop()
+
+
+class NinthLevel:
+    class Syllable:
+        def __init__(self, text, x, y, font_size, boulder_image):
+            self.text = text
+            self.rect = pygame.Rect(x, y, font_size * len(text), font_size)
+            self.boulder_image = boulder_image  # Assign the boulder image
+            self.boulder_rect = self.boulder_image.get_rect(
+                topleft=(x, y))  # Position the boulder image at the same position
+
+        def fall(self, speed):
+            self.rect.y += speed
+            self.boulder_rect.y += speed  # Move the boulder along with the syllable
+
+        def draw(self, surface, font):
+            # Draw the boulder image
+            surface.blit(self.boulder_image, (self.boulder_rect.x, self.boulder_rect.y))
+
+            # Draw the syllable text on top of the boulder
+            text_surface = font.render(self.text, True, (255, 255, 255))
+            text_rect = text_surface.get_rect(center=self.boulder_rect.center)  # Center the text on the boulder
+            surface.blit(text_surface, text_rect)
+
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+
+        # Initialize Pygame
+        pygame.init()
+
+        # Game constants
+        self.WIDTH, self.HEIGHT = 1200, 550
+        self.SYLLABLES = [
+            {"word": "hospital", "syllables": ["hos", "pi", "tal"]},
+            {"word": "banana", "syllables": ["ba", "na", "na"]},
+            {"word": "computer", "syllables": ["com", "pu", "ter"]},
+            {"word": "watermelon", "syllables": ["wa", "ter", "me", "lon"]},
+            {"word": "chocolate", "syllables": ["cho", "co", "late"]},
+            {"word": "potato", "syllables": ["po", "ta", "to"]},
+            {"word": "hamburger", "syllables": ["ham", "bur", "ger"]},
+            {"word": "dinosaur", "syllables": ["di", "no", "saur"]},
+            {"word": "crocodile", "syllables": ["cro", "co", "dile"]},
+            # Add more words and syllables as needed
+        ]
+        self.FONT_SIZE = 36
+        self.LIVES = 100
+        self.current_word = ""  # Track the current word
+        self.energy_level = 100  # Initialize energy level
+        self.backspace_pressed = False
+        self.win = False
+        self.is_restart = False
+
+        # Set up font
+        self.font = pygame.font.Font(None, self.FONT_SIZE)
+
+        # Load boulder image
+        self.boulder_image_path = os.path.join('graphics', 'Boulder.png')
+        self.boulder_image = pygame.image.load(self.boulder_image_path).convert_alpha()
+        self.boulder_image = pygame.transform.scale(self.boulder_image, (75, 75))
+
+        # Enemy Logo image
+        self.enemylogo_image_path = os.path.join('graphics', 'Confusion-Logo.png')
+        self.enemylogo_image = pygame.image.load(self.enemylogo_image_path).convert_alpha()
+        self.enemylogo_image = pygame.transform.scale(self.enemylogo_image, (60, 60))
+
+        # Shield Logo image
+        self.shieldlogo_image_path = os.path.join('graphics', 'shield-Logo.png')
+        self.shieldlogo_image = pygame.image.load(self.shieldlogo_image_path).convert_alpha()
+        self.shieldlogo_image = pygame.transform.scale(self.shieldlogo_image, (60, 60))
+
+        # Load background image
+        background_image_path = os.path.join('graphics', 'tower-final-bg.png')
+        self.background_image = pygame.image.load(background_image_path).convert_alpha()
+        self.background_image = pygame.transform.scale(self.background_image,
+                                                       (self.display.get_width(), self.display.get_height()))
+
+        # black image
+        black_image_path = os.path.join('graphics', 'black-screen.png')
+        self.black_image = pygame.image.load(black_image_path).convert_alpha()
+        self.black_image = pygame.transform.scale(self.black_image,
+                                                       (self.display.get_width(), self.display.get_height()))
+
+        # Load background image
+        shield_image_path = os.path.join('graphics', 'shield.png')
+        self.shield_image = pygame.image.load(shield_image_path).convert_alpha()
+        self.shield_image = pygame.transform.scale(self.shield_image,
+                                                       (self.display.get_width(), self.display.get_height()))
+
+        # Load shield broke image
+        shield_broke_image_path = os.path.join('graphics', 'shield-broke.png')
+        self.shield_broke_image = pygame.image.load(shield_broke_image_path).convert_alpha()
+        self.shield_broke_image = pygame.transform.scale(self.shield_broke_image,
+                                                         (self.display.get_width(), self.display.get_height()))
+        self.show_shield_broke = False  # Flag to control the display of the shield-broke image
+        self.shield_broke_timer = 0  # Timer to keep track of how long to display the image
+
+        # Game constants
+        self.WIDTH, self.HEIGHT = 1000, 525
+
+        # Load the Confusion Final Form sprite sheet
+        self.confusion_sprite_sheet_path = os.path.join('graphics', 'Confusion-Final-Form-Sheet.png')
+        self.confusion_sprite_sheet = pygame.image.load(self.confusion_sprite_sheet_path).convert_alpha()
+
+        self.confusion_frames = []
+        self.load_confusion_frames()
+
+        # Variables for animation
+        self.current_frame_index = 0
+        self.animation_timer = 0
+        self.animation_speed = 100  # milliseconds between frames
+
+        # Input box properties
+        self.input_box_width = 300
+        self.input_box_height = 40
+        self.input_box_x = 110 # Center horizontally
+        self.input_box_y = 660
+        self.input_box = pygame.Rect(self.input_box_x, self.input_box_y, self.input_box_width, self.input_box_height)
+        self.input_color = (255, 255, 255)  # White
+        self.text_color = (0, 0, 0)  # Black
+        self.current_text = ""
+
+        # Game properties
+        self.syllables = []
+        self.spawn_timer = 0
+        self.spawn_interval = 1000  # milliseconds
+
+    def load_spritesheet(self, filename, frame_width, frame_height, scale_factor):
+        # Load the sprite sheet image
+        spritesheet = pygame.image.load(os.path.join('graphics', filename)).convert_alpha()
+        # Get the width and height of the entire sprite sheet
+        sheet_width, sheet_height = spritesheet.get_size()
+
+        # Create a list to hold individual frames
+        frames = []
+        for y in range(0, sheet_height, frame_height):
+            for x in range(0, sheet_width, frame_width):
+                # Extract each frame by using a sub-surface
+                frame = spritesheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
+                # Scale the frame to make it larger
+                scaled_frame = pygame.transform.scale(frame, (
+                    int(frame_width * scale_factor), int(frame_height * scale_factor)))
+                frames.append(scaled_frame)
+
+        return frames
+
+    def run_dialogue_strip(self):
+        self.dialogue_font = pygame.font.Font(None, 36)
+
+        # Dialogue list (narrating the FourthLevel)
+        self.dialogue_lines = [
+            "After entering the gate, Lexi and the adventurer rush their way onto the spiral stairs.",
+            "...",
+            "Upon reaching the top of the tower, they saw the king lying on the floor",
+            "They approached the king who cant move due to the curse of Confusion.",
+            '"Confusion is on the opposite side of the tower. Go there and end all of this.", the king said.',
+            "The two rushed on the other room opposite of the tower and that is where they found confusion.",
+        ]
+
+        # Corresponding images for each dialogue line
+        self.dialogue_images = [
+            pygame.image.load(os.path.join('graphics', 'To-Confusion-1.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'To-Confusion-2.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'To-Confusion-3.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'To-Confusion-4.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'To-Confusion-5.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'To-Confusion-6.png')).convert_alpha(),
+        ]
+
+        # Corresponding narration files for each dialogue line
+        self.dialogue_sounds = [
+            pygame.mixer.Sound(os.path.join('audio', 'ninth-narrator-1.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', '500-milliseconds-of-silence.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ninth-narrator-2.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ninth-narrator-3.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ninth-narrator-4.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ninth-narrator-5.mp3')),
+        ]
+
+        # Scale the images to fit the screen
+        self.dialogue_images = [
+            pygame.transform.scale(img, (self.display.get_width(), self.display.get_height() - 150)) for img in
+            self.dialogue_images
+        ]
+
+        self.dialogue_index = 0
+        running = True
+
+        # Initialize the mixer for playing audio
+        pygame.mixer.init()
+
+        # Flag to check if narration is playing
+        self.narration_playing = False
+
+        def play_narration():
+            """Play the narration for the current dialogue line."""
+            self.narration_playing = True
+            self.dialogue_sounds[self.dialogue_index].play()
+            pygame.time.set_timer(pygame.USEREVENT, int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
+
+        # Stop any currently playing narration before starting the new one
+        for sound in self.dialogue_sounds:
+            sound.stop()
+
+        # Play the first narration automatically
+        play_narration()
+
+        while running:
+            self.display.fill((0, 0, 0))  # Black background for the dialogue screen
+
+            # Display the corresponding image
+            self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
+
+            # Create and display the dialogue box
+            dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
+            pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
+
+            # Render the current dialogue line
+            dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
+                                                      (255, 255, 255))  # White font
+            dialogue_rect = dialogue_text.get_rect(
+                center=(self.display.get_width() // 2, self.display.get_height() - 75))
+            self.display.blit(dialogue_text, dialogue_rect)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sys.exit()
+
+                # Allow the player to skip the narration and move to the next slide with the spacebar
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
+                        self.narration_playing = False
+                        self.dialogue_index += 1
+                        if self.dialogue_index >= len(self.dialogue_lines):
+                            running = False  # End the dialogue and start the game
+                        else:
+                            play_narration()  # Play the next narration
+
+                # Check if narration finished
+                if event.type == pygame.USEREVENT and self.narration_playing:
+                    self.narration_playing = False
+                    self.dialogue_index += 1
+                    if self.dialogue_index >= len(self.dialogue_lines):
+                        running = False  # End the dialogue and start the game
+                    else:
+                        play_narration()  # Play the next narration
+
+            pygame.display.update()
+
+    def run_dialogue_strip_1(self):
+        # Initialize pygame's mixer for audio (if needed)
+        pygame.mixer.init()
+
+        # Load character images (only one image for the player)
+        char1_image = pygame.image.load(os.path.join('graphics', 'character-avatar.png'))
+        char1_image = pygame.transform.scale(char1_image, (200, 200))
+
+        # Load character images (only one image for the player)
+        char2_image = pygame.image.load(os.path.join('graphics', 'confusion-avatar.png'))
+        char2_image = pygame.transform.scale(char2_image, (200, 200))
+
+        dialogue_data = [
+            {"name": "You", "text": "STOP ALL OF THIS CONFUSION!", "image": char1_image},
+            {"name": "You", "text": "Dyscape will be fully destroyed if you still continue this.", "image": char1_image},
+            {"name": "Confusion", "text": "Stop me if you can. This world's destruction is inevitable.", "image": char2_image},
+            {"name": "Confusion", "text": "All of the people here are like pawns to me. Their weakness disgusts me.", "image": char2_image},
+            {"name": "Confusion", "text": "Even the king of this world thinks he is that mighty. What a joke.", "image": char2_image},
+            {"name": "You", "text": "What is your intention, Confusion? Did you understand every single word you said?", "image": char1_image},
+            {"name": "Confusion", "text": "I don't know, really. Maybe I just love the thought of destroying things\n that are not my liking.", "image": char2_image},
+            {"name": "You", "text": "YOU ARE A MONSTER!", "image": char1_image},
+            {"name": "Confusion","text": "Haha! Maybe I am! And your mere sword cant defeat a monster.", "image": char2_image},
+            {"name": "You", "text": "I will take you on! Right here and right now!", "image": char1_image},
+            {"name": "Confusion", "text": "That's the spirit! Haha! I'd like to see you try, weakling.", "image": char2_image},
+        ]
+
+        # Preload audio files
+        audio_files = {}
+        for dialogue in dialogue_data:
+            if "audio" in dialogue:
+                audio_file = dialogue["audio"]
+                audio_files[audio_file] = pygame.mixer.Sound(os.path.join("audio", audio_file))
+
+        dialogue_box_height = 150  # Height of the dialogue box surface
+        dialogue_font = pygame.font.Font(None, 32)  # Font for dialogue text
+        name_font = pygame.font.Font(None, 36)  # Font for character names
+        space_prompt_font = pygame.font.Font(None, 28)  # Font for "Press SPACE to continue"
+
+        current_line = 0
+        text_displayed = ""
+        text_index = 0
+        text_speed = 2  # Speed of text animation
+        audio_played = False  # Flag to track if audio has been played for the current line
+        current_sound = None  # Track the currently playing sound
+
+        running = True
+        clock = pygame.time.Clock()
+
+        while running:
+            self.display.blit(self.background_image, (0, 0))
+
+            # Create the dialogue box at the bottom
+            dialogue_box = pygame.Surface((self.display.get_width(), dialogue_box_height))
+            dialogue_box.fill((255, 219, 172))  # Light background for the dialogue box
+            dialogue_box_rect = dialogue_box.get_rect(topleft=(0, self.display.get_height() - dialogue_box_height))
+
+            # Draw the brown border around the dialogue box
+            border_color = (139, 69, 19)  # Brown color (RGB)
+            border_thickness = 20  # Thickness of the border
+            pygame.draw.rect(self.display, border_color, dialogue_box_rect.inflate(border_thickness, border_thickness),
+                             border_thickness)
+
+            # Get the current dialogue data
+            current_dialogue = dialogue_data[current_line]
+            character_name = current_dialogue["name"]
+            character_text = current_dialogue["text"]
+            antagonist = "Confusion"
+
+            # Play the audio file if it exists and hasn't been played yet
+            if "audio" in current_dialogue and not audio_played:
+                audio_file = current_dialogue["audio"]
+                if current_sound is not None:
+                    current_sound.stop()  # Stop the currently playing sound if it exists
+                current_sound = audio_files[audio_file]  # Get the new sound
+                current_sound.play()  # Play the new audio
+                audio_played = True  # Set the flag to True to prevent replaying the audio
+
+            # Update owl animation (cycle through the frames)
+            if character_name == antagonist or character_name == "Confusion":
+                self.display.blit(char2_image, (950, self.display.get_height() - dialogue_box_height - 200))
+
+            # Render the character image (player) if it's the player's turn
+            else:
+                self.display.blit(char1_image, (50, self.display.get_height() - dialogue_box_height - 200))
+
+            # Render the character name inside the dialogue box (above the text)
+            name_surface = name_font.render(character_name, True, (0,0,0))
+            dialogue_box.blit(name_surface, (20, 10))  # Draw name near the top inside the dialogue box
+
+            # Text animation (add one letter at a time)
+            if text_index < len(character_text):
+                text_index += text_speed  # Control how fast letters are added
+                text_displayed = character_text[:text_index]
+            else:
+                text_displayed = character_text
+
+            # Render the dialogue text below the name
+            text_surface = dialogue_font.render(text_displayed, True, (0,0,0))
+            dialogue_box.blit(text_surface, (20, 60))  # Draw the text inside the dialogue box below the name
+
+            # Add "Press SPACE to continue." prompt at the bottom right
+            if text_index >= len(character_text):  # Show prompt only if the text is fully displayed
+                space_prompt_surface = space_prompt_font.render("Press SPACE to continue.", True, (100, 100, 100))
+                dialogue_box.blit(space_prompt_surface,
+                                  (dialogue_box.get_width() - space_prompt_surface.get_width() - 20,
+                                   dialogue_box.get_height() - space_prompt_surface.get_height() - 10))
+
+            # Draw the dialogue box on the screen with the brown border
+            self.display.blit(dialogue_box, dialogue_box_rect.topleft)
+
+            # Event handling for advancing the dialogue
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:  # Only proceed on SPACE key
+                        if text_index >= len(character_text):
+                            # Move to the next line of dialogue if the text is fully displayed
+                            current_line += 1
+                            text_index = 0
+                            text_displayed = ""
+                            audio_played = False  # Reset the audio flag for the next line
+                            if current_line >= len(dialogue_data):
+                                running = False  # Exit dialogue when all lines are done
+
+            pygame.display.flip()
+            clock.tick(60)  # Control the frame rate
+
+    def run_dialogue_strip_2(self):
+        # Initialize pygame's mixer for audio (if needed)
+        pygame.mixer.init()
+
+        # Load the owl sprite sheet and extract frames for animation
+        owl_frames = self.load_spritesheet('owl-flying.png', 48, 48, scale_factor=6)
+        owl_frame_index = 0  # Start with the first frame of the animation
+        owl_animation_speed = 5  # Change the frame every 5 frames of the game loop
+
+        # Load character images (only one image for the player)
+        char1_image = pygame.image.load(os.path.join('graphics', 'character-avatar.png'))
+        char1_image = pygame.transform.scale(char1_image, (200, 200))
+
+        dialogue_data = [
+            {"name": "Magical Owl", "text": "Psst! Adventurer! I have a plan"},
+            {"name": "You", "text": "What is it, Lexi?", "image": char1_image},
+            {"name": "Magical Owl", "text": "We cannot defeat Confusion if we trade blows with him. But we can TIRE HIM out."},
+            {"name": "You", "text": "That's a great idea! Tell me more.", "image": char1_image},
+            {"name": "Magical Owl", "text": "I ll put up a MAGIC SHIELD and block Confusion's Attacks."},
+            {"name": "Magical Owl", "text": "He will probably use his power to throw chunks and boulders."},
+            {"name": "Magical Owl", "text": "This shield will deal a great amount of my magic, but so does his power."},
+            {"name": "Magical Owl", "text": "This shield has its limit, so try to DESTROY as many boulders as you can."},
+            {"name": "Magical Owl","text": "Let's do this, adventurer! This is a battle of endurance."},
+            {"name": "You", "text": "I got you, Lexi! I'm on it.", "image": char1_image},
+        ]
+
+        # Preload audio files
+        audio_files = {}
+        for dialogue in dialogue_data:
+            if "audio" in dialogue:
+                audio_file = dialogue["audio"]
+                audio_files[audio_file] = pygame.mixer.Sound(os.path.join("audio", audio_file))
+
+        dialogue_box_height = 150  # Height of the dialogue box surface
+        dialogue_font = pygame.font.Font(None, 32)  # Font for dialogue text
+        name_font = pygame.font.Font(None, 36)  # Font for character names
+        space_prompt_font = pygame.font.Font(None, 28)  # Font for "Press SPACE to continue"
+
+        current_line = 0
+        text_displayed = ""
+        text_index = 0
+        text_speed = 2  # Speed of text animation
+        audio_played = False  # Flag to track if audio has been played for the current line
+        current_sound = None  # Track the currently playing sound
+
+        running = True
+        clock = pygame.time.Clock()
+
+        while running:
+            self.display.blit(self.black_image, (0, 0))
+
+            # Create the dialogue box at the bottom
+            dialogue_box = pygame.Surface((self.display.get_width(), dialogue_box_height))
+            dialogue_box.fill((255, 219, 172))  # Light background for the dialogue box
+            dialogue_box_rect = dialogue_box.get_rect(topleft=(0, self.display.get_height() - dialogue_box_height))
+
+            # Draw the brown border around the dialogue box
+            border_color = (139, 69, 19)  # Brown color (RGB)
+            border_thickness = 20  # Thickness of the border
+            pygame.draw.rect(self.display, border_color, dialogue_box_rect.inflate(border_thickness, border_thickness),
+                             border_thickness)
+
+            # Get the current dialogue data
+            current_dialogue = dialogue_data[current_line]
+            character_name = current_dialogue["name"]
+            character_text = current_dialogue["text"]
+            antagonist = "Magical Owl"
+
+            # Play the audio file if it exists and hasn't been played yet
+            if "audio" in current_dialogue and not audio_played:
+                audio_file = current_dialogue["audio"]
+                if current_sound is not None:
+                    current_sound.stop()  # Stop the currently playing sound if it exists
+                current_sound = audio_files[audio_file]  # Get the new sound
+                current_sound.play()  # Play the new audio
+                audio_played = True  # Set the flag to True to prevent replaying the audio
+
+            # Update owl animation (cycle through the frames)
+            if character_name == antagonist or character_name == "Lexi the Owl":
+                owl_frame_index = (owl_frame_index + 1) % (len(owl_frames) * owl_animation_speed)
+                current_owl_frame = owl_frames[owl_frame_index // owl_animation_speed]
+                self.display.blit(current_owl_frame, (950, self.display.get_height() - dialogue_box_height - 300))
+
+            # Render the character image (player) if it's the player's turn
+            else:
+                self.display.blit(char1_image, (50, self.display.get_height() - dialogue_box_height - 200))
+
+            # Render the character name inside the dialogue box (above the text)
+            name_surface = name_font.render(character_name, True, (0,0,0))
+            dialogue_box.blit(name_surface, (20, 10))  # Draw name near the top inside the dialogue box
+
+            # Text animation (add one letter at a time)
+            if text_index < len(character_text):
+                text_index += text_speed  # Control how fast letters are added
+                text_displayed = character_text[:text_index]
+            else:
+                text_displayed = character_text
+
+            # Render the dialogue text below the name
+            text_surface = dialogue_font.render(text_displayed, True, (0,0,0))
+            dialogue_box.blit(text_surface, (20, 60))  # Draw the text inside the dialogue box below the name
+
+            # Add "Press SPACE to continue." prompt at the bottom right
+            if text_index >= len(character_text):  # Show prompt only if the text is fully displayed
+                space_prompt_surface = space_prompt_font.render("Press SPACE to continue.", True, (100, 100, 100))
+                dialogue_box.blit(space_prompt_surface,
+                                  (dialogue_box.get_width() - space_prompt_surface.get_width() - 20,
+                                   dialogue_box.get_height() - space_prompt_surface.get_height() - 10))
+
+            # Draw the dialogue box on the screen with the brown border
+            self.display.blit(dialogue_box, dialogue_box_rect.topleft)
+
+            # Event handling for advancing the dialogue
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:  # Only proceed on SPACE key
+                        if text_index >= len(character_text):
+                            # Move to the next line of dialogue if the text is fully displayed
+                            current_line += 1
+                            text_index = 0
+                            text_displayed = ""
+                            audio_played = False  # Reset the audio flag for the next line
+                            if current_line >= len(dialogue_data):
+                                running = False  # Exit dialogue when all lines are done
+
+            pygame.display.flip()
+            clock.tick(60)  # Control the frame rate
+
+    def load_confusion_frames(self):
+        """Extracts 9 frames from the sprite sheet, each of size 500x500."""
+        frame_width = 500
+        frame_height = 500
+        num_frames = 9
+
+        for i in range(num_frames):
+            # Cut out each frame from the sprite sheet
+            frame = self.confusion_sprite_sheet.subsurface((i * frame_width, 0, frame_width, frame_height))
+            self.confusion_frames.append(frame)
+
+    def update_animation(self):
+        """Updates the current frame index based on time for the animation."""
+        current_time = pygame.time.get_ticks()  # Get the time in milliseconds
+        if current_time - self.animation_timer > self.animation_speed:
+            self.animation_timer = current_time
+            # Update to the next frame, looping back to the first frame when reaching the end
+            self.current_frame_index = (self.current_frame_index + 1) % len(self.confusion_frames)
+
+    def draw_confusion(self):
+        """Draws the current frame of the Confusion animation with scaling and adjustable placement."""
+        current_frame = self.confusion_frames[self.current_frame_index]
+
+        # Define new width and height for scaling (you can adjust the scaling factors as needed)
+        scale_width, scale_height = 300, 300  # Example scaling to 300x300
+
+        # Scale the current frame to the desired size
+        scaled_frame = pygame.transform.scale(current_frame, (scale_width, scale_height))
+
+        # Define new x and y positions for placement
+        new_x = WIDTH // 2 - scale_width // 2  # Center horizontally
+        new_y = -50  # Adjust vertical placement (50 pixels from the top)
+
+        # Draw the scaled frame at the new position
+        self.display.blit(scaled_frame, (new_x, new_y))
+
+    def draw_text_box(self):
+        # Draw the input box
+        pygame.draw.rect(self.display, self.input_color, self.input_box, 0)
+        text_surface = self.font.render(self.current_text, True, self.text_color)
+        self.display.blit(text_surface, (self.input_box.x + 5, self.input_box.y + 5))
+        label = f"Enter word here: "
+        label_surface = self.font.render(label, True, (0, 0, 0))
+        self.display.blit(label_surface, (115, 630))  # Adjust text position accordingly
+
+    def draw_lifebar(self, current_value, max_value, x, y, width, height, fill_color, border_color=(255, 255, 255),
+                     background_color=(50, 50, 50)):
+        # Draw the background for the lifebar
+        pygame.draw.rect(self.display, background_color, (x, y, width, height))  # Background rectangle
+        # Draw the border
+        pygame.draw.rect(self.display, border_color, (x -1, y -1, width +2, height +2), 2)  # Border with thickness of 2
+        # Calculate the width of the lifebar based on the current value
+        bar_width = (current_value / max_value) * width
+        # Draw the filled lifebar
+        pygame.draw.rect(self.display, fill_color, (x, y, bar_width, height))
+
+    def handle_input(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:  # Enter key
+                self.check_input()
+                self.current_text = ""
+            elif event.key == pygame.K_BACKSPACE:
+                if self.current_text:  # Check if there is text to remove
+                    self.current_text = self.current_text[:-1] # Remove the last character
+            else:
+                self.current_text += event.unicode  # Add typed character to input
+
+    def check_input(self):
+        # Check if player typed the correct word
+        if self.current_text.lower() == self.current_word.lower():
+            print("Correct answer:", self.current_text)
+            self.syllables = []  # Destroy current syllables
+            self.spawn_next_word()  # Spawn the next word's syllables
+        else:
+            print("Wrong answer:", self.current_text)
+
+    def update(self):
+        # Spawn new syllables if none are on the screen
+        if not self.syllables:
+            self.spawn_next_word()
+
+        # Create a list to hold syllables that need to be removed
+        syllables_to_remove = []
+
+        # Update syllable positions
+        for syllable in self.syllables:
+            syllable.fall(1)  # Move syllables down
+            if syllable.rect.y > self.HEIGHT:  # If a syllable hits the bottom
+                self.LIVES -= 4
+                print(f"Lives left: {self.LIVES}")
+                syllables_to_remove.append(syllable)  # Mark the syllable for removal
+
+                # Show the shield broke image for 0.2 seconds
+                self.show_shield_broke = True
+                self.shield_broke_timer = pygame.time.get_ticks()  # Start the timer
+
+                if self.LIVES <= 0:
+                    self.game_over()
+
+        # Remove the syllables that were marked for removal
+        for syllable in syllables_to_remove:
+            if syllable in self.syllables:  # Check if syllable still exists
+                self.syllables.remove(syllable)
+
+        # Check for win condition
+        if self.energy_level <= 0:
+            print("You win!")
+            self.win = True
+            self.gameStateManager.set_state('final-level')  # Transition to final level
+
+        # Check if the shield-broke image should be hidden
+        if self.show_shield_broke and (pygame.time.get_ticks() - self.shield_broke_timer > 200):  # 200 ms
+            self.show_shield_broke = False
+
+    def spawn_next_word(self):
+        # Choose a random word and its syllables
+        word_data = random.choice(self.SYLLABLES)
+        self.current_word = word_data["word"]  # Set current word
+        syllables = word_data["syllables"]
+
+        # Define a minimum distance between syllables
+        min_distance = 50  # Adjust this value as needed
+
+        for syllable_text in syllables:
+            # Generate a position for the new syllable
+            while True:
+                x = random.randint(0, self.WIDTH - self.FONT_SIZE * len(syllable_text))
+                y = -self.FONT_SIZE
+
+                # Check if the new syllable overlaps with existing syllables
+                overlap = False
+                for existing_syllable in self.syllables:
+                    if abs(existing_syllable.rect.x - x) < min_distance and abs(existing_syllable.rect.y - y) < min_distance:
+                        overlap = True
+                        break
+
+                # If no overlap, break the loop and add the syllable
+                if not overlap:
+                    break
+
+            # Add the new syllable to the list, using the scaled boulder image
+            self.syllables.append(self.Syllable(syllable_text, x, y, self.FONT_SIZE, self.boulder_image))
+            self.energy_level -= 2  # Deduct energy level
+
+    def draw_syllables(self):
+        for syllable in self.syllables:
+            syllable.draw(self.display, self.font)
+
+    def draw_lives(self):
+        self.draw_lifebar(self.LIVES, 100, 110, 40, 300, 15, (154, 213, 33),
+                          (255, 255, 255))  # Green lifebar with white border
+        lives_text = f"Shield Health:       {self.LIVES} %"
+        lives_surface = self.font.render(lives_text, True, (0, 0, 0))
+        self.display.blit(lives_surface, (110, 10))  # Adjust text position accordingly
+
+    def draw_energy(self):
+        self.draw_lifebar(self.energy_level, 100, 110, 110, 300, 15, (38, 46, 124),
+                          (255, 255, 255))  # Blue energy bar with white border
+        energy_text = f"Confusion's Energy: {self.energy_level} %"
+        energy_surface = self.font.render(energy_text, True, (0, 0, 0))
+        self.display.blit(energy_surface, (110, 80))  # Adjust text position accordingly
+
+    def draw_end_screen(self):
+        # Draw a semi-transparent overlay
+        overlay = pygame.Surface((WIDTH, HEIGHT))  # Use the specified screen size
+        overlay.fill((0, 0, 0, 180))  # Semi-transparent black
+        self.display.blit(overlay, (0, 0))
+
+        # Draw the game over text
+        game_over_text = self.font.render("Your Shield broke.", True, (255, 0, 0))
+        text_rect = game_over_text.get_rect(center=(640, 300))  # Center horizontally at 640 (1280 / 2)
+        self.display.blit(game_over_text, text_rect)
+
+        # Draw the restart button
+        restart_button_rect = pygame.Rect(640 - 75, 360, 150, 40)  # Center the button at 640
+        pygame.draw.rect(self.display, (0, 255, 0), restart_button_rect)
+        restart_text = self.font.render("Restart", True, (0, 0, 0))
+        restart_text_rect = restart_text.get_rect(center=restart_button_rect.center)  # Center the text in the button
+        self.display.blit(restart_text, restart_text_rect)
+
+        pygame.display.flip()
+
+        return restart_button_rect
+
+    def game_over(self):
+        running = True
+        while running:
+            restart_button_rect= self.draw_end_screen()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = event.pos
+                    if restart_button_rect.collidepoint(mouse_pos):
+                        self.reset_game()
+                        running = False
+
+            # Keep the screen updated
+            pygame.display.flip()
+
+    def reset_game(self):
+        self.LIVES = 100
+        self.energy_level = 100
+        self.current_word = ""
+        self.syllables = []
+        self.current_text = ""
+        self.win = False
+        self.show_shield_broke = False
+        self.shield_broke_timer = 0
+        self.spawn_timer = 0
+        self.spawn_next_word()  # Optionally start with a new word
+        self.is_restart = True
+
+    def run(self):
+        pygame.mixer.init()
+        clock = pygame.time.Clock()
+
+        if not self.is_restart:
+            self.run_dialogue_strip()
+            pygame.mixer.music.unload()
+            pygame.mixer.music.load(os.path.join('audio', '05 Reflect.mp3'))
+            pygame.mixer.music.set_volume(0.1)
+            pygame.mixer.music.play(-1)
+            self.run_dialogue_strip_1()
+            self.run_dialogue_strip_2()
+            pygame.mixer.music.stop()
+        else:
+                self.is_restart = False
+        pygame.mixer.music.unload()
+        pygame.mixer.music.load(os.path.join('audio', '03 Invasion.mp3'))
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                self.handle_input(event)  # Handle input events
+
+            # Handle continuous backspace removal
+            if self.backspace_pressed:
+                if self.current_text:  # Only remove if there's text
+                    self.current_text = self.current_text[:-1]
+
+            # Update game state
+            self.update()
+            if self.win:
+                self.gameStateManager.set_state('final-level')
+                running = False
+            self.update_animation()
+            self.display.blit(self.background_image, (0, 0))  # Background color
+            self.display.blit(self.shield_image, (0, 0))
+            self.draw_confusion()
+            self.draw_text_box()  # Draw the text box
+            self.draw_syllables()  # Draw the syllables
+            self.display.blit(self.shieldlogo_image, (30, 10))
+            self.display.blit(self.enemylogo_image, (30, 75))
+            self.draw_lives()  # Draw lives
+            self.draw_energy()  # Draw energy level
+            # Inside the run method, after drawing the background
+            if self.show_shield_broke:
+                self.display.blit(self.shield_broke_image, (0, 0))  # Draw shield broke image
+            pygame.display.flip()  # Update the display
+            clock.tick(FPS)  # Limit to 60 frames per second
+        pygame.mixer.music.stop()
+
+
+class FinalLevel:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.frames = []
+        background_image_path_2 = os.path.join('graphics', 'confusion-stronger-bg.png')
+        self.background_image_2 = pygame.image.load(background_image_path_2).convert_alpha()
+        self.background_image_2 = pygame.transform.scale(self.background_image_2,
+                                                         (self.display.get_width(), self.display.get_height()))
+
+        self.load_spritesheets()
+
+        self.questions = [
+            {"question": "Which word begins with the same sound as dog?", "options": ["Door", "Cat", "Fish", "Top"], "correct": "Door", "background": "graphics/still_image-1.png"},
+            {"question": "Which word rhymes with cap", "options": ["Cup", "Soup", "Map", "Kit"], "correct": "Map",
+             "background": "graphics/still_image-2.png"},
+            {"question": "Which word ends with the same sound as frog?", "options": ["Dog", "Cat", "Hat", "Fox"], "correct": "Dog",
+             "background": "graphics/still_image-3.png"},
+            {"question": "Which word has the same middle sound as sun?", "options": ["Sit", "Run", "Bag", "Net"], "correct": "Run",
+             "background": "graphics/still_image-4.png"},
+            {"question": "If you say the sounds /c/ - /a/ - /t/ together, what word do you get?", "options": ["Tap", "Cap", "Rat", "Cat"], "correct": "Cat",
+             "background": "graphics/still_image-5.png"},
+        ]
+
+    def load_spritesheet(self, filename, frame_width, frame_height, scale_factor):
+        # Load the sprite sheet image
+        spritesheet = pygame.image.load(os.path.join('graphics', filename)).convert_alpha()
+        # Get the width and height of the entire sprite sheet
+        sheet_width, sheet_height = spritesheet.get_size()
+
+        # Create a list to hold individual frames
+        frames = []
+        for y in range(0, sheet_height, frame_height):
+            for x in range(0, sheet_width, frame_width):
+                # Extract each frame by using a sub-surface
+                frame = spritesheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
+                # Scale the frame to make it larger
+                scaled_frame = pygame.transform.scale(frame, (
+                    int(frame_width * scale_factor), int(frame_height * scale_factor)))
+                frames.append(scaled_frame)
+
+        return frames
+
+    def run_dialogue_strip(self):
+        self.dialogue_font = pygame.font.Font(None, 36)
+
+        # Dialogue list (narrating the FourthLevel)
+        self.dialogue_lines = [
+            "Their plan worked as Confusion was defeated and was fully tired.",
+            "After a few seconds, Confusion stood up, all dizzy, with his face already exposed.",
+            "Both Lexi and the adventurer noticed it as they were both shocked and feared to death.",
+            "Confusion's face was revealed. He was a boy, sinister-looking, and with a black hair.",
+            "Due to the fact that he was defeated, Confusion now powers up to his full extent and\n he will try to end this all.",
+
+        ]
+
+        # Corresponding images for each dialogue line
+        self.dialogue_images = [
+            pygame.image.load(os.path.join('graphics', 'Confusion-Reveal-1.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Reveal-2.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Reveal-3.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Reveal-4.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Reveal-5.png')).convert_alpha(),
+
+        ]
+
+        # Corresponding narration files for each dialogue line
+        self.dialogue_sounds = [
+            pygame.mixer.Sound(os.path.join('audio', 'confusion-reveal-1.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'confusion-reveal-2.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'confusion-reveal-3.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'confusion-reveal-4.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'confusion-reveal-5.mp3')),
+
+        ]
+
+        # Scale the images to fit the screen
+        self.dialogue_images = [
+            pygame.transform.scale(img, (self.display.get_width(), self.display.get_height() - 150)) for img in
+            self.dialogue_images
+        ]
+
+        self.dialogue_index = 0
+        running = True
+
+        # Initialize the mixer for playing audio
+        pygame.mixer.init()
+
+        # Flag to check if narration is playing
+        self.narration_playing = False
+
+        def play_narration():
+            """Play the narration for the current dialogue line."""
+            self.narration_playing = True
+            self.dialogue_sounds[self.dialogue_index].play()
+            pygame.time.set_timer(pygame.USEREVENT, int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
+
+        # Play the first narration automatically
+        play_narration()
+
+        while running:
+            self.display.fill((0, 0, 0))  # Black background for the dialogue screen
+
+            # Display the corresponding image
+            self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
+
+            # Create and display the dialogue box
+            dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
+            pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
+
+            # Render the current dialogue line
+            dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
+                                                      (255, 255, 255))  # White font
+            dialogue_rect = dialogue_text.get_rect(
+                center=(self.display.get_width() // 2, self.display.get_height() - 75))
+            self.display.blit(dialogue_text, dialogue_rect)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sys.exit()
+
+                # Allow the player to skip the narration and move to the next slide with the spacebar
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
+                        self.narration_playing = False
+                        self.dialogue_index += 1
+                        if self.dialogue_index >= len(self.dialogue_lines):
+                            running = False  # End the dialogue and start the game
+                        else:
+                            play_narration()  # Play the next narration
+
+                # Check if narration finished
+                if event.type == pygame.USEREVENT and self.narration_playing:
+                    self.narration_playing = False
+                    self.dialogue_index += 1
+                    if self.dialogue_index >= len(self.dialogue_lines):
+                        running = False  # End the dialogue and start the game
+                    else:
+                        play_narration()  # Play the next narration
+
+            pygame.display.update()
+
+    def run_dialogue_strip_1(self):
+        # Initialize pygame's mixer for audio (if needed)
+        pygame.mixer.init()
+
+        # Load the owl sprite sheet and extract frames for animation
+        owl_frames = self.load_spritesheet('owl-flying.png', 48, 48, scale_factor=6)
+        owl_frame_index = 0  # Start with the first frame of the animation
+        owl_animation_speed = 5  # Change the frame every 5 frames of the game loop
+
+        # Load character images (only one image for the player)
+        char1_image = pygame.image.load(os.path.join('graphics', 'character-avatar.png'))
+        char1_image = pygame.transform.scale(char1_image, (200, 200))
+
+        dialogue_data = [
+            {"name": "You", "text": "Confusion is getting stronger and our shield is getting weaker!", "image": char1_image},
+            {"name": "You", "text": "Is there anything we can do to end this fight?", "image": char1_image},
+            {"name": "Magical Owl", "text": "Actually, there is one. But it may be our final chance."},
+            {"name": "You", "text": "What is it? Tell me!", "image": char1_image},
+            {"name": "Magical Owl", "text": "Your life will be at risk if we do this!. I can't let that happen."},
+            {"name": "You", "text": "JUST TELL ME!", "image": char1_image},
+            {"name": "Magical Owl", "text": "Okay. I will tell you this once so listen closely."},
+            {"name": "Magical Owl", "text": "I will use my REMAINING magic power to help you deliver the FINAL\n BLOW to Confusion using your sword."},
+            {"name": "Magical Owl", "text": "i will then use FORESIGHT and foresee the future to ELIMINATE ALL\n POSSIBLE OUTCOMES of you being defeated by him."},
+            {"name": "Magical Owl", "text": "Using all of my magic will put me to sleep and if you fail, you may\n lose your life, in this world and yours."},
+            {"name": "Magical Owl", "text": "I don't want you to die, adventurer."},
+            {"name": "You", "text": "I dont care, Lexi. We’ve come this far to save your world.", "image": char1_image},
+            {"name": "You", "text": "I trust you. I know you won't let me die.", "image": char1_image},
+            {"name": "Magical Owl", "text": "Let's defeat this monster."},
+
+        ]
+
+        # Preload audio files
+        audio_files = {}
+        for dialogue in dialogue_data:
+            if "audio" in dialogue:
+                audio_file = dialogue["audio"]
+                audio_files[audio_file] = pygame.mixer.Sound(os.path.join("audio", audio_file))
+
+        dialogue_box_height = 150  # Height of the dialogue box surface
+        dialogue_font = pygame.font.Font(None, 32)  # Font for dialogue text
+        name_font = pygame.font.Font(None, 36)  # Font for character names
+        space_prompt_font = pygame.font.Font(None, 28)  # Font for "Press SPACE to continue"
+
+        current_line = 0
+        text_displayed = ""
+        text_index = 0
+        text_speed = 2  # Speed of text animation
+        audio_played = False  # Flag to track if audio has been played for the current line
+        current_sound = None  # Track the currently playing sound
+
+        running = True
+        clock = pygame.time.Clock()
+
+        while running:
+            self.display.blit(self.background_image_2, (0, 0))
+
+            # Create the dialogue box at the bottom
+            dialogue_box = pygame.Surface((self.display.get_width(), dialogue_box_height))
+            dialogue_box.fill((255, 219, 172))  # Light background for the dialogue box
+            dialogue_box_rect = dialogue_box.get_rect(topleft=(0, self.display.get_height() - dialogue_box_height))
+
+            # Draw the brown border around the dialogue box
+            border_color = (139, 69, 19)  # Brown color (RGB)
+            border_thickness = 20  # Thickness of the border
+            pygame.draw.rect(self.display, border_color, dialogue_box_rect.inflate(border_thickness, border_thickness),
+                             border_thickness)
+
+            # Get the current dialogue data
+            current_dialogue = dialogue_data[current_line]
+            character_name = current_dialogue["name"]
+            character_text = current_dialogue["text"]
+            antagonist = "Magical Owl"
+
+            # Play the audio file if it exists and hasn't been played yet
+            if "audio" in current_dialogue and not audio_played:
+                audio_file = current_dialogue["audio"]
+                if current_sound is not None:
+                    current_sound.stop()  # Stop the currently playing sound if it exists
+                current_sound = audio_files[audio_file]  # Get the new sound
+                current_sound.play()  # Play the new audio
+                audio_played = True  # Set the flag to True to prevent replaying the audio
+
+            # Update owl animation (cycle through the frames)
+            if character_name == antagonist or character_name == "Lexi the Owl":
+                owl_frame_index = (owl_frame_index + 1) % (len(owl_frames) * owl_animation_speed)
+                current_owl_frame = owl_frames[owl_frame_index // owl_animation_speed]
+                self.display.blit(current_owl_frame, (950, self.display.get_height() - dialogue_box_height - 300))
+
+            # Render the character image (player) if it's the player's turn
+            else:
+                self.display.blit(char1_image, (50, self.display.get_height() - dialogue_box_height - 200))
+
+            # Render the character name inside the dialogue box (above the text)
+            name_surface = name_font.render(character_name, True, (0,0,0))
+            dialogue_box.blit(name_surface, (20, 10))  # Draw name near the top inside the dialogue box
+
+            # Text animation (add one letter at a time)
+            if text_index < len(character_text):
+                text_index += text_speed  # Control how fast letters are added
+                text_displayed = character_text[:text_index]
+            else:
+                text_displayed = character_text
+
+            # Render the dialogue text below the name
+            text_surface = dialogue_font.render(text_displayed, True, (0,0,0))
+            dialogue_box.blit(text_surface, (20, 60))  # Draw the text inside the dialogue box below the name
+
+            # Add "Press SPACE to continue." prompt at the bottom right
+            if text_index >= len(character_text):  # Show prompt only if the text is fully displayed
+                space_prompt_surface = space_prompt_font.render("Press SPACE to continue.", True, (100, 100, 100))
+                dialogue_box.blit(space_prompt_surface,
+                                  (dialogue_box.get_width() - space_prompt_surface.get_width() - 20,
+                                   dialogue_box.get_height() - space_prompt_surface.get_height() - 10))
+
+            # Draw the dialogue box on the screen with the brown border
+            self.display.blit(dialogue_box, dialogue_box_rect.topleft)
+
+            # Event handling for advancing the dialogue
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:  # Only proceed on SPACE key
+                        if text_index >= len(character_text):
+                            # Move to the next line of dialogue if the text is fully displayed
+                            current_line += 1
+                            text_index = 0
+                            text_displayed = ""
+                            audio_played = False  # Reset the audio flag for the next line
+                            if current_line >= len(dialogue_data):
+                                running = False  # Exit dialogue when all lines are done
+
+            pygame.display.flip()
+            clock.tick(60)  # Control the frame rate
+
+    def run_dialogue_strip_2(self):
+        self.dialogue_font = pygame.font.Font(None, 36)
+
+        # Dialogue list (narrating the FourthLevel)
+        self.dialogue_lines = [
+            "Lexi starts pouring every power he has left onto the traveler's weapon.",
+            "Then he uses FORESIGHT to foresee the future and ELIMINATE unneccesary \n outcomes for the final attack to be successful.",
+            "Full of uncertainty, Lexi still pushes through as he remembers how the adventurer trusts him.",
+        ]
+
+        # Corresponding images for each dialogue line
+        self.dialogue_images = [
+            pygame.image.load(os.path.join('graphics', 'power-transfer-to-sword.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'foresight.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'foresight.png')).convert_alpha(),
+        ]
+
+        # Corresponding narration files for each dialogue line
+        self.dialogue_sounds = [
+            pygame.mixer.Sound(os.path.join('audio', 'final-narrator-1.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'final-narrator-2.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'final-narrator-3.mp3')),
+        ]
+
+        # Scale the images to fit the screen
+        self.dialogue_images = [
+            pygame.transform.scale(img, (self.display.get_width(), self.display.get_height() - 150)) for img in
+            self.dialogue_images
+        ]
+
+        self.dialogue_index = 0
+        running = True
+
+        # Initialize the mixer for playing audio
+        pygame.mixer.init()
+
+        # Flag to check if narration is playing
+        self.narration_playing = False
+
+        def play_narration():
+            """Play the narration for the current dialogue line."""
+            self.narration_playing = True
+            self.dialogue_sounds[self.dialogue_index].play()
+            pygame.time.set_timer(pygame.USEREVENT, int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
+
+        # Play the first narration automatically
+        play_narration()
+
+        while running:
+            self.display.fill((0, 0, 0))  # Black background for the dialogue screen
+
+            # Display the corresponding image
+            self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
+
+            # Create and display the dialogue box
+            dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
+            pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
+
+            # Render the current dialogue line
+            dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
+                                                      (255, 255, 255))  # White font
+            dialogue_rect = dialogue_text.get_rect(
+                center=(self.display.get_width() // 2, self.display.get_height() - 75))
+            self.display.blit(dialogue_text, dialogue_rect)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sys.exit()
+
+                # Allow the player to skip the narration and move to the next slide with the spacebar
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
+                        self.narration_playing = False
+                        self.dialogue_index += 1
+                        if self.dialogue_index >= len(self.dialogue_lines):
+                            running = False  # End the dialogue and start the game
+                        else:
+                            play_narration()  # Play the next narration
+
+                # Check if narration finished
+                if event.type == pygame.USEREVENT and self.narration_playing:
+                    self.narration_playing = False
+                    self.dialogue_index += 1
+                    if self.dialogue_index >= len(self.dialogue_lines):
+                        running = False  # End the dialogue and start the game
+                    else:
+                        play_narration()  # Play the next narration
+
+            pygame.display.update()
+
+    def run_dialogue_strip_3(self):
+        self.dialogue_font = pygame.font.Font(None, 36)
+
+        # Dialogue list (narrating the FourthLevel)
+        self.dialogue_lines = [
+            "I GOT THEM ALL CORRECT, ADVENTURER! NOW IS YOUR TIME!!",
+            "Lexi shouts as he tells the adventurer to now fight. There is already a bright future ahead.",
+            "The adventurer rushes forward, without second thought. This is the final moment of the final battle.",
+        ]
+
+        # Corresponding images for each dialogue line
+        self.dialogue_images = [
+            pygame.image.load(os.path.join('graphics', 'final-cutscene-1.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'final-cutscene-2.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'final-cutscene-3.png')).convert_alpha(),
+        ]
+
+        # Corresponding narration files for each dialogue line
+        self.dialogue_sounds = [
+            pygame.mixer.Sound(os.path.join('audio', 'final-owl-1.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'final-narrator-4.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'final-narrator-5.mp3')),
+        ]
+
+        # Scale the images to fit the screen
+        self.dialogue_images = [
+            pygame.transform.scale(img, (self.display.get_width(), self.display.get_height() - 150)) for img in
+            self.dialogue_images
+        ]
+
+        self.dialogue_index = 0
+        running = True
+
+        # Initialize the mixer for playing audio
+        pygame.mixer.init()
+
+        # Flag to check if narration is playing
+        self.narration_playing = False
+
+        def play_narration():
+            """Play the narration for the current dialogue line."""
+            self.narration_playing = True
+            self.dialogue_sounds[self.dialogue_index].play()
+            pygame.time.set_timer(pygame.USEREVENT, int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
+
+        # Stop any currently playing narration before starting the new one
+        for sound in self.dialogue_sounds:
+            sound.stop()
+
+        # Play the first narration automatically
+        play_narration()
+
+        while running:
+            self.display.fill((0, 0, 0))  # Black background for the dialogue screen
+
+            # Display the corresponding image
+            self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
+
+            # Create and display the dialogue box
+            dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
+            pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
+
+            # Render the current dialogue line
+            dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
+                                                      (255, 255, 255))  # White font
+            dialogue_rect = dialogue_text.get_rect(
+                center=(self.display.get_width() // 2, self.display.get_height() - 75))
+            self.display.blit(dialogue_text, dialogue_rect)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sys.exit()
+
+                # Allow the player to skip the narration and move to the next slide with the spacebar
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
+                        self.narration_playing = False
+                        self.dialogue_index += 1
+                        if self.dialogue_index >= len(self.dialogue_lines):
+                            running = False  # End the dialogue and start the game
+                        else:
+                            play_narration()  # Play the next narration
+
+                # Check if narration finished
+                if event.type == pygame.USEREVENT and self.narration_playing:
+                    self.narration_playing = False
+                    self.dialogue_index += 1
+                    if self.dialogue_index >= len(self.dialogue_lines):
+                        running = False  # End the dialogue and start the game
+                    else:
+                        play_narration()  # Play the next narration
+
+            pygame.display.update()
+
+    def load_spritesheets(self):
+        for i in range(1, 14):  # Load sheets from 1 to 13
+            sheet_name = f'Final-Scene-Dyscape-Sheet-{i}.png'
+            sheet_path = os.path.join('graphics', sheet_name)
+            spritesheet = pygame.image.load(sheet_path).convert_alpha()
+            self.extract_frames(spritesheet)
+
+    def extract_frames(self, spritesheet):
+        # Frame size
+        frame_width = 1280
+        frame_height = 720
+        sheet_width, sheet_height = spritesheet.get_size()
+
+        # Extract frames from the spritesheet
+        for y in range(0, sheet_height, frame_height):
+            for x in range(0, sheet_width, frame_width):
+                # Ensure we don't go out of bounds
+                if x + frame_width <= sheet_width and y + frame_height <= sheet_height:
+                    frame = spritesheet.subsurface((x, y, frame_width, frame_height))
+                    self.frames.append(frame)
+
+    def animate_frames(self):
+        # This method will handle the animation of frames
+        clock = pygame.time.Clock()
+        frame_index = 0
+        total_frames = len(self.frames)
+
+        while frame_index < total_frames:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+
+            self.display.fill(FERN_GREEN)
+            self.display.blit(self.frames[frame_index], (0, 0))  # Display frame at (0, 0)
+            pygame.display.flip()
+            frame_index += 1
+            clock.tick(11)  # Control the speed of the animation (frames per second)
+
+        pygame.time.delay(1700)
+        self.gameStateManager.set_state('ending')
+
+    def run_qa_session(self):
+        font = pygame.font.Font(None, 36)
+        question_index = 0
+        correct_answers = 0
+        total_questions = len(self.questions)
+        running = True
+
+        while running:
+            question_data = self.questions[question_index]
+
+            # Load and display the background for the current question
+            background_image = pygame.image.load(question_data["background"]).convert()
+            self.display.blit(background_image, (0, 0))  # Display background image
+
+            # Render and display question text
+            question_text = font.render(question_data["question"], True, (255, 255, 255))
+            question_rect = question_text.get_rect(
+                center=(self.display.get_width() // 2, self.display.get_height() // 2 - 50))  # Center the question text
+            self.display.blit(question_text, question_rect.topleft)  # Blit question text on top of the background
+
+            # Display options and keep track of their rects for clicking
+            y_offset = 50  # Start position for options below the question
+            option_rects = []  # To store the rectangles for options
+            button_color = (40, 107, 120)  # Blue color for the button
+            hover_color = (190, 69, 27)  # Darker blue for hover effect
+
+            for idx, option in enumerate(question_data["options"]):
+                # Calculate button position and size
+                button_rect = pygame.Rect(
+                    (self.display.get_width() // 2 - 100, self.display.get_height() // 2 + y_offset - 20),
+                    (200, 40))  # Centered button
+                option_rects.append(button_rect)  # Store the rect for this option
+
+                # Check for mouse hover
+                mouse_pos = pygame.mouse.get_pos()
+                if button_rect.collidepoint(mouse_pos):
+                    pygame.draw.rect(self.display, hover_color, button_rect)  # Draw darker button on hover
+                else:
+                    pygame.draw.rect(self.display, button_color, button_rect)  # Draw normal button
+
+                # Render option text and center it within the button
+                option_text = font.render(f"{option}", True, (255, 255, 255))
+                text_rect = option_text.get_rect(center=button_rect.center)  # Center text in button
+                self.display.blit(option_text, text_rect.topleft)  # Blit option text on top of the button
+                y_offset += 50  # Increment y_offset for the next option
+
+            # Event handling for selecting an answer
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:  # Left mouse button
+                        mouse_pos = pygame.mouse.get_pos()  # Get the mouse position
+                        for idx, button_rect in enumerate(option_rects):
+                            if button_rect.collidepoint(mouse_pos):  # Check if mouse is over this option
+                                selected_option = question_data["options"][idx]
+                                if selected_option == question_data["correct"]:
+                                    correct_answers += 1
+                                    question_index += 1
+                                else:
+                                    # Reset on incorrect answer
+                                    question_index = 0
+                                    correct_answers = 0
+
+                                # Check if all questions were answered correctly
+                                if correct_answers == total_questions:
+                                    running = False
+                                    # self.animate_frames()  # Uncomment if you have an animation function
+                                elif question_index >= total_questions:
+                                    question_index = 0
+                                    correct_answers = 0
+
+            pygame.display.flip()
+            pygame.time.Clock().tick(60)
+
+    def run(self):
+        pygame.mixer.init()
+        pygame.mixer.music.unload()
+        pygame.mixer.music.load(os.path.join('audio', '02 Wonderin.mp3'))
+        pygame.mixer.music.set_volume(0.05)
+        pygame.mixer.music.play(-1)
+        self.run_dialogue_strip()
+        self.run_dialogue_strip_1()
+        self.run_dialogue_strip_2()
+        pygame.mixer.music.stop()
+
+        # Load and play the background music
+        pygame.mixer.init()
+        pygame.mixer.music.unload()
+        pygame.mixer.music.load(os.path.join('audio', 'final-battle-ost.wav'))
+        pygame.mixer.music.set_volume(0.05)
+        pygame.mixer.music.play(-1)  # Loop the music indefinitely
+
+        self.run_qa_session()
+        self.run_dialogue_strip_3()
+        pygame.mixer.music.stop()
+
+        pygame.mixer.music.load(os.path.join('audio', 'final-battle-ost(fight-part).wav'))
+        pygame.mixer.music.set_volume(0.2)
+        pygame.mixer.music.play(-1)
+        # Stop the background music after the animation
+        self.animate_frames()
+        pygame.mixer.music.stop()
+
+class Ending:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+
+    def run_dialogue_strip(self):
+        self.dialogue_font = pygame.font.Font(None, 36)
+
+        # Dialogue list (narrating the FourthLevel)
+        self.dialogue_lines = [
+            "After the intense battle, Confusion was finally thrown out of the tower and starts vanishing to thin air.",
+            "Freed from the curses of Confusion, the people regained their knowledge that was taken from them.",
+            "While everyone was rejoicing, the Traveler rushed towards Lexi, who was lying on the ground after\n his power was exhausted from the battle.",
+            "As Lexi’s eyes are getting heavier, he then explained that the cost of lending his power is falling\n into deep slumber.",
+            "As the tears fell from the Traveler’s eyes,  he noticed the glowing particles coming out of his body,\n like the glistening stars in the night.",
+            "Lexi smiled weakly towards him, and before he knew it, he left the world of Dyscape without a trace.",
+            " ",
+            "Months have passed since he returned to his world, but the Traveler could not forget for a second every\n adventure he had experienced.",
+            "Hopeful for another encounter, he kept coming back to the same spot where it all began.",
+            "On one fateful day, where the calm breeze kissed his cheek, he heard a familiar voice coming from the lake,\n as if an old friend calling him.",
+            "The glowing water reflected the rays of the sun, and with a smile on his face, his heart leapt for joy.",
+            "He ran towards the lake and jumped into the water, knowing that another adventure awaits him\n in the world of Dyscape."
+        ]
+
+        # Corresponding images for each dialogue line
+        self.dialogue_images = [
+            pygame.image.load(os.path.join('graphics', 'Confusion-Defeated-1.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Defeated-2.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Defeated-3.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Defeated-4.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Defeated-5.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Defeated-6.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'black-screen.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Defeated-7.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Defeated-8.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Defeated-9.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Defeated-10.png')).convert_alpha(),
+            pygame.image.load(os.path.join('graphics', 'Confusion-Defeated-11.png')).convert_alpha(),
+
+        ]
+
+        # Corresponding narration files for each dialogue line
+        self.dialogue_sounds = [
+            pygame.mixer.Sound(os.path.join('audio', 'ending-narrator-1.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ending-narrator-2.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ending-narrator-3.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ending-narrator-4.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ending-narrator-5.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ending-narrator-6.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', '500-milliseconds-of-silence.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ending-narrator-7.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ending-narrator-8.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ending-narrator-9.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ending-narrator-10.mp3')),
+            pygame.mixer.Sound(os.path.join('audio', 'ending-narrator-11.mp3')),
+
+        ]
+
+        # Scale the images to fit the screen
+        self.dialogue_images = [
+            pygame.transform.scale(img, (self.display.get_width(), self.display.get_height() - 150)) for img in
+            self.dialogue_images
+        ]
+
+        self.dialogue_index = 0
+        running = True
+
+        # Initialize the mixer for playing audio
+        pygame.mixer.init()
+
+        # Flag to check if narration is playing
+        self.narration_playing = False
+
+        def play_narration():
+            """Play the narration for the current dialogue line."""
+            self.narration_playing = True
+            self.dialogue_sounds[self.dialogue_index].play()
+            pygame.time.set_timer(pygame.USEREVENT, int(self.dialogue_sounds[self.dialogue_index].get_length() * 1000))
+
+        # Stop any currently playing narration before starting the new one
+        for sound in self.dialogue_sounds:
+            sound.stop()
+
+        # Play the first narration automatically
+        play_narration()
+
+        while running:
+            self.display.fill((0, 0, 0))  # Black background for the dialogue screen
+
+            # Display the corresponding image
+            self.display.blit(self.dialogue_images[self.dialogue_index], (0, 0))
+
+            # Create and display the dialogue box
+            dialogue_box_rect = pygame.Rect(0, self.display.get_height() - 150, self.display.get_width(), 150)
+            pygame.draw.rect(self.display, (0, 0, 0), dialogue_box_rect)
+
+            # Render the current dialogue line
+            dialogue_text = self.dialogue_font.render(self.dialogue_lines[self.dialogue_index], True,
+                                                      (255, 255, 255))  # White font
+            dialogue_rect = dialogue_text.get_rect(
+                center=(self.display.get_width() // 2, self.display.get_height() - 75))
+            self.display.blit(dialogue_text, dialogue_rect)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sys.exit()
+
+                # Allow the player to skip the narration and move to the next slide with the spacebar
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.dialogue_sounds[self.dialogue_index].stop()  # Stop the current narration
+                        self.narration_playing = False
+                        self.dialogue_index += 1
+                        if self.dialogue_index >= len(self.dialogue_lines):
+                            running = False  # End the dialogue and start the game
+                        else:
+                            play_narration()  # Play the next narration
+
+                # Check if narration finished
+                if event.type == pygame.USEREVENT and self.narration_playing:
+                    self.narration_playing = False
+                    self.dialogue_index += 1
+                    if self.dialogue_index >= len(self.dialogue_lines):
+                        running = False  # End the dialogue and start the game
+                    else:
+                        play_narration()  # Play the next narration
+
+            pygame.display.update()
+
+    def display_ending_screen(self):
+        running = True
+        self.display.fill((0, 0, 0))  # Set black background
+
+        # Set fonts for the main text and subtext
+        main_font = pygame.font.Font(None, 60)
+        sub_font = pygame.font.Font(None, 36)
+
+        # Render the main text
+        main_text = main_font.render("YOU HAVE COMPLETED YOUR DYSCAPE ADVENTURE!", True, (255, 255, 255))
+        main_rect = main_text.get_rect(center=(self.display.get_width() // 2, self.display.get_height() // 2 - 20))
+
+        # Render the subtext
+        sub_text = sub_font.render("You can still play all levels though.", True, (255, 255, 255))
+        sub_rect = sub_text.get_rect(center=(self.display.get_width() // 2, self.display.get_height() // 2 + 40))
+
+        # Create a button rectangle
+        button_rect = pygame.Rect(self.display.get_width() // 2 - 75, self.display.get_height() // 2 + 100, 150, 50)
+
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1 and button_rect.collidepoint(event.pos):
+                        running = False  # Exit the loop to go back to main menu
+                        self.gameStateManager.set_state('main-menu')
+
+            # Fill the background
+            self.display.fill((0, 0, 0))
+
+            # Draw the main text and subtext
+            self.display.blit(main_text, main_rect)
+            self.display.blit(sub_text, sub_rect)
+
+            # Draw the button
+            pygame.draw.rect(self.display, (100, 100, 100), button_rect)  # Gray button
+            button_text = sub_font.render("Main Menu", True, (255, 255, 255))
+            button_text_rect = button_text.get_rect(center=button_rect.center)
+            self.display.blit(button_text, button_text_rect)
+
+            pygame.display.update()
+
+    def run(self):
+        pygame.mixer.init()
+        pygame.mixer.music.unload()
+        pygame.mixer.music.load(os.path.join('audio', '04 Aftermath.mp3'))
+        pygame.mixer.music.set_volume(0.05)
+        pygame.mixer.music.play(-1)
+        self.run_dialogue_strip()
+        pygame.mixer.music.stop()
+
+        self.display_ending_screen()
+
+
+
+
 
 
 class GameStateManager:
