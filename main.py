@@ -626,7 +626,7 @@ class TheBrokenBridge:
                                 self.exit_to_main_menu()  # Exit to the main menu if clicked
                                 running = False
                             elif self.win and self.next_level_button.collidepoint(event.pos):
-                                self.gameStateManager.set_state('second-level')
+                                self.gameStateManager.set_state('fifth-level')
                                 running = False
                     continue  # Skip the rest of the game loop while in the end screen
 
@@ -1030,7 +1030,7 @@ class TheRhymeanGarden:
                             self.gameStateManager.set_state('main-menu')
                             running = False
                         elif self.next_level_button.collidepoint(event.pos):
-                            self.gameStateManager.set_state('third-level')
+                            self.gameStateManager.set_state('sixth-level')
                             running = False
 
             # Update the warrior animation frame
@@ -1990,7 +1990,7 @@ class ForestOfNolite:
                         self.bgm.stop()
                         print("Loading next level...")
                         # Here you would call the method to load the next level
-                        self.gameStateManager.set_state('fifth-level')
+                        self.gameStateManager.set_state('seventh-level')
                         running = False  # Exit the end screen
 
                     if restart_button.collidepoint(event.pos):
@@ -2845,7 +2845,7 @@ class TheUnknownToad:
                     if self.win:
                         if next_level_button.collidepoint(event.pos):
                             # Go to the next level
-                            self.gameStateManager.set_state('sixth-level')
+                            self.gameStateManager.set_state('second-level')
                             running = False
                     if restart_button.collidepoint(event.pos):
                         # Restart the current level
@@ -3313,7 +3313,8 @@ class EchoingChambers:
                         mouse_pos = pygame.mouse.get_pos()
                         if self.next_level_button.collidepoint(mouse_pos):
                             # Go to the next level
-                            self.gameStateManager.next_level()
+                            self.gameStateManager.set_state('eighth-level')
+                            running = False
                         elif self.restart_button.collidepoint(mouse_pos):
                             # Restart the current level
                             self.restart_level()
@@ -3940,7 +3941,7 @@ class LavaRush:
                         return
                     elif event.type == pygame.MOUSEBUTTONDOWN:
                         if next_level_button.collidepoint(event.pos):
-                            self.gameStateManager.set_state('next-level')
+                            self.gameStateManager.set_state('third-level')
                             running = False
                         elif restart_level_button.collidepoint(event.pos):
                             self.restart_level()
