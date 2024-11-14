@@ -14,7 +14,7 @@ class Game:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("DyscapeTheGame")
 
-        self.gameStateManager = GameStateManager('final-level')
+        self.gameStateManager = GameStateManager('eighth-level')
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = FirstLevel(self.screen, self.gameStateManager)
