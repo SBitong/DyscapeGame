@@ -392,7 +392,7 @@ class TheUnknownToad:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
-        self.font = pygame.font.SysFont('Arial', 36)
+        self.font = pygame.font.SysFont('Arial', 30)
         self.white = WHITE
         self.black = BLACK
         self.win = False
@@ -1118,19 +1118,19 @@ class TheUnknownToad:
             # Draw buttons
             if self.win:
                 pygame.draw.rect(self.display, (0, 0, 255), next_level_button)  # Blue button
-                next_level_text = self.font.render("Next Level", True, self.white)
+                next_level_text = font.render("Next Level", True, self.white)
                 # Center the text in the button
                 next_level_text_rect = next_level_text.get_rect(center=next_level_button.center)
                 self.display.blit(next_level_text, next_level_text_rect.topleft)
 
             pygame.draw.rect(self.display, (0, 128, 0), restart_button)  # Green button
-            restart_text = self.font.render("Restart", True, self.white)
+            restart_text = font.render("Restart", True, self.white)
             # Center the text in the button
             restart_text_rect = restart_text.get_rect(center=restart_button.center)
             self.display.blit(restart_text, restart_text_rect.topleft)
 
             pygame.draw.rect(self.display, (128, 0, 0), main_menu_button)  # Red button
-            main_menu_text = self.font.render("Main Menu", True, self.white)
+            main_menu_text = font.render("Main Menu", True, self.white)
             # Center the text in the button
             main_menu_text_rect = main_menu_text.get_rect(center=main_menu_button.center)
             self.display.blit(main_menu_text, main_menu_text_rect.topleft)
@@ -1210,6 +1210,11 @@ class TheUnknownToad:
         self.show_how_to_play()
         self.start_countdown() # Initialize water droplets when the level starts
 
+        pygame.mixer.init()
+        pygame.mixer.music.unload()
+        pygame.mixer.music.load(os.path.join('audio', '04 Aftermath.mp3'))
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
         running = True
         while running:
             self.display.blit(self.background_image, (0, 0))
@@ -1326,6 +1331,7 @@ class TheUnknownToad:
                 if current_time - overlay_start_time > overlay_duration:
                     show_red_overlay = False
             pygame.display.update()
+        pygame.mixer.music.stop()
 
 class LavaRush:
     def __init__(self, display, gameStateManager):
@@ -2018,6 +2024,11 @@ class LavaRush:
         self.show_how_to_play()
         self.start_countdown()
         self.start_time = time.time()  # Start the timer immediately after the title animation
+        pygame.mixer.init()
+        pygame.mixer.music.unload()
+        pygame.mixer.music.load(os.path.join('audio', '06 No Way Out.mp3'))
+        pygame.mixer.music.set_volume(0.2)
+        pygame.mixer.music.play(-1)
         running = True
         while running:
             elapsed_time = time.time() - self.start_time
@@ -2135,6 +2146,7 @@ class LavaRush:
 
             pygame.display.update()
             pygame.time.Clock().tick(60)
+        pygame.mixer.music.stop()
 
 class SylleLagoon:
     def __init__(self, display, gameStateManager):
@@ -2780,7 +2792,11 @@ class SylleLagoon:
         self.start_countdown()
         running = True
         self.load_next_word()
-
+        pygame.mixer.init()
+        pygame.mixer.music.unload()
+        pygame.mixer.music.load(os.path.join('audio', '01 Hei Shao.mp3'))
+        pygame.mixer.music.set_volume(0.3)
+        pygame.mixer.music.play(-1)
         while running:
             elapsed_time = (time.time() - self.start_time)
             remaining_time = max(0.0, self.timer - elapsed_time)
@@ -2859,6 +2875,7 @@ class SylleLagoon:
 
             pygame.display.update()
             pygame.time.Clock().tick(60)
+        pygame.mixer.music.stop()
 
 class TheBrokenBridge:
         def __init__(self, display, gameStateManager):
@@ -3399,6 +3416,11 @@ class TheBrokenBridge:
                 self.is_restart = False
             self.show_how_to_play()
             self.start_countdown()
+            pygame.mixer.init()
+            pygame.mixer.music.unload()
+            pygame.mixer.music.load(os.path.join('audio', '04 Aftermath.mp3'))
+            pygame.mixer.music.set_volume(0.5)
+            pygame.mixer.music.play(-1)
             running = True
             while running:
 
@@ -3525,6 +3547,7 @@ class TheBrokenBridge:
                     print("You Win!")
 
                 pygame.display.update()  # Update the display
+            pygame.mixer.music.stop()
 
 class TheRhymeanGarden:
     def __init__(self, display, gameStateManager):
@@ -4112,6 +4135,11 @@ class TheRhymeanGarden:
         self.last_time = pygame.time.get_ticks()  # Initialize last_time here
         running = True
         self.game_over = False
+        pygame.mixer.init()
+        pygame.mixer.music.unload()
+        pygame.mixer.music.load(os.path.join('audio', '03 Invasion.mp3'))
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -4206,6 +4234,7 @@ class TheRhymeanGarden:
 
             pygame.display.update()
             self.clock.tick(FPS)  # Cap frame rate at 60 FPS
+        pygame.mixer.music.stop()
 
 class ForestOfNolite:
     def __init__(self, display, gameStateManager):
@@ -5320,7 +5349,11 @@ class EchoingChambers:
         correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
         wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
 
-
+        pygame.mixer.init()
+        pygame.mixer.music.unload()
+        pygame.mixer.music.load(os.path.join('audio', '05 Reflect.mp3'))
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
 
         running = True
         clock = pygame.time.Clock()
@@ -5408,6 +5441,7 @@ class EchoingChambers:
 
             pygame.display.update()
             clock.tick(FPS)
+        pygame.mixer.music.stop()
 
     def show_end_screen(self):
         """Display the end screen based on win/lose state."""
@@ -6441,7 +6475,7 @@ class NinthLevel:
         self.countdown_font = pygame.font.Font(None, 100)
         self.is_restart = False
 
-        self.font = pygame.font.SysFont('Arial', 36)
+        self.font = pygame.font.SysFont('Arial', 30)
         self.button_font = pygame.font.SysFont('Arial', 25)
 
         # Load boulder image
