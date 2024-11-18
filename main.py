@@ -74,8 +74,8 @@ class MainMenu:
         self.display = display
         self.gameStateManager = gameStateManager
 
-        # Load the Arial font
-        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        # Load the Arial-Bold font
+        font_path = os.path.join('fonts', 'ARIALBD.TTF')
         self.font = pygame.font.Font(font_path, 40)
 
         # Load hover sound effect
@@ -392,7 +392,8 @@ class TheUnknownToad:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
-        self.font = pygame.font.SysFont('Arial', 30)
+        font_path = os.path.join('fonts', 'ARIALBD.TTF')
+        self.font = pygame.font.Font(font_path, 30)
         self.white = WHITE
         self.black = BLACK
         self.win = False
@@ -414,6 +415,11 @@ class TheUnknownToad:
         background_image_path_2 = os.path.join('graphics', 'dyscape-entrance-bg.png')
         self.background_image_2 = pygame.image.load(background_image_path_2).convert_alpha()
         self.background_image_2 = pygame.transform.scale(self.background_image_2,(self.display.get_width(), self.display.get_height()))
+
+        hover_sound_path = os.path.join('audio',
+                                        'mouse_hover_effect_01.mp3')  # Replace with the path to your hover sound
+        self.hover_sound = pygame.mixer.Sound(hover_sound_path)
+        self.last_hovered_index = -1  # Initialize to -1 to indicate no button has been hovered yet
 
         # Questions with multiple choices and the correct answer
         self.qa_dict = {
@@ -515,7 +521,7 @@ class TheUnknownToad:
     def run_title_screen(self):
         title_text = "THE UNKNOWN TOAD"
         font_path_1 = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
-        font_path_2 = os.path.join('fonts', 'ARIAL.TTF')
+        font_path_2 = os.path.join('fonts', 'ARIALBD.TTF')
         title_font = pygame.font.Font(font_path_1, 50)  # Large font for the title
         button_font = pygame.font.Font(font_path_2, 20)
 
@@ -1110,7 +1116,7 @@ class TheUnknownToad:
                 main_menu_button = pygame.Rect(self.display.get_width() // 2 - 100, 370, 200, 50)
 
             # Display the message
-            font_path = os.path.join('fonts', 'ARIAL.TTF')
+            font_path = os.path.join('fonts', 'ARIALBD.TTF')
             font = pygame.font.Font(font_path, 20)
             message_surface = font.render(message, True, self.white)
             self.display.blit(message_surface, (self.display.get_width() // 2 - message_surface.get_width() // 2, 200))
@@ -1159,6 +1165,8 @@ class TheUnknownToad:
             pygame.display.update()
 
     def run(self):
+        pygame.mixer.init()
+
         heart_image = pygame.image.load(os.path.join('graphics', 'heart.png'))
         heart_image = pygame.transform.scale(heart_image, (80, 50))  # Scale heart image as needed
 
@@ -1200,20 +1208,36 @@ class TheUnknownToad:
 
         # Skip the animations if this is a restart
         if not self.is_restart:
+            pygame.mixer.music.unload()
+            pygame.mixer.music.load(os.path.join('audio', '04 Aftermath.mp3'))
+            pygame.mixer.music.set_volume(0.2)
+            pygame.mixer.music.play(-1)
             self.run_dialogue_strip_1()
             self.run_dialogue_strip_2()
+            pygame.mixer.music.stop()
             self.run_title_screen()
+
+            # pygame.mixer.music.unload()
+            pygame.mixer.music.load(os.path.join('audio', 'best-adventure-ever.mp3'))
+            pygame.mixer.music.set_volume(0.2)
+            pygame.mixer.music.play(-1)
             self.run_dialogue_strip()
+            pygame.mixer.music.stop()
         else:
             self.is_restart = False  # Reset the flag
 
+        pygame.mixer.music.unload()
+        pygame.mixer.music.load(os.path.join('audio', 'fantasy.mp3'))
+        pygame.mixer.music.set_volume(0.2)
+        pygame.mixer.music.play(-1)
         self.show_how_to_play()
+        pygame.mixer.music.stop()
         self.start_countdown() # Initialize water droplets when the level starts
 
-        pygame.mixer.init()
+
         pygame.mixer.music.unload()
-        pygame.mixer.music.load(os.path.join('audio', '04 Aftermath.mp3'))
-        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.load(os.path.join('audio', 'best-adventure-ever.mp3'))
+        pygame.mixer.music.set_volume(0.4)
         pygame.mixer.music.play(-1)
         running = True
         while running:
@@ -1240,6 +1264,10 @@ class TheUnknownToad:
             # Get the current sentence
             sentence = self.questions[self.current_question_index]
 
+            # Define colors for buttons
+            normal_button_color = (207, 160, 102)  # Light gray button
+            hovered_button_color = (150, 120, 80)  # Darker gray for hover effect
+
             # Render choices
             choices = self.qa_dict[sentence]["choices"]
             y_offset_choices = audio_button_y + 70  # Adjust for spacing below the audio button
@@ -1263,13 +1291,57 @@ class TheUnknownToad:
                     choice_height + 20  # Keep the top/bottom padding as it was
                 )
 
+                # Check if the mouse is over the button
+                mouse_pos = pygame.mouse.get_pos()
+                if choice_rect.collidepoint(mouse_pos):
+                    button_color = hovered_button_color  # Change to darker color on hover
+
+                    # Play hover sound if this button is not the last hovered one
+                    if self.last_hovered_index != i:
+                        self.hover_sound.set_volume(0.1)
+                        self.hover_sound.play()  # Play hover sound
+                        self.last_hovered_index = i  # Update last hovered index
+                else:
+                    button_color = normal_button_color  # Normal color
+
                 # Draw a rounded rectangle (button)
-                self.draw_rounded_rect(self.display, (207, 160, 102), choice_rect, corner_radius=15)  # Light gray button
+                self.draw_rounded_rect(self.display, button_color, choice_rect,
+                                       corner_radius=15)  # Use the determined button color
 
                 # Center the choice text inside the rounded rectangle
                 choice_text_rect = choice_surface.get_rect(center=choice_rect.center)
                 self.display.blit(choice_surface, choice_text_rect.topleft)
                 self.choice_rects.append(choice_rect)
+
+            # Reset last hovered index if the mouse is not over any button
+            if all(not rect.collidepoint(mouse_pos) for rect in self.choice_rects):
+                self.last_hovered_index = -1
+
+            # Load the total number of questions
+            total_questions = len(self.questions)
+
+            # Render the question counter
+            question_counter_text = f"Question {self.current_question_index + 1}/{total_questions}"
+            question_counter_surface = self.font.render(question_counter_text, True, WHITE)
+
+            # Position the counter on the top right corner
+            question_counter_rect = question_counter_surface.get_rect(
+                topright=(self.display.get_width() - 20, 20)  # Adjust the offset as needed
+            )
+            self.display.blit(question_counter_surface, question_counter_rect.topleft)  # Blit the question counter text
+
+            # Render the lives on the left side of the screen
+            for i in range(self.lives):
+                self.display.blit(heart_image, (10 + i * 60, 10))  # Position hearts with spacing
+
+            # Render the question
+            question_text = "How many words are in the sentence?"
+            question_surface = self.font.render(question_text, True, self.black)
+            question_rect = question_surface.get_rect(center=(scroll_x + scroll_width // 2, 225))
+            self.display.blit(question_surface, question_rect.topleft)
+
+            # Render the audio button below the question
+            self.display.blit(audio_button_image, (audio_button_x, audio_button_y))
 
             # Event handling
             for event in pygame.event.get():
@@ -1363,9 +1435,17 @@ class LavaRush:
         self.win = False
         self.is_restart = False
         self.countdown_font = pygame.font.Font(None, 100)
+        font_path = os.path.join('fonts', 'ARIALBD.TTF')
+        self.font = pygame.font.Font(font_path, 36)
+        self.timer_font = pygame.font.Font(font_path, 45)
+        self.button_font = pygame.font.Font(font_path, 25)
 
-        self.font = pygame.font.SysFont('Arial', 36)
-        self.button_font = pygame.font.SysFont('Arial', 25)
+        self.correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
+        self.wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
+
+        # Initialize question counter
+        self.current_question_number = 0  # Track the current question number
+        self.total_questions = 15  # Set total number of questions
 
         # Load background (Lava Labyrinth background)
         background_image_path = os.path.join('graphics', 'lava_labyrinth.jpg')
@@ -1403,7 +1483,7 @@ class LavaRush:
     def run_title_screen(self):
         title_text = "LAVA RUSH"
         font_path_1 = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
-        font_path_2 = os.path.join('fonts', 'ARIAL.TTF')
+        font_path_2 = os.path.join('fonts', 'ARIALBD.TTF')
         title_font = pygame.font.Font(font_path_1, 50)  # Large font for the title
         button_font = pygame.font.Font(font_path_2, 20)
 
@@ -1846,6 +1926,8 @@ class LavaRush:
         self.current_syllable_selection = []
         self.start_time = time.time()
 
+        self.current_question_number += 1
+
     def create_syllable_buttons(self, choices):
         self.syllable_buttons = []
         button_width, button_height = 100, 50
@@ -1864,7 +1946,7 @@ class LavaRush:
         return self.current_syllable_selection == self.correct_syllables
 
     def show_end_screen(self):
-        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        font_path = os.path.join('fonts', 'ARIALBD.TTF')
         self.endscreen_font = pygame.font.Font(font_path, 20)
         self.display.fill((0, 0, 0))
 
@@ -2009,22 +2091,30 @@ class LavaRush:
         """Reset the level and restart."""
         self.lives = 3  # Reset lives
         self.correct_answers_count = 0  # Reset correct answers count
+        self.current_question_number = 0
         self.current_syllable_selection = []  # Reset syllable selection
         self.is_restart = True
         self.load_new_word()  # Load a new word
 
     def run(self):
+        pygame.mixer.init()
         if not self.is_restart:
             self.run_dialogue_strip_1()
             self.run_title_screen()
+            pygame.mixer.init()
+            pygame.mixer.music.unload()
+            pygame.mixer.music.load(os.path.join('audio', 'fantasy.mp3'))
+            pygame.mixer.music.set_volume(0.2)
+            pygame.mixer.music.play(-1)
             self.run_dialogue_strip_2()
             self.run_dialogue_strip_3()
+            pygame.mixer.music.stop()
         else:
             self.is_restart = False
         self.show_how_to_play()
         self.start_countdown()
         self.start_time = time.time()  # Start the timer immediately after the title animation
-        pygame.mixer.init()
+
         pygame.mixer.music.unload()
         pygame.mixer.music.load(os.path.join('audio', '06 No Way Out.mp3'))
         pygame.mixer.music.set_volume(0.2)
@@ -2050,6 +2140,11 @@ class LavaRush:
             self.display.blit(self.current_word_image,
                               (self.display.get_width() // 2 - self.current_word_image.get_width() // 2, 100))
 
+            # Display the question counter
+            question_counter_text = self.font.render(f"Question: {self.current_question_number}/{self.total_questions}",
+                                                     True, (255, 255, 255))
+            self.display.blit(question_counter_text, (900, 10))  # Position it at the top left
+
             for button_data in self.syllable_buttons:
                 rect = button_data["rect"]
                 syllable = button_data["syllable"]
@@ -2065,7 +2160,7 @@ class LavaRush:
                 self.display.blit(self.heart_image, (10 + i * 60, 10))
 
             # Display the timer in the format 0:00
-            timer_text = self.font.render(f"Time: {minutes}:{seconds:02d}", True, (255, 255, 255))
+            timer_text = self.timer_font.render(f"Time: {minutes}:{seconds:02d}", True, (255, 255, 255))
             self.display.blit(timer_text, (10, 70))  # Display time below the lives
 
             self.display.blit(self.audio_logo, self.audio_button_rect)
@@ -2112,10 +2207,11 @@ class LavaRush:
                         if len(self.current_syllable_selection) >= len(self.correct_syllables):
                             if self.check_answer():
                                 print("Correct! You unlocked the gate.")
+                                self.correct_answer_sound.play()
                                 self.correct_answers_count += 1
                                 self.overlay_color = (0, 255, 0)
                                 self.overlay_start_time = time.time()
-                                if self.correct_answers_count >= 15:
+                                if self.current_question_number >= self.total_questions:
                                     print("Congratulations! You completed the level.")
                                     self.win = True
                                     self.show_end_screen()
@@ -2134,6 +2230,7 @@ class LavaRush:
 
             if remaining_time <= 0:
                 print("Lava erupted! You failed.")
+                self.wrong_answer_sound.play()
                 self.lives -= 1
                 self.overlay_color = (255, 0, 0)
                 self.overlay_start_time = time.time()
@@ -2157,7 +2254,8 @@ class SylleLagoon:
         self.win = False
         self.is_restart = False
         self.countdown_font = pygame.font.Font(None, 100)
-        self.font = pygame.font.SysFont('Arial', 36)
+        font_path = os.path.join('fonts', 'ARIALBD.TTF')
+        self.font = pygame.font.Font(font_path, 36)
         self.words = [
             {"word": "TIGER",
              "question": "If you know this word, what is its last syllable?",
@@ -2211,6 +2309,14 @@ class SylleLagoon:
              "image": "graphics/cactus.png"},
         ]
 
+        self.audio_logo_image = pygame.image.load(os.path.join('graphics', 'audio-logo.png')).convert_alpha()
+        self.audio_logo_image = pygame.transform.scale(self.audio_logo_image, (80, 80))  # Scale as needed
+        self.audio_logo_rect = self.audio_logo_image.get_rect(
+            center=(self.display.get_width() // 2, 300))  # Position it
+
+        self.correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
+        self.wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
+
         self.current_word_index = 0
         self.correct_syllable = None
         self.start_time = None
@@ -2249,7 +2355,7 @@ class SylleLagoon:
     def run_title_screen(self):
         title_text = "SYLLE LAGOON"
         font_path_1 = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
-        font_path_2 = os.path.join('fonts', 'ARIAL.TTF')
+        font_path_2 = os.path.join('fonts', 'ARIALBD.TTF')
         title_font = pygame.font.Font(font_path_1, 50)  # Large font for the title
         button_font = pygame.font.Font(font_path_2, 20)
 
@@ -2641,7 +2747,7 @@ class SylleLagoon:
             pygame.draw.ellipse(self.display, (41, 108, 114), (x - radius_x // 2, y - radius_y // 2, radius_x, radius_y))
 
             # Draw syllable text in the center of the oval
-            syllable_text = pygame.font.SysFont('Arial', 30).render(syllable, True, (255, 255, 255))
+            syllable_text = pygame.font.Font('fonts/ARIALBD.TTF', 30).render(syllable, True, (255, 255, 255))
             syllable_rect = syllable_text.get_rect(center=(x, y))
             self.display.blit(syllable_text, syllable_rect)
 
@@ -2665,7 +2771,7 @@ class SylleLagoon:
     def show_end_screen(self):
         # Set up screen
         self.display.fill((0, 0, 0))  # Black background
-        font = pygame.font.SysFont('Arial', 20)
+        font = pygame.font.Font('fonts/ARIALBD.TTF', 20)
 
         # Display message based on win or lose
         message_text = "You Win!" if self.win else "You Lose"
@@ -2674,7 +2780,7 @@ class SylleLagoon:
         self.display.blit(message_surface, message_rect)
 
         # Button setup
-        button_font = pygame.font.SysFont('Arial', 30)
+        button_font = pygame.font.Font('fonts/ARIALBD.TTF', 30)
 
         # Restart Level button
         restart_text = button_font.render("Restart Level", True, (255, 255, 255))
@@ -2782,6 +2888,8 @@ class SylleLagoon:
         pass
 
     def run(self):
+
+
         if not self.is_restart:
             self.run_dialogue_strip_1()
             self.run_title_screen()
@@ -2794,7 +2902,7 @@ class SylleLagoon:
         self.load_next_word()
         pygame.mixer.init()
         pygame.mixer.music.unload()
-        pygame.mixer.music.load(os.path.join('audio', '01 Hei Shao.mp3'))
+        pygame.mixer.music.load(os.path.join('audio', 'adventure-time.mp3'))
         pygame.mixer.music.set_volume(0.3)
         pygame.mixer.music.play(-1)
         while running:
@@ -2810,12 +2918,18 @@ class SylleLagoon:
                     mouse_pos = pygame.mouse.get_pos()
                     self.check_geyser_selection(mouse_pos)
 
-            # Fill the screen with the background color
+                    # Check if the audio logo was clicked
+                    if self.audio_logo_rect.collidepoint(mouse_pos):
+                        current_word_data = self.words[self.current_word_index]
+                        engine.say(current_word_data['word'])
+                        engine.runAndWait()  # Wait for the speech to finish
+
+        # Fill the screen with the background color
             self.display.blit(self.background_image, (0, 0)) # Light blue lagoon color
 
             # Display the question
             current_word_data = self.words[self.current_word_index]
-            word_text = pygame.font.SysFont('Arial', 40).render(f"{current_word_data['question']}", True,
+            word_text = pygame.font.Font('fonts/ARIALBD.TTF', 40).render(f"{current_word_data['question']}", True,
                                                                 (255, 255, 255))
             self.display.blit(word_text, (self.display.get_width() // 2 - word_text.get_width() // 2, 50))
 
@@ -2838,11 +2952,20 @@ class SylleLagoon:
 
             self.draw_lives()
 
+            # Display question counter
+            question_counter_text = f"Question: {self.current_word_index + 1} / {len(self.words)}"
+            counter_surface = pygame.font.Font('fonts/ARIALBD.TTF', 40).render(question_counter_text, True, (255, 255, 255))
+            self.display.blit(counter_surface, (self.display.get_width() - counter_surface.get_width() - 10,
+                                                50 + self.heart_height))  # Position it on the opposite side of lives
+
+            # Draw the audio logo
+            self.display.blit(self.audio_logo_image, self.audio_logo_rect)
+
             # Format the timer to display as 0:01 secs
             minutes = int(remaining_time // 60)
             seconds = int(remaining_time % 60)
             timer_text = f"Timer: {minutes}:{seconds:02}"  # Ensure seconds are always two digits
-            timer_surface = pygame.font.SysFont('Arial', 40).render(timer_text, True, (255, 255, 255))
+            timer_surface = pygame.font.Font('fonts/ARIALBD.TTF', 40).render(timer_text, True, (255, 255, 255))
             # Display timer below lives
             self.display.blit(timer_surface, (10, 50 + self.heart_height + 5))  # Adjust position as needed
 
@@ -2851,6 +2974,7 @@ class SylleLagoon:
                 print("Time's up! Checking answer...")
                 if self.selected_syllable == self.correct_syllable:
                     print("Correct! Moving to next word.")
+                    self.correct_answer_sound.play()
                     self.current_word_index += 1
                     if self.current_word_index >= len(self.words):
                         print("All words completed!")
@@ -2862,6 +2986,7 @@ class SylleLagoon:
 
                 else:
                     print("Incorrect! You lose a life.")
+                    self.wrong_answer_sound.play()
                     self.lives -= 1
                     if self.lives <= 0:
                         print("Game Over")
@@ -2944,7 +3069,7 @@ class TheBrokenBridge:
             self.is_restart = False
 
             # Load the Arial font
-            font_path = os.path.join('fonts', 'ARIAL.TTF')
+            font_path = os.path.join('fonts', 'ARIALBD.TTF')
             self.font = pygame.font.Font(font_path, 20)
 
             # Initialize the Text-to-Speech engine
@@ -3043,7 +3168,7 @@ class TheBrokenBridge:
         def run_title_screen(self):
             title_text = "THE BROKEN BRIDGE"
             font_path_1 = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
-            font_path_2 = os.path.join('fonts', 'ARIAL.TTF')
+            font_path_2 = os.path.join('fonts', 'ARIALBD.TTF')
             title_font = pygame.font.Font(font_path_1, 50)  # Large font for the title
             button_font = pygame.font.Font(font_path_2, 20)
 
@@ -3570,7 +3695,7 @@ class TheRhymeanGarden:
         self.max_rounds = 10
 
         # Load the Arial font
-        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        font_path = os.path.join('fonts', 'ARIALBD.TTF')
         self.font = pygame.font.Font(font_path, 30)
         self.large_font = pygame.font.Font(font_path, 55)
 
@@ -3733,7 +3858,7 @@ class TheRhymeanGarden:
     def run_title_screen(self):
         title_text = "THE RHYMEAN GARDEN"
         font_path_1 = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
-        font_path_2 = os.path.join('fonts', 'ARIAL.TTF')
+        font_path_2 = os.path.join('fonts', 'ARIALBD.TTF')
         title_font = pygame.font.Font(font_path_1, 50)  # Large font for the title
         button_font = pygame.font.Font(font_path_2, 20)
 
@@ -4335,7 +4460,7 @@ class ForestOfNolite:
     def run_title_screen(self):
         title_text = "FOREST OF NOLITE"
         font_path_1 = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
-        font_path_2 = os.path.join('fonts', 'ARIAL.TTF')
+        font_path_2 = os.path.join('fonts', 'ARIALBD.TTF')
         title_font = pygame.font.Font(font_path_1, 50)  # Large font for the title
         button_font = pygame.font.Font(font_path_2, 20)
 
@@ -4722,7 +4847,7 @@ class ForestOfNolite:
 
     def show_end_screen(self):
         """Displays the end screen with win/lose messages and buttons."""
-        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        font_path = os.path.join('fonts', 'ARIALBD.TTF')
         self.font = pygame.font.Font(font_path, 20)
         running = True
         while running:
@@ -4897,8 +5022,8 @@ class EchoingChambers:
         self.countdown_font = pygame.font.Font(None, 100)
         self.is_restart = False
 
-        self.font = pygame.font.SysFont('Arial', 36)
-        self.button_font = pygame.font.SysFont('Arial', 25)
+        self.font = pygame.font.Font('fonts/ARIALBD.TTF', 36)
+        self.button_font = pygame.font.Font('fonts/ARIALBD.TTF', 25)
 
         # Load background, heart, speaker, and wood sign images with resizing
         self.background = pygame.image.load(os.path.join('graphics', 'cave.png')).convert_alpha()
@@ -4956,7 +5081,7 @@ class EchoingChambers:
     def run_title_screen(self):
         title_text = "ECHOING CHAMBERS"
         font_path_1 = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
-        font_path_2 = os.path.join('fonts', 'ARIAL.TTF')
+        font_path_2 = os.path.join('fonts', 'ARIALBD.TTF')
         title_font = pygame.font.Font(font_path_1, 50)  # Large font for the title
         button_font = pygame.font.Font(font_path_2, 20)
 
@@ -5445,7 +5570,7 @@ class EchoingChambers:
 
     def show_end_screen(self):
         """Display the end screen based on win/lose state."""
-        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        font_path = os.path.join('fonts', 'ARIALBD.TTF')
         font = pygame.font.Font(font_path, 20)
         if self.win:
             text = font.render("You Win!", True, (255, 255, 255))
@@ -5576,6 +5701,11 @@ class EighthLevel:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
+
+        # Load the correct and wrong answer sounds
+        self.correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
+        self.wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
+
         self.lives = 3
         self.current_gate = 1
         self.win = False
@@ -5583,7 +5713,7 @@ class EighthLevel:
         self.end_screen_displayed = False  # Flag to track if end screen has been displayed
         self.is_restart = False
         self.countdown_font = pygame.font.Font(None, 100)
-        self.font = pygame.font.SysFont('Arial', 36)
+        self.font = pygame.font.Font('fonts/ARIALBD.TTF', 36)
 
 
         # Initialize the TTS engine
@@ -5664,7 +5794,7 @@ class EighthLevel:
     def run_title_screen(self):
         title_text = "THE FINAL BATTLE"
         font_path_1 = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
-        font_path_2 = os.path.join('fonts', 'ARIAL.TTF')
+        font_path_2 = os.path.join('fonts', 'ARIALBD.TTF')
         title_font = pygame.font.Font(font_path_1, 50)  # Large font for the title
         button_font = pygame.font.Font(font_path_2, 20)
 
@@ -6097,6 +6227,10 @@ class EighthLevel:
         if self.check_slots_correctness():
             self.last_answer = self.word_slots[:]
             self.current_round += 1
+
+            # Play correct answer sound
+            self.correct_answer_sound.play()
+
             if not self.is_syllable_round and self.current_round < len(self.rounds):
                 self.load_round()
                 print(f"Successfully completed round {self.current_round}. Proceeding to the next round.")
@@ -6151,7 +6285,7 @@ class EighthLevel:
         overlay.set_alpha(150)  # Set transparency level
         overlay.fill((0, 0, 0))  # Black background
         self.display.blit(overlay, (0, 0))  # Fill the screen with black
-        font_path = os.path.join('fonts', 'ARIAL.TTF')
+        font_path = os.path.join('fonts', 'ARIALBD.TTF')
         self.font = pygame.font.Font(font_path, 20)
 
         # Display the appropriate message based on win or loss
@@ -6262,6 +6396,7 @@ class EighthLevel:
                         if self.check_slots_correctness():
                             self.advance_round()  # Call this only if the answer is correct
                         else:
+                            self.wrong_answer_sound.play()
                             self.lives -= 1
                             print("Incorrect order. Lives remaining: ", self.lives)
                             self.reset_slots()  # Reset slots and check for game over after incorrect answer
@@ -6455,17 +6590,17 @@ class NinthLevel:
         # Game constants
         self.WIDTH, self.HEIGHT = 1200, 550
         self.SYLLABLES = [
-            {"word": "hospital", "syllables": ["hos", "pi", "tal"]},
-            {"word": "banana", "syllables": ["ba", "na", "na"]},
-            {"word": "computer", "syllables": ["com", "pu", "ter"]},
-            {"word": "watermelon", "syllables": ["wa", "ter", "me", "lon"]},
-            {"word": "chocolate", "syllables": ["cho", "co", "late"]},
-            {"word": "potato", "syllables": ["po", "ta", "to"]},
-            {"word": "hamburger", "syllables": ["ham", "bur", "ger"]},
-            {"word": "dinosaur", "syllables": ["di", "no", "saur"]},
-            {"word": "crocodile", "syllables": ["cro", "co", "dile"]},
-            # Add more words and syllables as needed
+            {"word": "hospital", "syllables": ["hos", "pi", "tal"], "image": "graphics/hospital.png"},
+            {"word": "banana", "syllables": ["ba", "na", "na"], "image": "graphics/banana.png"},
+            {"word": "computer", "syllables": ["com", "pu", "ter"], "image": "graphics/computer.png"},
+            {"word": "watermelon", "syllables": ["wa", "ter", "me", "lon"], "image": "graphics/watermelon.png"},
+            {"word": "chocolate", "syllables": ["cho", "co", "late"], "image": "graphics/chocolate.png"},
+            {"word": "potato", "syllables": ["po", "ta", "to"], "image": "graphics/potato.png"},
+            {"word": "hamburger", "syllables": ["ham", "bur", "ger"], "image": "graphics/hamburger.png"},
+            {"word": "dinosaur", "syllables": ["di", "no", "saur"], "image": "graphics/dinosaur.png"},
+            {"word": "crocodile", "syllables": ["cro", "co", "dile"], "image": "graphics/crocodile.png"},
         ]
+
         self.FONT_SIZE = 36
         self.LIVES = 100
         self.current_word = ""  # Track the current word
@@ -6475,8 +6610,8 @@ class NinthLevel:
         self.countdown_font = pygame.font.Font(None, 100)
         self.is_restart = False
 
-        self.font = pygame.font.SysFont('Arial', 30)
-        self.button_font = pygame.font.SysFont('Arial', 25)
+        self.font = pygame.font.Font('fonts/ARIALBD.TTF', 30)
+        self.button_font = pygame.font.Font('fonts/ARIALBD.TTF', 25)
 
         # Load boulder image
         self.boulder_image_path = os.path.join('graphics', 'Boulder.png')
@@ -6552,7 +6687,7 @@ class NinthLevel:
     def run_title_screen(self):
         title_text = "THE FINAL BATTLE"
         font_path_1 = os.path.join('fonts', 'ARIALBLACKITALIC.TTF')
-        font_path_2 = os.path.join('fonts', 'ARIAL.TTF')
+        font_path_2 = os.path.join('fonts', 'ARIALBD.TTF')
         title_font = pygame.font.Font(font_path_1, 50)  # Large font for the title
         button_font = pygame.font.Font(font_path_2, 20)
 
@@ -7129,7 +7264,7 @@ class NinthLevel:
         for syllable in self.syllables:
             syllable.fall(1)  # Move syllables down
             if syllable.rect.y > self.HEIGHT:  # If a syllable hits the bottom
-                self.LIVES -= 4
+                self.LIVES -= 3
                 print(f"Lives left: {self.LIVES}")
                 syllables_to_remove.append(syllable)  # Mark the syllable for removal
 
@@ -7161,6 +7296,15 @@ class NinthLevel:
         self.current_word = word_data["word"]  # Set current word
         syllables = word_data["syllables"]
 
+        # Load the corresponding image for the current word
+        word_image_path = word_data["image"]
+        try:
+            self.current_word_image = pygame.image.load(word_image_path).convert_alpha()
+            self.current_word_image = pygame.transform.scale(self.current_word_image, (150, 150))  # Scale to 100x100
+        except pygame.error as e:
+            print(f"Error loading image {word_image_path}: {e}")
+            return  # Exit the function if the image cannot be loaded
+
         # Define a minimum distance between syllables
         min_distance = 50  # Adjust this value as needed
 
@@ -7173,7 +7317,8 @@ class NinthLevel:
                 # Check if the new syllable overlaps with existing syllables
                 overlap = False
                 for existing_syllable in self.syllables:
-                    if abs(existing_syllable.rect.x - x) < min_distance and abs(existing_syllable.rect.y - y) < min_distance:
+                    if abs(existing_syllable.rect.x - x) < min_distance and abs(
+                            existing_syllable.rect.y - y) < min_distance:
                         overlap = True
                         break
 
@@ -7286,16 +7431,12 @@ class NinthLevel:
                     sys.exit()
                 self.handle_input(event)  # Handle input events
 
-            # Handle continuous backspace removal
-            if self.backspace_pressed:
-                if self.current_text:  # Only remove if there's text
-                    self.current_text = self.current_text[:-1]
-
             # Update game state
             self.update()
             if self.win:
                 self.gameStateManager.set_state('final-level')
                 running = False
+
             self.update_animation()
             self.display.blit(self.background_image, (0, 0))  # Background color
             self.display.blit(self.shield_image, (0, 0))
@@ -7306,6 +7447,11 @@ class NinthLevel:
             self.display.blit(self.enemylogo_image, (30, 75))
             self.draw_lives()  # Draw lives
             self.draw_energy()  # Draw energy level
+
+            # Draw the current word image on the right side of the screen
+            if hasattr(self, 'current_word_image'):
+                self.display.blit(self.current_word_image, (self.WIDTH - 110, 10))  # Position it on the right side
+
             # Inside the run method, after drawing the background
             if self.show_shield_broke:
                 self.display.blit(self.shield_broke_image, (0, 0))  # Draw shield broke image
@@ -7319,7 +7465,7 @@ class FinalLevel:
         self.gameStateManager = gameStateManager
         self.frames = []
         self.countdown_font = pygame.font.Font(None, 100)
-        self.font = pygame.font.SysFont('Arial', 36)
+        self.font = pygame.font.Font('fonts/ARIALBD.TTF', 36)
         background_image_path_2 = os.path.join('graphics', 'confusion-stronger-bg.png')
         self.background_image_2 = pygame.image.load(background_image_path_2).convert_alpha()
         self.background_image_2 = pygame.transform.scale(self.background_image_2,
