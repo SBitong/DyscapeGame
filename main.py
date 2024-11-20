@@ -596,31 +596,35 @@ class LevelSelectionPage:
 
     def get_max_unlocked_level(self):
         """Fetch the highest unlocked level from the database."""
+        level_mapping = {
+            "The Unknown Toad": 1,
+            "Lava Rush": 2,
+            "Sylle Lagoon": 3,
+            "The Broken Bridge": 4,
+            "The Rhymean Garden": 5,
+            "Forest of Nolite": 6,
+            "Echoing Chambers": 7,
+            "Eight Level": 8,
+            "Ninth Level": 9,
+            "Final Level": 10,
+            "Ending": 11
+        }
+
         with sqlite3.connect('game_data.db') as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT current_level FROM games WHERE id = ?', (self.game_id,))
             result = cursor.fetchone()
-            print(f"Database fetched result: {result}")  # Debugging
+
+            # Debugging output to trace database and mapping logic
+            print(f"Database fetched result: {result}")
 
             if result:
-                level_mapping = {
-                    "The Unknown Toad": 1,
-                    "Lava Rush": 2,
-                    "Sylle Lagoon": 3,
-                    "The Broken Bridge": 4,
-                    "The Rhymean Garden": 5,
-                    "Forest of Nolite": 6,
-                    "Echoing Chambers": 7,
-                    "Eighth Level": 8,
-                    "Ninth Level": 9,
-                    "Final Level": 10,
-                    "Ending": 11
-                }
-                mapped_level = level_mapping.get(result[0], 1)
-                print(f"Mapped level: {mapped_level}")  # Debugging
+                current_level = result[0]
+                mapped_level = level_mapping.get(current_level, 1)  # Default to 1 if mapping fails
+                print(f"Mapped level: {mapped_level}")
                 return mapped_level
 
-        print("Defaulting to level 1")  # Debugging
+        print("Defaulting to level 1")  # If no result from the database, default to level 1
         return 1
 
     def handle_events(self):
