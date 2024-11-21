@@ -35,6 +35,7 @@ class Game:
 
         self.gameStateManager = GameStateManager('main-menu', self.database)
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
+        self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = TheUnknownToad(self.screen, self.gameStateManager, game_id=1)
         self.secondLevel = LavaRush(self.screen, self.gameStateManager, game_id=2)
         self.thirdLevel = SylleLagoon(self.screen, self.gameStateManager, game_id=3)
@@ -49,6 +50,7 @@ class Game:
         self.states = {
             'main-menu': self.mainMenu,
             'database': self.database,
+            'options': self.options,
             'first-level': self.firstLevel,
             'second-level': self.secondLevel,
             'third-level': self.thirdLevel,
@@ -248,8 +250,9 @@ class Database:
         ''', (current_date, next_level, game_id))
         self.conn.commit()
         print(f"Database updated: Game ID {game_id}, New Level: {next_level}")
+        # Debug query to check the update
         self.cursor.execute('SELECT * FROM games WHERE id = ?', (game_id,))
-        print(f"Current database state: {self.cursor.fetchone()}")
+        print(self.cursor.fetchone())
 
     def update_progress_in_database(self, game_id, new_level):
         with self.conn:
@@ -342,26 +345,7 @@ class Database:
                 clicked_game = self.get_clicked_game(event.pos)
                 if clicked_game:
                     game_id, name, creation_date, last_played_date, current_level = clicked_game
-
-                    # Define the level mapping
-                    level_mapping = {
-                        "The Unknown Toad": 1,
-                        "Lava Rush": 2,
-                        "Sylle Lagoon": 3,
-                        "The Broken Bridge": 4,
-                        "The Rhymean Garden": 5,
-                        "Forest of Nolite": 6,
-                        "Echoing Chambers": 7,
-                        "Eighth Level": 8,
-                        "Ninth Level": 9,
-                        "Final Level": 10,
-                        "Ending": 11,
-                    }
-
-                    # Fetch the max unlocked level based on current_level
-                    max_unlocked_level = level_mapping.get(current_level, 1)
-
-                    print(f"Current level: {current_level}, Max unlocked level: {max_unlocked_level}")
+                    max_unlocked_level = int(current_level.split('-')[1])
 
                     level_selection_page = LevelSelectionPage(
                         self.display,
@@ -372,7 +356,6 @@ class Database:
                         'graphics/lock.png'
                     )
                     level_selection_page.run(max_unlocked_level)
-                    print(f"Current level: {current_level}, Max unlocked level: {max_unlocked_level}")
 
     def get_clicked_game(self, mouse_pos):
         y_offset = 150
@@ -413,20 +396,9 @@ class Database:
 
         if game_data:
             current_level_str = game_data[4]
-            level_mapping = {
-                "The Unknown Toad": 1,
-                "Lava Rush": 2,
-                "Sylle Lagoon": 3,
-                "The Broken Bridge": 4,
-                "The Rhymean Garden": 5,
-                "Forest of Nolite": 6,
-                "Echoing Chambers": 7,
-                "Eighth Level": 8,
-                "Ninth Level": 9,
-                "Final Level": 10,
-                "Ending": 11,
-            }
-
+            level_mapping = {'first-level': 1, 'second-level': 2, 'third-level': 3, 'fourth-level': 4
+                             , 'fifth-level': 5, 'sixth-level': 6, 'seventh-level': 7, 'eight-level': 8, 'ninth-level': 9
+                             , 'final-level': 10, 'ending': 11}
             max_unlocked_level = level_mapping.get(current_level_str, 1)
             level_selection_page = LevelSelectionPage(self.display, self.gameStateManager, game_id, max_unlocked_level)
             level_selection_page.run()
@@ -576,19 +548,22 @@ class LevelSelectionPage:
 
     def display_page(self):
         """Display the level selection page with locked/unlocked states."""
+        # Display background and back button
         self.display.blit(self.background_image, (0, 0))
         self.display.blit(self.back_button, self.back_button_rect)
 
+        # Fetch the most recent max unlocked level
         self.max_unlocked_level = self.get_max_unlocked_level()
         print(f"Max unlocked level for display: {self.max_unlocked_level}")
 
+        # Draw level tiles (locked/unlocked)
         for i in range(1, 9):  # Assuming 8 levels
             x, y = self.level_positions[i - 1]
             if i <= self.max_unlocked_level:
-                image = self.level_images.get(i, self.default_image)  # Handle missing images
+                image = self.level_images[i]  # Unlocked level image
                 print(f"Level {i} unlocked: True")
             else:
-                image = self.lock_image
+                image = self.lock_image  # Locked level image
                 print(f"Level {i} unlocked: False")
             self.display.blit(image, (x, y))
 
@@ -596,35 +571,20 @@ class LevelSelectionPage:
 
     def get_max_unlocked_level(self):
         """Fetch the highest unlocked level from the database."""
-        level_mapping = {
-            "The Unknown Toad": 1,
-            "Lava Rush": 2,
-            "Sylle Lagoon": 3,
-            "The Broken Bridge": 4,
-            "The Rhymean Garden": 5,
-            "Forest of Nolite": 6,
-            "Echoing Chambers": 7,
-            "Eight Level": 8,
-            "Ninth Level": 9,
-            "Final Level": 10,
-            "Ending": 11
-        }
-
         with sqlite3.connect('game_data.db') as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT current_level FROM games WHERE id = ?', (self.game_id,))
             result = cursor.fetchone()
-
-            # Debugging output to trace database and mapping logic
-            print(f"Database fetched result: {result}")
-
             if result:
-                current_level = result[0]
-                mapped_level = level_mapping.get(current_level, 1)  # Default to 1 if mapping fails
-                print(f"Mapped level: {mapped_level}")
-                return mapped_level
-
-        print("Defaulting to level 1")  # If no result from the database, default to level 1
+                level_mapping = {
+                    "The Unknown Toad": 1, "Lava Rush": 2, "Sylle Lagoon": 3,
+                    "The Broken Bridge": 4, "The Rhymean Garden": 5, "Forest Of Nolite": 6,
+                    "Echoing Chambers": 7, "Eighth Level": 8, "ninth-level": 9,
+                    "final-level": 10, "ending": 11
+                }
+                print(f"Fetched current_level: {result[0]} (Mapped to: {level_mapping.get(result[0], 1)})")
+                return level_mapping.get(result[0], 1)
+        print("Defaulting to level 1")
         return 1
 
     def handle_events(self):
@@ -710,12 +670,17 @@ class MainMenu:
         self.startbutton_rect = pygame.Rect((self.display.get_width() // 2 - 150, 400), (300, 80))
         #self.startbutton_text = self.font.render('Start', True, (0, 0, 0))
 
+        # Options Button properties
+        self.optionbutton_color = (255, 200, 0)
+        self.optionbutton_hover_color = (255, 170, 0)
+        self.optionbutton_text = "Options"
+        self.optionbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 500), (250, 70))
 
         # Exit Button properties
         self.exitbutton_color = (255, 200, 0)
         self.exitbutton_hover_color = (255, 170, 0)
         self.exitbutton_text = "Exit Game"
-        self.exitbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 500), (250, 70))
+        self.exitbutton_rect = pygame.Rect(((self.display.get_width() // 2) - (250 // 2), 590), (250, 70))
 
     def stop_sounds(self):
         self.main_menu_bgm.stop()
@@ -805,6 +770,16 @@ class MainMenu:
 
             self.draw_button(self.startbutton_text, self.font, self.startbutton_rect, start_button_color)
 
+            if self.optionbutton_rect.collidepoint(mouse_pos):
+                if not self.option_button_hovered:
+                    self.hover_sound.play()
+                    self.option_button_hovered = True
+                option_button_color = self.optionbutton_hover_color
+            else:
+                option_button_color = self.optionbutton_color
+                self.option_button_hovered = False
+
+            self.draw_button(self.optionbutton_text, self.font, self.optionbutton_rect, option_button_color)
 
             if self.exitbutton_rect.collidepoint(mouse_pos):
                 if not self.exit_button_hovered:
@@ -836,6 +811,13 @@ class MainMenu:
                         engine.runAndWait()
                         running = False  # Exit the loop to transition to the next state
 
+                    elif self.optionbutton_rect.collidepoint(event.pos):
+                        self.stop_sounds()
+                        self.gameStateManager.set_state('options')
+                        engine.say("Options")
+                        engine.runAndWait()
+                        running = False  # Exit the loop to transition to the next state
+
                     elif self.exitbutton_rect.collidepoint(event.pos):
                         self.stop_sounds()
                         pygame.quit()
@@ -843,6 +825,116 @@ class MainMenu:
 
             pygame.display.update()
 
+class Options:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+
+        # Load the background image
+        background_image_path = os.path.join('graphics', 'main-menu-background-1.jpg')
+        self.background_image = pygame.image.load(background_image_path).convert_alpha()
+        self.background_image = pygame.transform.scale(self.background_image, (self.display.get_width(), self.display.get_height()))
+
+        # Load the specified font
+        self.font = pygame.font.SysFont(settings.FONT_NAME, settings.FONT_SIZE)
+
+        # Volume slider properties
+        self.slider_length = 300
+        self.slider_height = 10
+        self.slider_color = (200, 200, 200)
+        self.knob_color = (255, 255, 255)
+        self.knob_radius = 10
+
+        # Center the volume slider
+        self.slider_x = (self.display.get_width() - self.slider_length) // 2
+        self.slider_y = self.display.get_height() // 3
+        self.knob_position = self.slider_x + int(settings.MASTER_VOLUME * self.slider_length)
+
+        # TTS toggle button properties
+        self.tts_toggle_rect = pygame.Rect((self.display.get_width() - 150) // 2, self.slider_y + 100, 150, 50)
+        self.tts_enabled = settings.TTS_ENABLED
+
+        # Font selection properties
+        self.fonts = ["Arial", "Courier", "Comic Sans MS", "Georgia", "Times New Roman"]
+        self.current_font_index = self.fonts.index(settings.FONT_NAME) if settings.FONT_NAME in self.fonts else 0
+        self.font_rect = pygame.Rect((self.display.get_width() - 300) // 2, self.tts_toggle_rect.y + 100, 300, 50)
+
+    def run(self):
+        running = True
+        while running:
+            self.display.blit(self.background_image, (0, 0))  # Draw the background image
+
+            # Draw the volume slider
+            pygame.draw.rect(self.display, self.slider_color, (self.slider_x, self.slider_y, self.slider_length, self.slider_height))
+            pygame.draw.circle(self.display, self.knob_color, (self.knob_position, self.slider_y + self.slider_height // 2), self.knob_radius)
+
+            # Display volume label
+            volume_label = self.font.render("Master Volume", True, (255, 255, 255))
+            volume_label_rect = volume_label.get_rect(center=(self.display.get_width() // 2, self.slider_y - 40))
+            self.display.blit(volume_label, volume_label_rect)
+
+            # Draw TTS toggle
+            tts_text = self.font.render("TTS: On" if self.tts_enabled else "TTS: Off", True, (255, 255, 255))
+            pygame.draw.rect(self.display, (0, 100, 0) if self.tts_enabled else (100, 0, 0), self.tts_toggle_rect)
+            tts_text_rect = tts_text.get_rect(center=self.tts_toggle_rect.center)
+            self.display.blit(tts_text, tts_text_rect)
+
+            # Draw font selection
+            font_text = self.font.render(f"Font: {self.fonts[self.current_font_index]}", True, (255, 255, 255))
+            pygame.draw.rect(self.display, (100, 100, 100), self.font_rect)
+            font_text_rect = font_text.get_rect(center=self.font_rect.center)
+            self.display.blit(font_text, font_text_rect)
+
+            # Event Handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.is_mouse_on_slider(event.pos):
+                        self.adjust_volume(event.pos)
+                    elif self.tts_toggle_rect.collidepoint(event.pos):
+                        self.toggle_tts()
+                    elif self.font_rect.collidepoint(event.pos):
+                        self.cycle_font()
+                elif event.type == pygame.MOUSEMOTION:
+                    if event.buttons[0] and self.is_mouse_on_slider(event.pos):
+                        self.adjust_volume(event.pos)
+
+            pygame.display.update()
+
+            # Go back to the main menu
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_ESCAPE]:
+                running = False
+                self.save_settings()
+                self.gameStateManager.set_state('main-menu')
+
+    def is_mouse_on_slider(self, mouse_pos):
+        return (self.slider_x <= mouse_pos[0] <= self.slider_x + self.slider_length and
+                self.slider_y - self.knob_radius <= mouse_pos[1] <= self.slider_y + self.slider_height + self.knob_radius)
+
+    def adjust_volume(self, mouse_pos):
+        self.knob_position = max(self.slider_x, min(mouse_pos[0], self.slider_x + self.slider_length))
+        settings.MASTER_VOLUME = (self.knob_position - self.slider_x) / self.slider_length
+        pygame.mixer.music.set_volume(settings.MASTER_VOLUME)
+
+    def toggle_tts(self):
+        self.tts_enabled = not self.tts_enabled
+        settings.TTS_ENABLED = self.tts_enabled
+
+    def cycle_font(self):
+        self.current_font_index = (self.current_font_index + 1) % len(self.fonts)
+        settings.FONT_NAME = self.fonts[self.current_font_index]
+        self.font = pygame.font.SysFont(settings.FONT_NAME, settings.FONT_SIZE)
+
+    def save_settings(self):
+        # Save the settings back to settings.py
+        with open('settings.py', 'w') as f:
+            f.write(f"MASTER_VOLUME = {settings.MASTER_VOLUME}\n")
+            f.write(f"TTS_ENABLED = {settings.TTS_ENABLED}\n")
+            f.write(f"FONT_NAME = '{settings.FONT_NAME}'\n")
+            f.write(f"FONT_SIZE = {settings.FONT_SIZE}\n")
 
 class TheUnknownToad:
     def __init__(self, display, gameStateManager, game_id):
@@ -1547,19 +1639,18 @@ class TheUnknownToad:
     def update_progress_in_database(self, completed_level):
         """Update the database to unlock the next level."""
         level_mapping = {
-            "The Unknown Toad": 1,
-            "Lava Rush": 2,
-            "Sylle Lagoon": 3,
-            "The Broken Bridge": 4,
-            "The Rhymean Garden": 5,
-            "Forest of Nolite": 6,
-            "Echoing Chambers": 7,
-            "Eighth Level": 8,  # Ensure the database uses this exact name
-            "Ninth Level": 9,
-            "Final Level": 10,
-            "Ending": 11
+            "first-level": "second-level",
+            "second-level": "third-level",
+            "third-level": "fourth-level",
+            "fourth-level": "fifth-level",
+            "fifth-level": "sixth-level",
+            "sixth-level": "seventh-level",
+            "seventh-level": "eighth-level",
+            "eighth-level": "ninth-level",
+            "ninth-level": "final-level",
+            "final-level": "ending",
+            "ending": "ending"
         }
-
         next_level = level_mapping.get(completed_level, completed_level)
         print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
         self.database.update_last_played(self.game_id, next_level)
@@ -2326,19 +2417,18 @@ class LavaRush:
     def update_progress_in_database(self, completed_level):
         """Update the database to unlock the next level."""
         level_mapping = {
-            "The Unknown Toad": 1,
-            "Lava Rush": 2,
-            "Sylle Lagoon": 3,
-            "The Broken Bridge": 4,
-            "The Rhymean Garden": 5,
-            "Forest of Nolite": 6,
-            "Echoing Chambers": 7,
-            "Eighth Level": 8,  # Ensure the database uses this exact name
-            "Ninth Level": 9,
-            "Final Level": 10,
-            "Ending": 11
+            "first-level": "second-level",
+            "second-level": "third-level",
+            "third-level": "fourth-level",
+            "fourth-level": "fifth-level",
+            "fifth-level": "sixth-level",
+            "sixth-level": "seventh-level",
+            "seventh-level": "eighth-level",
+            "eighth-level": "ninth-level",
+            "ninth-level": "final-level",
+            "final-level": "ending",
+            "ending": "ending"
         }
-
         next_level = level_mapping.get(completed_level, completed_level)
         print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
         self.database.update_last_played(self.game_id, next_level)
@@ -2443,19 +2533,18 @@ class LavaRush:
     def update_progress_in_database(self, completed_level):
         """Update the database to unlock the next level."""
         level_mapping = {
-            "The Unknown Toad": 1,
-            "Lava Rush": 2,
-            "Sylle Lagoon": 3,
-            "The Broken Bridge": 4,
-            "The Rhymean Garden": 5,
-            "Forest of Nolite": 6,
-            "Echoing Chambers": 7,
-            "Eighth Level": 8,  # Ensure the database uses this exact name
-            "Ninth Level": 9,
-            "Final Level": 10,
-            "Ending": 11
+            "first-level": "second-level",
+            "second-level": "third-level",
+            "third-level": "fourth-level",
+            "fourth-level": "fifth-level",
+            "fifth-level": "sixth-level",
+            "sixth-level": "seventh-level",
+            "seventh-level": "eighth-level",
+            "eighth-level": "ninth-level",
+            "ninth-level": "final-level",
+            "final-level": "ending",
+            "ending": "ending"  # End of levels
         }
-
         next_level = level_mapping.get(completed_level, completed_level)
         self.database.update_last_played(self.game_id, next_level)
 
@@ -2829,19 +2918,18 @@ class SylleLagoon:
     def update_progress_in_database(self, completed_level):
         """Update the database to unlock the next level."""
         level_mapping = {
-            "The Unknown Toad": 1,
-            "Lava Rush": 2,
-            "Sylle Lagoon": 3,
-            "The Broken Bridge": 4,
-            "The Rhymean Garden": 5,
-            "Forest of Nolite": 6,
-            "Echoing Chambers": 7,
-            "Eighth Level": 8,  # Ensure the database uses this exact name
-            "Ninth Level": 9,
-            "Final Level": 10,
-            "Ending": 11
+            "first-level": "second-level",
+            "second-level": "third-level",
+            "third-level": "fourth-level",
+            "fourth-level": "fifth-level",
+            "fifth-level": "sixth-level",
+            "sixth-level": "seventh-level",
+            "seventh-level": "eighth-level",
+            "eighth-level": "ninth-level",
+            "ninth-level": "final-level",
+            "final-level": "ending",
+            "ending": "ending"
         }
-
         next_level = level_mapping.get(completed_level, completed_level)
         print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
         self.database.update_last_played(self.game_id, next_level)
@@ -3091,19 +3179,18 @@ class TheBrokenBridge:
         def update_progress_in_database(self, completed_level):
             """Update the database to unlock the next level."""
             level_mapping = {
-                "The Unknown Toad": 1,
-                "Lava Rush": 2,
-                "Sylle Lagoon": 3,
-                "The Broken Bridge": 4,
-                "The Rhymean Garden": 5,
-                "Forest of Nolite": 6,
-                "Echoing Chambers": 7,
-                "Eighth Level": 8,  # Ensure the database uses this exact name
-                "Ninth Level": 9,
-                "Final Level": 10,
-                "Ending": 11
+                "first-level": "second-level",
+                "second-level": "third-level",
+                "third-level": "fourth-level",
+                "fourth-level": "fifth-level",
+                "fifth-level": "sixth-level",
+                "sixth-level": "seventh-level",
+                "seventh-level": "eighth-level",
+                "eighth-level": "ninth-level",
+                "ninth-level": "final-level",
+                "final-level": "ending",
+                "ending": "ending"
             }
-
             next_level = level_mapping.get(completed_level, completed_level)
             print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
             self.database.update_last_played(self.game_id, next_level)
@@ -3592,19 +3679,18 @@ class TheRhymeanGarden:
     def update_progress_in_database(self, completed_level):
         """Update the database to unlock the next level."""
         level_mapping = {
-            "The Unknown Toad": 1,
-            "Lava Rush": 2,
-            "Sylle Lagoon": 3,
-            "The Broken Bridge": 4,
-            "The Rhymean Garden": 5,
-            "Forest of Nolite": 6,
-            "Echoing Chambers": 7,
-            "Eighth Level": 8,  # Ensure the database uses this exact name
-            "Ninth Level": 9,
-            "Final Level": 10,
-            "Ending": 11
+            "first-level": "second-level",
+            "second-level": "third-level",
+            "third-level": "fourth-level",
+            "fourth-level": "fifth-level",
+            "fifth-level": "sixth-level",
+            "sixth-level": "seventh-level",
+            "seventh-level": "eighth-level",
+            "eighth-level": "ninth-level",
+            "ninth-level": "final-level",
+            "final-level": "ending",
+            "ending": "ending"
         }
-
         next_level = level_mapping.get(completed_level, completed_level)
         print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
         self.database.update_last_played(self.game_id, next_level)
@@ -4205,19 +4291,18 @@ class ForestOfNolite:
     def update_progress_in_database(self, completed_level):
         """Update the database to unlock the next level."""
         level_mapping = {
-            "The Unknown Toad": 1,
-            "Lava Rush": 2,
-            "Sylle Lagoon": 3,
-            "The Broken Bridge": 4,
-            "The Rhymean Garden": 5,
-            "Forest of Nolite": 6,
-            "Echoing Chambers": 7,
-            "Eighth Level": 8,  # Ensure the database uses this exact name
-            "Ninth Level": 9,
-            "Final Level": 10,
-            "Ending": 11
+            "first-level": "second-level",
+            "second-level": "third-level",
+            "third-level": "fourth-level",
+            "fourth-level": "fifth-level",
+            "fifth-level": "sixth-level",
+            "sixth-level": "seventh-level",
+            "seventh-level": "eighth-level",
+            "eighth-level": "ninth-level",
+            "ninth-level": "final-level",
+            "final-level": "ending",
+            "ending": "ending"
         }
-
         next_level = level_mapping.get(completed_level, completed_level)
         print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
         self.database.update_last_played(self.game_id, next_level)
@@ -4620,19 +4705,18 @@ class EchoingChambers:
     def update_progress_in_database(self, completed_level):
         """Update the database to unlock the next level."""
         level_mapping = {
-            "The Unknown Toad": 1,
-            "Lava Rush": 2,
-            "Sylle Lagoon": 3,
-            "The Broken Bridge": 4,
-            "The Rhymean Garden": 5,
-            "Forest of Nolite": 6,
-            "Echoing Chambers": 7,
-            "Eighth Level": 8,  # Ensure the database uses this exact name
-            "Ninth Level": 9,
-            "Final Level": 10,
-            "Ending": 11
+            "first-level": "second-level",
+            "second-level": "third-level",
+            "third-level": "fourth-level",
+            "fourth-level": "fifth-level",
+            "fifth-level": "sixth-level",
+            "sixth-level": "seventh-level",
+            "seventh-level": "eighth-level",
+            "eighth-level": "ninth-level",
+            "ninth-level": "final-level",
+            "final-level": "ending",
+            "ending": "ending"
         }
-
         next_level = level_mapping.get(completed_level, completed_level)
         print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
         self.database.update_last_played(self.game_id, next_level)
@@ -5237,19 +5321,18 @@ class EighthLevel:
     def update_progress_in_database(self, completed_level):
         """Update the database to unlock the next level."""
         level_mapping = {
-            "The Unknown Toad": 1,
-            "Lava Rush": 2,
-            "Sylle Lagoon": 3,
-            "The Broken Bridge": 4,
-            "The Rhymean Garden": 5,
-            "Forest of Nolite": 6,
-            "Echoing Chambers": 7,
-            "Eighth Level": 8,  # Ensure the database uses this exact name
-            "Ninth Level": 9,
-            "Final Level": 10,
-            "Ending": 11
+            "first-level": "second-level",
+            "second-level": "third-level",
+            "third-level": "fourth-level",
+            "fourth-level": "fifth-level",
+            "fifth-level": "sixth-level",
+            "sixth-level": "seventh-level",
+            "seventh-level": "eighth-level",
+            "eighth-level": "ninth-level",
+            "ninth-level": "final-level",
+            "final-level": "ending",
+            "ending": "ending"
         }
-
         next_level = level_mapping.get(completed_level, completed_level)
         print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
         self.database.update_last_played(self.game_id, next_level)
