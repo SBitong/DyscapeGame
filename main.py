@@ -33,7 +33,6 @@ class Game:
         # Update the database's reference to gameStateManager
         self.database.gameStateManager = self.gameStateManager
 
-        self.gameStateManager = GameStateManager('main-menu', self.database)
         self.mainMenu = MainMenu(self.screen, self.gameStateManager)
         self.options = Options(self.screen, self.gameStateManager)
         self.firstLevel = TheUnknownToad(self.screen, self.gameStateManager, game_id=1)
@@ -66,6 +65,36 @@ class Game:
 
         self.clock = pygame.time.Clock()
 
+    def transition_to_next_level(self, current_level):
+        """Transition to the next level after completing the current one."""
+        level_sequence = {
+            "first-level": "second-level",
+            "second-level": "third-level",
+            "third-level": "fourth-level",
+            "fourth-level": "fifth-level",
+            "fifth-level": "sixth-level",
+            "sixth-level": "seventh-level",
+            "seventh-level": "eighth-level",
+            "eighth-level": "ninth-level",  # Transition to level 9 after level 8
+            "ninth-level": "final-level",
+            "final-level": "ending",
+        }
+
+        next_level = level_sequence.get(current_level)
+        if next_level:
+            # Update the database for the next level
+            self.database.update_progress_in_database(self.gameStateManager.game_id, next_level)
+
+            # Transition to the next level directly
+            if next_level in self.states:
+                self.gameStateManager.set_state(self.states[next_level])
+                print(f"Transitioned to: {next_level}")
+            else:
+                print(f"Error: State for {next_level} not found.")
+        else:
+            print("No next level found! Transitioning to main menu.")
+            self.gameStateManager.set_state("main-menu")  # Default fallback
+
     def run(self):
         while True:
             # Event loop
@@ -82,6 +111,7 @@ class Game:
 
             # Cap the frame rate
             self.clock.tick(FPS)
+
 
 def show_new_game_popup(database, gameStateManager, display):
     running = True
@@ -262,6 +292,7 @@ class Database:
                 WHERE id = ?
             ''', (new_level, datetime.datetime.now().strftime('%Y-%m-%d'), game_id))
             self.conn.commit()
+            print(f"Database updated: Game ID {game_id}, New Level: {new_level}")
 
     def display_page(self):
         # Draw the background image
@@ -396,11 +427,15 @@ class Database:
 
         if game_data:
             current_level_str = game_data[4]
-            level_mapping = {'first-level': 1, 'second-level': 2, 'third-level': 3, 'fourth-level': 4
-                             , 'fifth-level': 5, 'sixth-level': 6, 'seventh-level': 7, 'eight-level': 8, 'ninth-level': 9
-                             , 'final-level': 10, 'ending': 11}
+            level_mapping = {'first-level': 1, 'second-level': 2, 'third-level': 3, 'fourth-level': 4,
+                             'fifth-level': 5, 'sixth-level': 6, 'seventh-level': 7, 'eighth-level': 8,
+                             'ninth-level': 9, 'final-level': 10, 'ending': 11}
             max_unlocked_level = level_mapping.get(current_level_str, 1)
-            level_selection_page = LevelSelectionPage(self.display, self.gameStateManager, game_id, max_unlocked_level)
+            print(f"Continuing game: ID {game_id}, Max Unlocked Level: {max_unlocked_level}")
+
+            # Restrict to 8 levels on selection page, but allow continuation beyond level 8
+            display_max_level = min(max_unlocked_level, 8)
+            level_selection_page = LevelSelectionPage(self.display, self.gameStateManager, game_id, display_max_level)
             level_selection_page.run()
         else:
             print(f"Error: No saved game found for game ID {game_id}")
@@ -547,17 +582,17 @@ class LevelSelectionPage:
             return self.default_image
 
     def display_page(self):
-        """Display the level selection page with locked/unlocked states."""
-        # Display background and back button
+        """Display the level selection page with levels restricted to 1–8."""
         self.display.blit(self.background_image, (0, 0))
         self.display.blit(self.back_button, self.back_button_rect)
 
-        # Fetch the most recent max unlocked level
-        self.max_unlocked_level = self.get_max_unlocked_level()
+        # Fetch the highest unlocked level, but restrict to 8 for display
+        self.max_unlocked_level = min(self.get_max_unlocked_level(self.game_id), 8)
+
         print(f"Max unlocked level for display: {self.max_unlocked_level}")
 
-        # Draw level tiles (locked/unlocked)
-        for i in range(1, 9):  # Assuming 8 levels
+        # Draw level tiles (locked/unlocked) for levels 1–8
+        for i in range(1, 9):  # Levels 1–8 only
             x, y = self.level_positions[i - 1]
             if i <= self.max_unlocked_level:
                 image = self.level_images[i]  # Unlocked level image
@@ -569,29 +604,73 @@ class LevelSelectionPage:
 
         pygame.display.flip()
 
-    def get_max_unlocked_level(self):
+    def display_page(self):
+        """Display the level selection page with levels restricted to 1–8."""
+        self.display.blit(self.background_image, (0, 0))
+        self.display.blit(self.back_button, self.back_button_rect)
+
+        # Fetch the highest unlocked level, but restrict to 8 for display
+        self.max_unlocked_level = min(self.get_max_unlocked_level(self.game_id), 8)
+
+        print(f"Max unlocked level for display: {self.max_unlocked_level}")
+
+        # Draw level tiles (locked/unlocked) for levels 1–8
+        for i in range(1, 9):  # Levels 1–8 only
+            x, y = self.level_positions[i - 1]
+            if i <= self.max_unlocked_level:
+                image = self.level_images[i]  # Unlocked level image
+                print(f"Level {i} unlocked: True")
+            else:
+                image = self.lock_image  # Locked level image
+                print(f"Level {i} unlocked: False")
+            self.display.blit(image, (x, y))
+
+        pygame.display.flip()
+
+    def get_max_unlocked_level(self, game_id):
         """Fetch the highest unlocked level from the database."""
         with sqlite3.connect('game_data.db') as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT current_level FROM games WHERE id = ?', (self.game_id,))
+            cursor.execute('SELECT current_level FROM games WHERE id = ?', (game_id,))
             result = cursor.fetchone()
             if result:
+                # Normalize fetched level to match level_mapping keys
+                fetched_level = result[0].strip().title()  # Normalize case and strip spaces
                 level_mapping = {
-                    "The Unknown Toad": 1, "Lava Rush": 2, "Sylle Lagoon": 3,
-                    "The Broken Bridge": 4, "The Rhymean Garden": 5, "Forest Of Nolite": 6,
-                    "Echoing Chambers": 7, "Eighth Level": 8, "ninth-level": 9,
-                    "final-level": 10, "ending": 11
+                    "The Unknown Toad": 1,
+                    "Lava Rush": 2,
+                    "Sylle Lagoon": 3,
+                    "The Broken Bridge": 4,
+                    "The Rhymean Garden": 5,
+                    "Forest Of Nolite": 6,
+                    "Echoing Chambers": 7,
+                    "Eight Level": 8,
+                    "Ninth Level": 9,
+                    "Final Level": 10,
+                    "Ending": 11
                 }
-                print(f"Fetched current_level: {result[0]} (Mapped to: {level_mapping.get(result[0], 1)})")
-                return level_mapping.get(result[0], 1)
-        print("Defaulting to level 1")
-        return 1
+                mapped_level = level_mapping.get(fetched_level, 1)
+                print(f"Fetched current_level: {fetched_level} (Mapped to: {mapped_level})")
+                return mapped_level
+            print("Defaulting to level 1")
+            return 1
 
     def handle_events(self):
-        level_classes = {1: TheUnknownToad, 2: LavaRush, 3: SylleLagoon, 4: TheBrokenBridge,
-                         5: TheRhymeanGarden, 6: ForestOfNolite, 7: EchoingChambers, 8: EighthLevel,
-                         9: NinthLevel, 10: FinalLevel, 11: Ending}
-  # Extend with other levels as needed
+        """Handle events for the level selection page."""
+        level_classes = {
+            1: TheUnknownToad,
+            2: LavaRush,
+            3: SylleLagoon,
+            4: TheBrokenBridge,
+            5: TheRhymeanGarden,
+            6: ForestOfNolite,
+            7: EchoingChambers,
+            8: EighthLevel,
+            9: NinthLevel,
+            10: FinalLevel,
+            11: Ending
+        }
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -603,12 +682,13 @@ class LevelSelectionPage:
                     self.gameStateManager.set_state(Database(self.display, self.gameStateManager))
                     return
 
-                # Check if any level tile is clicked
-                for i in range(1, self.max_unlocked_level + 1):
+                # Restrict selection to levels 1 to 8 on the level selection screen
+                for i in range(1, min(self.max_unlocked_level, 8) + 1):
                     x, y = self.level_positions[i - 1]
                     if pygame.Rect(x, y, self.tile_size, self.tile_size).collidepoint(event.pos):
+                        # Get the corresponding level class
                         level_class = level_classes.get(i, TheUnknownToad)
-                        # Ensure game_id is passed here
+                        # Transition to the selected level
                         self.gameStateManager.set_state(level_class(self.display, self.gameStateManager, self.game_id))
                         return
 
@@ -5318,24 +5398,28 @@ class EighthLevel:
             self.word_positions = [(-100, -100)] * len(correct_words)  # Hide the words by moving them off-screen
             print(f"Correct order set: {self.rounds}")
 
+    def check_level_completion(self):
+        if self.win:  # This should check if the player has won the eighth level
+            print("Level 8 completed. Transitioning to Ninth Level.")
+            self.transition_to_next_level("eighth-level")
+        else:
+            print("Error: Level 8 completion condition not met.")
+
     def update_progress_in_database(self, completed_level):
         """Update the database to unlock the next level."""
         level_mapping = {
-            "first-level": "second-level",
-            "second-level": "third-level",
-            "third-level": "fourth-level",
-            "fourth-level": "fifth-level",
-            "fifth-level": "sixth-level",
-            "sixth-level": "seventh-level",
-            "seventh-level": "eighth-level",
             "eighth-level": "ninth-level",
             "ninth-level": "final-level",
             "final-level": "ending",
-            "ending": "ending"
         }
         next_level = level_mapping.get(completed_level, completed_level)
         print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
         self.database.update_last_played(self.game_id, next_level)
+
+    def load_next_level(self):
+        """Transition to the next level."""
+        self.update_progress_in_database("eighth-level")  # Mark Eighth Level as completed
+        self.gameStateManager.game.transition_to_next_level("eighth-level")  # Transition to Ninth Level
 
 
     def show_end_screen(self):
@@ -5559,12 +5643,28 @@ class EighthLevel:
             return self.rounds[self.current_round]["words"]  # Ensure this retrieves the correct order
         return []
 
+    def transition_to_next_level(self, current_level):
+        """Transition directly to the ninth level after completing the current one."""
+        next_level = "ninth-level"  # Force the next level to be the ninth level
+
+        if next_level in self.states:
+            # Update the database for the ninth level
+            self.database.update_progress_in_database(self.gameStateManager.game_id, next_level)
+
+            # Transition directly to the ninth level
+            self.gameStateManager.set_state(self.states[next_level])
+            print(f"Transitioned to: {next_level}")
+        else:
+            print(f"Error: State for {next_level} not found.")
+
     def load_next_level(self):
         self.gameStateManager.set_state('ninth-level')
+        print(f"Level completed: {self.win}, transitioning to: ninth-level")
 
     def run(self):
         pygame.mixer.init()
         if not self.is_restart:
+            # Play dialogue strips at the start of the level
             pygame.mixer.music.unload()
             pygame.mixer.music.load(os.path.join('audio', '02 Wonderin.mp3'))
             pygame.mixer.music.set_volume(0.05)
@@ -5574,10 +5674,12 @@ class EighthLevel:
             pygame.mixer.music.stop()
         else:
             self.is_restart = False
+
         pygame.mixer.music.unload()
         pygame.mixer.music.load(os.path.join('audio', '02 Wonderin.mp3'))
         pygame.mixer.music.set_volume(0.2)
         pygame.mixer.music.play(-1)
+
         running = True
         while running:
             for event in pygame.event.get():
@@ -5590,7 +5692,7 @@ class EighthLevel:
                         # Check if the Next Level button is clicked
                         if self.win and self.next_level_button.collidepoint(mouse_pos):
                             pygame.mixer.music.stop()
-                            self.load_next_level()  # Replace with your method to load the next level
+                            self.load_next_level()  # Transition to the next level
                             running = False
                         # Check if the Restart button is clicked
                         elif self.restart_button.collidepoint(mouse_pos):
@@ -5601,7 +5703,7 @@ class EighthLevel:
                         elif self.exit_button.collidepoint(mouse_pos):
                             pygame.mixer.music.stop()
                             self.gameStateManager.set_state('main-menu')
-                            running = False  # Exit the game loop (or you could go to the main menu)
+                            running = False  # Exit the game loop
 
             if self.game_over or self.win:
                 if not self.end_screen_displayed:  # Check if end screen is not yet displayed
@@ -5609,6 +5711,8 @@ class EighthLevel:
                     self.show_end_screen()  # Display the end screen
                     pygame.display.update()  # Update the display
                     self.end_screen_displayed = True  # Set flag to indicate end screen has been displayed
+                    if self.win:  # Check win condition and transition to next level
+                        self.load_next_level()  # Move to the ninth level
             else:
                 self.draw()  # Only draw if the game is not over or won
                 pygame.display.update()  # Update the display
