@@ -6547,12 +6547,18 @@ class EighthLevel:
                             self.gameStateManager.set_state('main-menu')
                             running = False  # Exit the game loop (or you could go to the main menu)
 
-            if self.game_over or self.win:
+            if self.game_over:  # If the player lost
                 if not self.end_screen_displayed:  # Check if end screen is not yet displayed
                     pygame.mixer.music.stop()
                     self.show_end_screen()  # Display the end screen
                     pygame.display.update()  # Update the display
                     self.end_screen_displayed = True  # Set flag to indicate end screen has been displayed
+            elif self.win and self.current_round >= len(
+                    self.rounds) and self.is_syllable_round and self.current_round >= len(
+                    self.syllable_rounds):  # If the player won the level
+                pygame.mixer.music.stop()
+                self.load_next_level()  # Transition automatically to the ninth level
+                running = False
             else:
                 self.draw()  # Only draw if the game is not over or won
                 pygame.display.update()  # Update the display
