@@ -592,7 +592,7 @@ class LevelSelectionPage:
                 # Updated level mapping to ensure correctness
                 level_mapping = {
                     "the unknown toad": 1, "lava rush": 2, "sylle lagoon": 3, "the broken bridge": 4,
-                    "the rhymean garden": 5, "forest of nolite": 6, "echoing chambers": 7, "eighth-level": 8,
+                    "the rhymean garden": 5, "forest of nolite": 6, "echoing chambers": 7, "eighth level": 8,
                     "ninth-level": 9, "final-level": 10, "ending": 11
                 }
                 return min(level_mapping.get(fetched_level, 1), 8)  # Cap at level 8 for display
@@ -4755,7 +4755,7 @@ class EchoingChambers:
         font_path = os.path.join('fonts', 'ARIAL.TTF')
         font = pygame.font.Font(font_path, 20)
         if self.win:
-            self.update_progress_in_database("Eight Level")
+            self.update_progress_in_database("Eighth Level")
             text = font.render("You Win!", True, (255, 255, 255))
             self.display.fill((0, 0, 0))
             self.display.blit(text,
@@ -6442,7 +6442,7 @@ class NinthLevel:
                 print("Ninth level completed. Updating progress to eighth-level.")
 
                 # Update progress in the database to reflect eighth-level
-                self.database.update_progress_in_database(self.game_id, "eighth-level")
+                self.database.update_progress_in_database(self.game_id, "eighth level")
                 self.gameStateManager.set_state(FinalLevel(self.display, self.gameStateManager,
                                                            self.game_id))  # Assuming FinalLevel is the next class
                 running = False
