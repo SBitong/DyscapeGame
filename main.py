@@ -418,7 +418,27 @@ class Database:
             self.conn.commit()
             print(f"Added missing column: {column_name}")
 
+    def get_max_unlocked_level(self, game_id):
+        """Fetch the highest unlocked level for the specified game ID."""
+        with sqlite3.connect('game_data.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT current_level FROM games WHERE id = ?', (game_id,))
+            result = cursor.fetchone()
+            if result:
+                fetched_level = result[0].strip().lower()  # Normalize fetched level
+                # Map level names to numerical values
+                level_mapping = {
+                    "the unknown toad": 1, "lava rush": 2, "sylle lagoon": 3, "the broken bridge": 4,
+                    "the rhymean garden": 5, "forest of nolite": 6, "echoing chambers": 7, "eighth level": 8,
+                    "ninth-level": 9, "final-level": 10, "ending": 11
+                }
+                return level_mapping.get(fetched_level, 1)  # Default to level 1 if not found
+            return 1  # Default to level 1 if no result found
+
     def continue_game(self, game_id):
+        """
+        Continue a saved game by loading the maximum unlocked level.
+        """
         # Retrieve the saved games list
         saved_games = self.get_saved_games()
 
@@ -426,15 +446,25 @@ class Database:
         game_data = next((game for game in saved_games if game[0] == game_id), None)
 
         if game_data:
-            current_level_str = game_data[4]
-            level_mapping = {'first-level': 1, 'second-level': 2, 'third-level': 3, 'fourth-level': 4,
-                             'fifth-level': 5, 'sixth-level': 6, 'seventh-level': 7, 'eighth-level': 8,
-                             'ninth-level': 9, 'final-level': 10, 'ending': 11}
-            max_unlocked_level = level_mapping.get(current_level_str, 1)
-            print(f"Continuing game: ID {game_id}, Max Unlocked Level: {max_unlocked_level}")
+            current_level_str = game_data[4].strip().lower()  # Normalize the current level string
+            print(f"Fetched current level string: {current_level_str}")  # Debugging statement
 
-            # Restrict to 8 levels on selection page, but allow continuation beyond level 8
+            # Use the global level mapping to determine max unlocked level
+            level_mapping = {
+                'the unknown toad': 1, 'lava rush': 2, 'sylle lagoon': 3, 'the broken bridge': 4,
+                'the rhymean garden': 5, 'forest of nolite': 6, 'echoing chambers': 7, 'eighth level': 8,
+                'ninth-level': 9, 'final-level': 10, 'ending': 11
+            }
+
+            # Get the maximum unlocked level using the mapping
+            max_unlocked_level = level_mapping.get(current_level_str, 1)
+            print(f"Determined Max Unlocked Level: {max_unlocked_level}")  # Debugging statement
+
+            # Restrict to 8 levels for display but retain progress for continuation beyond level 8
             display_max_level = min(max_unlocked_level, 8)
+            print(f"Displaying levels up to: {display_max_level}")  # Debugging statement
+
+            # Initialize the level selection page with the determined max level
             level_selection_page = LevelSelectionPage(self.display, self.gameStateManager, game_id, display_max_level)
             level_selection_page.run()
         else:
@@ -589,13 +619,15 @@ class LevelSelectionPage:
             result = cursor.fetchone()
             if result:
                 fetched_level = result[0].strip().lower()  # Normalize fetched level
-                # Updated level mapping to ensure correctness
+                # Level mapping for progression
                 level_mapping = {
                     "the unknown toad": 1, "lava rush": 2, "sylle lagoon": 3, "the broken bridge": 4,
                     "the rhymean garden": 5, "forest of nolite": 6, "echoing chambers": 7, "eighth level": 8,
                     "ninth-level": 9, "final-level": 10, "ending": 11
                 }
-                return min(level_mapping.get(fetched_level, 1), 8)  # Cap at level 8 for display
+                # Convert fetched level to its corresponding numerical value
+                max_unlocked_level = level_mapping.get(fetched_level, 1)
+                return max_unlocked_level  # Return the actual highest level unlocked
             return 1  # Default to level 1 if no result found
 
     def display_page(self):
@@ -1666,23 +1698,25 @@ class TheUnknownToad:
         pygame.draw.rect(surface, color, rect, border_radius=corner_radius)
 
     def update_progress_in_database(self, completed_level):
-        """Update the database to unlock the next level."""
+        """Update the database to unlock the next level, preserving max progress."""
         level_mapping = {
-            "first-level": "second-level",
-            "second-level": "third-level",
-            "third-level": "fourth-level",
-            "fourth-level": "fifth-level",
-            "fifth-level": "sixth-level",
-            "sixth-level": "seventh-level",
-            "seventh-level": "eighth-level",
-            "eighth-level": "ninth-level",
-            "ninth-level": "final-level",
-            "final-level": "ending",
-            "ending": "ending"
+            "the unknown toad": 1, "lava rush": 2, "sylle lagoon": 3, "the broken bridge": 4,
+            "the rhymean garden": 5, "forest of nolite": 6, "echoing chambers": 7, "eighth level": 8,
+            "ninth-level": 9, "final-level": 10, "ending": 11
         }
-        next_level = level_mapping.get(completed_level, completed_level)
-        print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
-        self.database.update_last_played(self.game_id, next_level)
+        reverse_level_mapping = {v: k for k, v in level_mapping.items()}
+        next_level_num = level_mapping.get(completed_level, 1) + 1
+        next_level = reverse_level_mapping.get(next_level_num, completed_level)  # Ensure valid level
+
+        # Fetch current max unlocked level
+        current_max_level = self.database.get_max_unlocked_level(self.game_id)
+
+        # Update only if the new level is higher than the current max unlocked level
+        if next_level_num > current_max_level:
+            print(f"Updating progress: Current Max Level: {current_max_level}, New Max Level: {next_level}")
+            self.database.update_last_played(self.game_id, next_level)
+        else:
+            print(f"Preserving progress: Max Level remains {current_max_level}")
 
     def show_end_screen(self):
         """Display the end screen based on win/lose state."""
@@ -2444,23 +2478,25 @@ class LavaRush:
         return self.current_syllable_selection == self.correct_syllables
 
     def update_progress_in_database(self, completed_level):
-        """Update the database to unlock the next level."""
+        """Update the database to unlock the next level, preserving max progress."""
         level_mapping = {
-            "first-level": "second-level",
-            "second-level": "third-level",
-            "third-level": "fourth-level",
-            "fourth-level": "fifth-level",
-            "fifth-level": "sixth-level",
-            "sixth-level": "seventh-level",
-            "seventh-level": "eighth-level",
-            "eighth-level": "ninth-level",
-            "ninth-level": "final-level",
-            "final-level": "ending",
-            "ending": "ending"
+            "the unknown toad": 1, "lava rush": 2, "sylle lagoon": 3, "the broken bridge": 4,
+            "the rhymean garden": 5, "forest of nolite": 6, "echoing chambers": 7, "eighth level": 8,
+            "ninth-level": 9, "final-level": 10, "ending": 11
         }
-        next_level = level_mapping.get(completed_level, completed_level)
-        print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
-        self.database.update_last_played(self.game_id, next_level)
+        reverse_level_mapping = {v: k for k, v in level_mapping.items()}
+        next_level_num = level_mapping.get(completed_level, 1) + 1
+        next_level = reverse_level_mapping.get(next_level_num, completed_level)  # Ensure valid level
+
+        # Fetch current max unlocked level
+        current_max_level = self.database.get_max_unlocked_level(self.game_id)
+
+        # Update only if the new level is higher than the current max unlocked level
+        if next_level_num > current_max_level:
+            print(f"Updating progress: Current Max Level: {current_max_level}, New Max Level: {next_level}")
+            self.database.update_last_played(self.game_id, next_level)
+        else:
+            print(f"Preserving progress: Max Level remains {current_max_level}")
 
     def show_end_screen(self):
         font_path = os.path.join('fonts', 'ARIAL.TTF')
@@ -2560,22 +2596,25 @@ class LavaRush:
         self.load_new_word()  # Load a new word
 
     def update_progress_in_database(self, completed_level):
-        """Update the database to unlock the next level."""
+        """Update the database to unlock the next level, preserving max progress."""
         level_mapping = {
-            "first-level": "second-level",
-            "second-level": "third-level",
-            "third-level": "fourth-level",
-            "fourth-level": "fifth-level",
-            "fifth-level": "sixth-level",
-            "sixth-level": "seventh-level",
-            "seventh-level": "eighth-level",
-            "eighth-level": "ninth-level",
-            "ninth-level": "final-level",
-            "final-level": "ending",
-            "ending": "ending"  # End of levels
+            "the unknown toad": 1, "lava rush": 2, "sylle lagoon": 3, "the broken bridge": 4,
+            "the rhymean garden": 5, "forest of nolite": 6, "echoing chambers": 7, "eighth level": 8,
+            "ninth-level": 9, "final-level": 10, "ending": 11
         }
-        next_level = level_mapping.get(completed_level, completed_level)
-        self.database.update_last_played(self.game_id, next_level)
+        reverse_level_mapping = {v: k for k, v in level_mapping.items()}
+        next_level_num = level_mapping.get(completed_level, 1) + 1
+        next_level = reverse_level_mapping.get(next_level_num, completed_level)  # Ensure valid level
+
+        # Fetch current max unlocked level
+        current_max_level = self.database.get_max_unlocked_level(self.game_id)
+
+        # Update only if the new level is higher than the current max unlocked level
+        if next_level_num > current_max_level:
+            print(f"Updating progress: Current Max Level: {current_max_level}, New Max Level: {next_level}")
+            self.database.update_last_played(self.game_id, next_level)
+        else:
+            print(f"Preserving progress: Max Level remains {current_max_level}")
 
     def run(self):
         self.run_dialogue_strip_1()
@@ -2945,24 +2984,25 @@ class SylleLagoon:
         self.current_time = 10.0
 
     def update_progress_in_database(self, completed_level):
-        """Update the database to unlock the next level."""
+        """Update the database to unlock the next level, preserving max progress."""
         level_mapping = {
-            "first-level": "second-level",
-            "second-level": "third-level",
-            "third-level": "fourth-level",
-            "fourth-level": "fifth-level",
-            "fifth-level": "sixth-level",
-            "sixth-level": "seventh-level",
-            "seventh-level": "eighth-level",
-            "eighth-level": "ninth-level",
-            "ninth-level": "final-level",
-            "final-level": "ending",
-            "ending": "ending"
+            "the unknown toad": 1, "lava rush": 2, "sylle lagoon": 3, "the broken bridge": 4,
+            "the rhymean garden": 5, "forest of nolite": 6, "echoing chambers": 7, "eighth level": 8,
+            "ninth-level": 9, "final-level": 10, "ending": 11
         }
-        next_level = level_mapping.get(completed_level, completed_level)
-        print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
-        self.database.update_last_played(self.game_id, next_level)
+        reverse_level_mapping = {v: k for k, v in level_mapping.items()}
+        next_level_num = level_mapping.get(completed_level, 1) + 1
+        next_level = reverse_level_mapping.get(next_level_num, completed_level)  # Ensure valid level
 
+        # Fetch current max unlocked level
+        current_max_level = self.database.get_max_unlocked_level(self.game_id)
+
+        # Update only if the new level is higher than the current max unlocked level
+        if next_level_num > current_max_level:
+            print(f"Updating progress: Current Max Level: {current_max_level}, New Max Level: {next_level}")
+            self.database.update_last_played(self.game_id, next_level)
+        else:
+            print(f"Preserving progress: Max Level remains {current_max_level}")
 
     def show_end_screen(self):
         # Set up screen
@@ -3206,23 +3246,25 @@ class TheBrokenBridge:
             self.tts_engine.runAndWait()
 
         def update_progress_in_database(self, completed_level):
-            """Update the database to unlock the next level."""
+            """Update the database to unlock the next level, preserving max progress."""
             level_mapping = {
-                "first-level": "second-level",
-                "second-level": "third-level",
-                "third-level": "fourth-level",
-                "fourth-level": "fifth-level",
-                "fifth-level": "sixth-level",
-                "sixth-level": "seventh-level",
-                "seventh-level": "eighth-level",
-                "eighth-level": "ninth-level",
-                "ninth-level": "final-level",
-                "final-level": "ending",
-                "ending": "ending"
+                "the unknown toad": 1, "lava rush": 2, "sylle lagoon": 3, "the broken bridge": 4,
+                "the rhymean garden": 5, "forest of nolite": 6, "echoing chambers": 7, "eighth level": 8,
+                "ninth-level": 9, "final-level": 10, "ending": 11
             }
-            next_level = level_mapping.get(completed_level, completed_level)
-            print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
-            self.database.update_last_played(self.game_id, next_level)
+            reverse_level_mapping = {v: k for k, v in level_mapping.items()}
+            next_level_num = level_mapping.get(completed_level, 1) + 1
+            next_level = reverse_level_mapping.get(next_level_num, completed_level)  # Ensure valid level
+
+            # Fetch current max unlocked level
+            current_max_level = self.database.get_max_unlocked_level(self.game_id)
+
+            # Update only if the new level is higher than the current max unlocked level
+            if next_level_num > current_max_level:
+                print(f"Updating progress: Current Max Level: {current_max_level}, New Max Level: {next_level}")
+                self.database.update_last_played(self.game_id, next_level)
+            else:
+                print(f"Preserving progress: Max Level remains {current_max_level}")
 
         def show_end_screen(self):
             self.display.blit(self.bottom_platform, (0, 0))  # Draw the bottom platform
@@ -3706,23 +3748,25 @@ class TheRhymeanGarden:
             pygame.time.delay(30)  # Control the fade-in speed
 
     def update_progress_in_database(self, completed_level):
-        """Update the database to unlock the next level."""
+        """Update the database to unlock the next level, preserving max progress."""
         level_mapping = {
-            "first-level": "second-level",
-            "second-level": "third-level",
-            "third-level": "fourth-level",
-            "fourth-level": "fifth-level",
-            "fifth-level": "sixth-level",
-            "sixth-level": "seventh-level",
-            "seventh-level": "eighth-level",
-            "eighth-level": "ninth-level",
-            "ninth-level": "final-level",
-            "final-level": "ending",
-            "ending": "ending"
+            "the unknown toad": 1, "lava rush": 2, "sylle lagoon": 3, "the broken bridge": 4,
+            "the rhymean garden": 5, "forest of nolite": 6, "echoing chambers": 7, "eighth level": 8,
+            "ninth-level": 9, "final-level": 10, "ending": 11
         }
-        next_level = level_mapping.get(completed_level, completed_level)
-        print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
-        self.database.update_last_played(self.game_id, next_level)
+        reverse_level_mapping = {v: k for k, v in level_mapping.items()}
+        next_level_num = level_mapping.get(completed_level, 1) + 1
+        next_level = reverse_level_mapping.get(next_level_num, completed_level)  # Ensure valid level
+
+        # Fetch current max unlocked level
+        current_max_level = self.database.get_max_unlocked_level(self.game_id)
+
+        # Update only if the new level is higher than the current max unlocked level
+        if next_level_num > current_max_level:
+            print(f"Updating progress: Current Max Level: {current_max_level}, New Max Level: {next_level}")
+            self.database.update_last_played(self.game_id, next_level)
+        else:
+            print(f"Preserving progress: Max Level remains {current_max_level}")
 
     def show_end_screen(self):
         self.display.fill((0, 0, 0))
@@ -4318,23 +4362,25 @@ class ForestOfNolite:
         print("Game has been restarted.")
 
     def update_progress_in_database(self, completed_level):
-        """Update the database to unlock the next level."""
+        """Update the database to unlock the next level, preserving max progress."""
         level_mapping = {
-            "first-level": "second-level",
-            "second-level": "third-level",
-            "third-level": "fourth-level",
-            "fourth-level": "fifth-level",
-            "fifth-level": "sixth-level",
-            "sixth-level": "seventh-level",
-            "seventh-level": "eighth-level",
-            "eighth-level": "ninth-level",
-            "ninth-level": "final-level",
-            "final-level": "ending",
-            "ending": "ending"
+            "the unknown toad": 1, "lava rush": 2, "sylle lagoon": 3, "the broken bridge": 4,
+            "the rhymean garden": 5, "forest of nolite": 6, "echoing chambers": 7, "eighth level": 8,
+            "ninth-level": 9, "final-level": 10, "ending": 11
         }
-        next_level = level_mapping.get(completed_level, completed_level)
-        print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
-        self.database.update_last_played(self.game_id, next_level)
+        reverse_level_mapping = {v: k for k, v in level_mapping.items()}
+        next_level_num = level_mapping.get(completed_level, 1) + 1
+        next_level = reverse_level_mapping.get(next_level_num, completed_level)  # Ensure valid level
+
+        # Fetch current max unlocked level
+        current_max_level = self.database.get_max_unlocked_level(self.game_id)
+
+        # Update only if the new level is higher than the current max unlocked level
+        if next_level_num > current_max_level:
+            print(f"Updating progress: Current Max Level: {current_max_level}, New Max Level: {next_level}")
+            self.database.update_last_played(self.game_id, next_level)
+        else:
+            print(f"Preserving progress: Max Level remains {current_max_level}")
 
     def show_end_screen(self):
         """Displays the end screen with win/lose messages and buttons."""
@@ -4732,23 +4778,25 @@ class EchoingChambers:
             clock.tick(FPS)
 
     def update_progress_in_database(self, completed_level):
-        """Update the database to unlock the next level."""
+        """Update the database to unlock the next level, preserving max progress."""
         level_mapping = {
-            "first-level": "second-level",
-            "second-level": "third-level",
-            "third-level": "fourth-level",
-            "fourth-level": "fifth-level",
-            "fifth-level": "sixth-level",
-            "sixth-level": "seventh-level",
-            "seventh-level": "eighth-level",
-            "eighth-level": "ninth-level",
-            "ninth-level": "final-level",
-            "final-level": "ending",
-            "ending": "ending"
+            "the unknown toad": 1, "lava rush": 2, "sylle lagoon": 3, "the broken bridge": 4,
+            "the rhymean garden": 5, "forest of nolite": 6, "echoing chambers": 7, "eighth level": 8,
+            "ninth-level": 9, "final-level": 10, "ending": 11
         }
-        next_level = level_mapping.get(completed_level, completed_level)
-        print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
-        self.database.update_last_played(self.game_id, next_level)
+        reverse_level_mapping = {v: k for k, v in level_mapping.items()}
+        next_level_num = level_mapping.get(completed_level, 1) + 1
+        next_level = reverse_level_mapping.get(next_level_num, completed_level)  # Ensure valid level
+
+        # Fetch current max unlocked level
+        current_max_level = self.database.get_max_unlocked_level(self.game_id)
+
+        # Update only if the new level is higher than the current max unlocked level
+        if next_level_num > current_max_level:
+            print(f"Updating progress: Current Max Level: {current_max_level}, New Max Level: {next_level}")
+            self.database.update_last_played(self.game_id, next_level)
+        else:
+            print(f"Preserving progress: Max Level remains {current_max_level}")
 
     def show_end_screen(self):
         """Display the end screen based on win/lose state."""
@@ -5355,15 +5403,25 @@ class EighthLevel:
             print("Error: Level 8 completion condition not met.")
 
     def update_progress_in_database(self, completed_level):
-        """Update the database to unlock the next level."""
+        """Update the database to unlock the next level, preserving max progress."""
         level_mapping = {
-            "eighth-level": "ninth-level",
-            "ninth-level": "final-level",
-            "final-level": "ending",
+            "the unknown toad": 1, "lava rush": 2, "sylle lagoon": 3, "the broken bridge": 4,
+            "the rhymean garden": 5, "forest of nolite": 6, "echoing chambers": 7, "eighth level": 8,
+            "ninth-level": 9, "final-level": 10, "ending": 11
         }
-        next_level = level_mapping.get(completed_level, completed_level)
-        print(f"Updating progress: Completed Level: {completed_level}, Next Level: {next_level}")
-        self.database.update_last_played(self.game_id, next_level)
+        reverse_level_mapping = {v: k for k, v in level_mapping.items()}
+        next_level_num = level_mapping.get(completed_level, 1) + 1
+        next_level = reverse_level_mapping.get(next_level_num, completed_level)  # Ensure valid level
+
+        # Fetch current max unlocked level
+        current_max_level = self.database.get_max_unlocked_level(self.game_id)
+
+        # Update only if the new level is higher than the current max unlocked level
+        if next_level_num > current_max_level:
+            print(f"Updating progress: Current Max Level: {current_max_level}, New Max Level: {next_level}")
+            self.database.update_last_played(self.game_id, next_level)
+        else:
+            print(f"Preserving progress: Max Level remains {current_max_level}")
 
     def load_next_level(self):
         """Transition to the next level."""
