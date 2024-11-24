@@ -8306,7 +8306,7 @@ class NinthLevel:
                 print("Ninth level completed. Updating progress to eighth-level.")
 
                 # Update progress in the database to reflect eighth-level
-                self.database.update_progress_in_database(self.game_id, "eighth level")
+                self.database.update_progress_in_database(self.game_id, "Eighth Level")
                 self.gameStateManager.set_state(FinalLevel(self.display, self.gameStateManager,
                                                            self.game_id))  # Assuming FinalLevel is the next class
                 running = False
@@ -8907,7 +8907,7 @@ class FinalLevel:
             clock.tick(11)  # Control the speed of the animation (frames per second)
 
         pygame.time.delay(1700)
-        self.gameStateManager.set_state('ending')
+        self.transition_to_ending()  # Transition to ending after animation
 
     def run_qa_session(self):
         font = pygame.font.Font(None, 36)
@@ -8984,6 +8984,12 @@ class FinalLevel:
 
             pygame.display.flip()
             pygame.time.Clock().tick(60)
+
+    def transition_to_ending(self):
+        print("Transitioning to the ending...")
+        self.gameStateManager.set_state(Ending(self.display, self.gameStateManager,
+                                                   self.game_id))
+        print("Successfully transitioned to the ending.")
 
     def run(self):
         pygame.mixer.init()
