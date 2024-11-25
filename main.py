@@ -7925,15 +7925,15 @@ class NinthLevel:
         char1_image = pygame.transform.scale(char1_image, (200, 200))
 
         dialogue_data = [
-            {"name": "Magical Owl", "text": "Psst! Adventurer! I have a plan"},
+            {"name": "Magical Owl", "text": "Psst! Adventurer! I have a plan", "audio": "owl-talking-ninth-1.mp3"},
             {"name": "You", "text": "What is it, Lexi?", "image": char1_image},
-            {"name": "Magical Owl", "text": "We cannot defeat Confusion if we trade blows with him. But we can TIRE HIM out."},
+            {"name": "Magical Owl", "text": "We cannot defeat Confusion if we trade blows with him. But we can TIRE HIM out.", "audio": "owl-talking-ninth-2.mp3"},
             {"name": "You", "text": "That's a great idea! Tell me more.", "image": char1_image},
-            {"name": "Magical Owl", "text": "I ll put up a MAGIC SHIELD and block Confusion's Attacks."},
-            {"name": "Magical Owl", "text": "He will probably use his power to throw chunks and boulders."},
-            {"name": "Magical Owl", "text": "This shield will deal a great amount of my magic, but so does his power."},
-            {"name": "Magical Owl", "text": "This shield has its limit, so try to DESTROY as many boulders as you can."},
-            {"name": "Magical Owl","text": "Let's do this, adventurer! This is a battle of endurance."},
+            {"name": "Magical Owl", "text": "I ll put up a MAGIC SHIELD and block Confusion's Attacks.", "audio": "owl-talking-ninth-3.mp3"},
+            {"name": "Magical Owl", "text": "He will probably use his power to throw chunks and boulders.", "audio": "owl-talking-ninth-4.mp3"},
+            {"name": "Magical Owl", "text": "This shield will deal a great amount of my magic, but so does his power.", "audio": "owl-talking-ninth-5.mp3"},
+            {"name": "Magical Owl", "text": "This shield has its limit, so try to DESTROY as many boulders as you can.", "audio": "owl-talking-ninth-6.mp3"},
+            {"name": "Magical Owl","text": "Let's do this, adventurer! This is a battle of endurance.", "audio": "owl-talking-ninth-7.mp3"},
             {"name": "You", "text": "I got you, Lexi! I'm on it.", "image": char1_image},
         ]
 
@@ -8346,6 +8346,9 @@ class FinalLevel:
         self.background_image_2 = pygame.image.load(background_image_path_2).convert_alpha()
         self.background_image_2 = pygame.transform.scale(self.background_image_2,
                                                          (self.display.get_width(), self.display.get_height()))
+
+        self.correct_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'correct-answer.mp3'))
+        self.wrong_answer_sound = pygame.mixer.Sound(os.path.join('audio', 'wrong-answer.mp3'))
 
         self.load_spritesheets()
 
@@ -8967,9 +8970,11 @@ class FinalLevel:
                             if button_rect.collidepoint(mouse_pos):  # Check if mouse is over this option
                                 selected_option = question_data["options"][idx]
                                 if selected_option == question_data["correct"]:
+                                    self.correct_answer_sound.play()
                                     correct_answers += 1
                                     question_index += 1
                                 else:
+                                    self.wrong_answer_sound.play()
                                     # Reset on incorrect answer
                                     question_index = 0
                                     correct_answers = 0
